@@ -1,0 +1,10 @@
+Package:rstls
+Type: Package
+Title: Interface to STLS
+Version: 0.1
+Date: 2011-09-14
+Author: Konstantin Usevich
+Maintainer: Konstantin Usevich <konstantin.usevich@statmod.ru>
+Description: This package provides R binding to STLS
+License: file LICENSE
+URL: http://github.com/kdu/rstls

@@ -1,0 +1,14 @@
+# Ignore object files and libraries
+*.o
+*.so
+*.a
+# Ignore mex files
+*.mex*
+# Ignore R files and libraries
+rstls.Rcheck
+rstls*.tar.gz
+# Ignore copied files
+rstls/src/stls/*
+rstls/src/SLICOT/*
+
+
