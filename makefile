@@ -1,6 +1,7 @@
 # makefile: STLS makefile
 
 CC  = gcc -fPIC 
+CCPP  = g++ -fPIC 
 F77 = gcc -fPIC 
 OCTAVE_MEX = mkoctfile --mex -v -DMEX_OCTAVE #mex  -v -compatibleArrayDims
 
@@ -17,10 +18,11 @@ INC_FLAGS = -I/home/kdu/local/include -I./$(STLS_INCLUDE_DIR) # -g
 OPT_FLAGS = -O #-pg # gprof ./test gmon.out > gmon.txt
 
 # Building octave mex-file
-mexoct :   stls.a SLICOT.a 
+mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lgslcblas \
 	-llapack -lblas  -o stls.mex
 #	cp -f mex_stls.mex ../stls.mex
+	cp -f stls.mex test_m
 
 R: 
 	cp $(STLS_INCLUDE_FILES) rstls/src/stls
@@ -30,13 +32,12 @@ R:
 	R CMD build rstls
 	R CMD INSTALL stls
 	
-
-test : test.o stls.o SLICOT.a
-	$(CC)  $(INC_FLAGS) $(OPT_FLAGS) -o test test.o stls.o SLICOT.a \
+testc : test.o stls.o SLICOT.a
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.o SLICOT.a \
 	-lgfortran -lgsl -lgslcblas -lcblas -lm -lgfortran -llapack -lf77blas -latlas	
 
-test.o : test.c stls.h 
-	$(CC) $(INC_FLAGS) $(OPT_FLAGS) -c test.c
+test.o : test_c/test.cpp $(STLS_INCLUDE_FILES) 
+	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -c test_c/test.cpp
 
 stls.a : $(STLS_SRC_FILES) $(STLS_INCLUDE_FILES)
 	$(CC) $(INC_FLAGS) $(OPT_FLAGS) -c $(STLS_SRC_FILES)

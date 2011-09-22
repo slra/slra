@@ -1,11 +1,17 @@
+/*********************************
+ * Header file fo STLS package
+ *********************************/
+
 /* stls.h: STLS header file */
+#ifndef _STLS_H_
+#define _STLS_H_
 
 #if defined(BUILD_R_PACKAGE)
 
 #include <R.h>
 #define PRINTF Rprintf
 
-#elif defined(BUILD_MEX_FILE) 
+#elif defined(MEX_OCTAVE) ||  defined(MEX_MATLAB)
 
 #include "mex.h"
 #define PRINTF mexPrintf
@@ -73,7 +79,11 @@ typedef struct {
     size_of_gamma, size_of_rb, size_of_dwork;
 } stls_opt_data;
 
-/* Prototypes */
+/* Prototypes of functions */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
 	 gsl_matrix*, gsl_matrix*, opt_and_info* );
@@ -113,6 +123,13 @@ void dpbtrs_(char*, int*, int*, const int*, double*, int*, double*, int*, int*);
 void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
 void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
 
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif /* _STLS_H_ */
 
 
 

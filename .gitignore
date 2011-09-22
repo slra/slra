@@ -10,5 +10,7 @@ rstls*.tar.gz
 # Ignore copied files
 rstls/src/stls/*
 rstls/src/SLICOT/*
+# Ignore test results
+res_*.txt
 
 

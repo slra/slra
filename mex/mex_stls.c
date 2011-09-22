@@ -189,9 +189,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
       mexErrMsgTxt(err_msg);
     }
   }
-/*
-    PRINTF("X");
-    print_mat(x);*/
+  
+  
+
+    PRINTF("X\n");
+    print_mat(x);
 
   /* optimization options prhs[4] */
   /* default options */
