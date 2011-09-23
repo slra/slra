@@ -157,7 +157,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 }
 
 
-#define TEST_NUM 3
+#define TEST_NUM 5
 
 int main(int argc, char *argv[])
 {

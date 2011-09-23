@@ -1,20 +1,22 @@
 % CORR - finds the STLS correction 
 
-function [ dp, ch, ph ] = corr( x, c, struct )
+function [ dp, ch, ph ] = corr( x, c, structin )
 
-[S,V] = decode_struct( struct );
+[S,V] = decode_struct( structin );
 
 [m,n_d] = size(c);
 [n,d]   = size(x);
-if isstruct(struct)
-  K = struct.k;
-  struct = struct.a;
+if isstruct(structin)
+  K = structin.k;
+  struct = structin.a;
 else
   K = 1;
+  struct = structin;
 end
 t = K;
 s = size(V,3);
 q = size(struct,1);
+
 
 % Find yr
 if t*d == 1
@@ -92,7 +94,7 @@ end
 if nargout > 1
   % Find CH
   dp_ = [0; dp];
-  S   = decode_struct( struct, [], m );
+  S   = decode_struct( structin, [], m );
   ch  = c - reshape(dp_(S(:)+1),m,n+d);
   if nargout > 2
     % Extract p from c and check consistency of C and STRUCT

@@ -126,18 +126,18 @@ tic, xh_tls = tls(a,b); t_ls = toc
 % Define the structure and solve the deconvolution problem via STLS
 s = [1 n 1; 3 1 1];
 tic, [xh_stls,i_stls] = stls(a,b,s); t_stls = toc
-xh_stls(1:2)'
+xh_stls#(1:2)'
 i_stls.fmin % value of the cost function at xh_stls
 
 % Solve via an alternative STLS method
 tic, xh_stln = faststln1(a,b, xh_ls); t_stln = toc
-xh_stln(1:2)'
+xh_stln#(1:2)'
 cost1(xh_stln,a,b,s) % value of the cost function at xh_stln
 
 % Compare the relative errors of estimation 
-e_ls   = norm(xh_ls-x0)/norm(x0); disp(e_ls)
-e_tls  = norm(xh_tls-x0)/norm(x0); disp(e_tls)
-e_stls = norm(xh_stls-x0)/norm(x0); disp(e_stls)
+e_ls   = norm(xh_ls-x0)/norm(x0); #disp(e_ls)
+e_tls  = norm(xh_tls-x0)/norm(x0);# disp(e_tls)
+e_stls = norm(xh_stls-x0)/norm(x0);# disp(e_stls)
 
 % Press any key to continue
 pause
@@ -147,31 +147,31 @@ pause
 % ==================================================================
 %
 % Generate data
-np = 12;                      % number of parameters
-p0 = (1:np)';                 % true value of the parameter vector
-p  = p0 + [5; zeros(np-1,1)]; % add disturbance
-c = hankel(p(1:10),p(10:np));
-a = c(:,1:2); b = c(:,3);
+%np = 12;                      % number of parameters
+%p0 = (1:np)';                 % true value of the parameter vector
+%p  = p0 + [5; zeros(np-1,1)]; % add disturbance
+%c = hankel(p(1:10),p(10:np));
+%a = c(:,1:2); b = c(:,3);
 
 % Define the structure and solve the problem via STLS 
-s  = [2 3 1];
-tic, [xh_stls,i_stls] = stls(a,b,s); t_stls = toc
-[dp, ch_stls ] = corr( xh_stls, [a b], s );
-i_stls.fmin % value of the cost function at xh_stls
+%s  = [2 3 1];
+%tic, [xh_stls,i_stls] = stls(a,b,s); t_stls = toc
+%[dp, ch_stls ] = corr( xh_stls, [a b], s );
+%i_stls.fmin % value of the cost function at xh_stls
 
 % Check the result
-svd_ch_stls = svd(ch_stls); disp(svd_ch_stls)
-norm_res = norm(ch_stls * [xh_stls; -1]); disp(norm_res)
+%svd_ch_stls = svd(ch_stls); disp(svd_ch_stls)
+%norm_res = norm(ch_stls * [xh_stls; -1]); disp(norm_res)
 
 % Solve via an alternative STLS method
-c = [a b]; c = fliplr(c);
-tic, xh_stln = faststln2(c(:,1:2),c(:,3)); t_stln = toc
-x_ext = [xh_stln; -1]; x_ext = flipud(x_ext); xh_stln = -x_ext(1:2)/x_ext(3);
-xh_stln(1:2)';
-cost1(xh_stln,a,b,s) % value of the cost function at xh_stln
+%c = [a b]; c = fliplr(c);
+%tic, xh_stln = faststln2(c(:,1:2),c(:,3)); t_stln = toc
+%x_ext = [xh_stln; -1]; x_ext = flipud(x_ext); xh_stln = -x_ext(1:2)/x_ext(3);
+%xh_stln(1:2)';
+%cost1(xh_stln,a,b,s) % value of the cost function at xh_stln
 
 % Press any key to continue
-pause
+%pause
 
 % % =====================================================================
 % % ====== Next we solve a transfer function identification problem =====
