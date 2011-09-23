@@ -7,7 +7,7 @@ opt.epsrel  = 1e-7;
 opt.epsabs  = 0; 
 opt.epsgrad = 1e-5; 
 opt.disp    = 'disp';
-opt.maxiter = 400;
+opt.maxiter = 50;
 
 function H = blkhankel(arr, L)
   [p,q,N] = size(arr);
@@ -68,7 +68,7 @@ endfunction
 
 
 [p, m, T] = size(y);
-y = y0 + 0.02 * randn(p, m, T);
+y = y0 + 0.01 * randn(p, m, T);
 h = blkhankel(y, 3);
 
 
@@ -77,53 +77,54 @@ b0 = h0(7:9,:)';
 a = h(1:6,:)';
 b = h(7:9,:)';
 
-yssa = getssa(y, 20, 6);
+%yssa = getssa(y, 20, 6);
 
-y(:,:, 1:3)
-yssa(:,:, 1:3)
+%y(:,:, 1:3)
+%yssa(:,:, 1:3)
 
-pause
 
-hssa = blkhankel(yssa, 3);
-assa = hssa(1:6,:)';
-bssa = hssa(7:9,:)';
-x0ssa = tls(assa,bssa);
+
+%hssa = blkhankel(yssa, 3);
+%assa = hssa(1:6,:)';
+%bssa = hssa(7:9,:)';
+%x0ssa = tls(assa,bssa);
 
 
 s.k = 2;
 s.a = [2 9 3];
 [xh0, info, v] =  stls(a0,b0,s,[],opt);
 [xh, infoh, v] =  stls(a,b,s,[],opt);
-[xhssa, infohssa, v] =  stls(a,b,s,x0ssa,opt);
+%[xhssa, infohssa, v] =  stls(a,b,s,x0ssa,opt);
 
 xh0
 xh
-xhssa
+%xhssa
 
-infoh.fmin
-infohssa.fmin
+info
+infoh
+%infohssa
 
 
 
-%rk = 6;
-%L = 4;
+rk = 6;
+L = 4;
 
-%g = blkhankel(y, L);
-%g0 = blkhankel(y0, L);
+g = blkhankel(y, L);
+g0 = blkhankel(y0, L);
 
-%ag = g(1:rk,:)';
-%bg = g((rk+1):(L*3),:)';
-%ag0 = g0(1:rk,:)';
-%bg0 = g0((rk+1):(L*3),:)';
+ag = g(1:rk,:)';
+bg = g((rk+1):(L*3),:)';
+ag0 = g0(1:rk,:)';
+bg0 = g0((rk+1):(L*3),:)';
 
-%sg.k = 2;
-%sg.q = 1;
-%sg.a = [2 (L*3) 3];
+sg.k = 2;
+sg.q = 1;
+sg.a = [2 (L*3) 3];
 
-%[zh, info, v] =  stls(ag,bg,sg);
-%[zh0, info, v] =  stls(ag0,bg0,sg);
+[zh, info, v] =  stls(ag,bg,sg);
+[zh0, info, v] =  stls(ag0,bg0,sg);
 
-%zh0
-%zh
+zh0
+zh
 
 
