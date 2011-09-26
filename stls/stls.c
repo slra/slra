@@ -485,6 +485,8 @@ void xmat2xext( gsl_matrix_const_view x_mat,
 }
 
 
+#define mymax(a,b) ((a) > (b) ? (a) : (b)) 
+
 /* 
 *  CHOLGAM: Choleski factorization of the Gamma matrix
 *
@@ -503,7 +505,9 @@ void cholgam( gsl_matrix* x_ext,
   double *gamma_vec, *dwork;
   const int zero = 0;
   /* MB02GD has very bad description of parameters */
-  const int ldwork = 1 + (P->s_minus_1 + 2)* P->k_times_d * P->k_times_d + (P->s_minus_1<3 ? 3 :P->s_minus_1) * P->k_times_d;
+  const int ldwork = 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d +  /* pDW */ 
+                       3 * P->k_times_d + /* 3 * K */
+                       mymax(P->s_minus_1 + 1,  P->m_div_k - 1 - P->s_minus_1) * P->k_times_d * P->k_times_d; /* Space needed for MB02CV */
 
   /* compute gamma_k = x_ext' * w_k * x_ext */
   gamma = gsl_matrix_alloc(P->k_times_d, P->k_times_d_times_s);
@@ -524,7 +528,7 @@ void cholgam( gsl_matrix* x_ext,
   gsl_matrix_vectorize(gamma_vec, gamma);
   gsl_matrix_free(gamma);
   
-/*  PRINTF("cholgam: PDW = %d, LDWORK = %d, 3K = %d\n, s-1 = %d", 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d, ldwork, 3 * P->k_times_d, P->s_minus_1 );*/
+  /*PRINTF("cholgam: PDW = %d, LDWORK = %d, 3K = %d\n, s-1 = %d", 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d, ldwork, 3 * P->k_times_d, P->s_minus_1 );*/
 
   /* Cholesky factorization of Gamma */
   dwork  = (double*) malloc((size_t)ldwork * sizeof(double));

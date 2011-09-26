@@ -56,8 +56,8 @@ Author: Ivan Markovsky, Last modified: November 2004.
 
 /* default constants for the exit condition */
 #define EPSABS 0
-#define EPSREL 1e-5
-#define EPSGRAD 1e-5
+#define EPSREL 1e-6
+#define EPSGRAD 1e-6
 #define MAXITER 100
 #define DISP 3
 

@@ -11,12 +11,13 @@
 #include "stls.h"
 
 /* default constants for the exit condition */
-#define MAXITER 80
+#define MAXITER 600
 #define EPSABS  0
-#define EPSREL  1e-6
-#define EPSGRAD 1e-6
+#define EPSREL  1e-5
+#define EPSGRAD 1e-5
 #define DISP    3     /* per iteration */
 
+#define TEST_NUM 6
 
 #define MAX_FN_LEN  60
 
@@ -36,7 +37,7 @@ int read_mat( gsl_matrix *a,  char * filename, FILE * log ) {
 
 
 
-void run_test( FILE * log, char * testname, double & time, double & fmin, double &diff ) {
+void run_test( FILE * log, char * testname, double & time, double & fmin, double &diff, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
   char str_codes[] = " THUE";
   data_struct s = {1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
@@ -54,7 +55,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   sprintf(fxresname,"res_x%s.txt",testname);
 
   try {
-    fprintf(log, "Running test %s\n", testname);  
+    if (!silent) {
+      fprintf(log, "Running test %s\n", testname);  
+    }
    
     /* Read structure */
     file = fopen(fsname,"r");
@@ -105,11 +108,17 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       throw 1;
     }
 
+    if (silent) {
+      opt.disp = 0;
+    }
+
     /* call stls */  
     stls(a, b, &s, x, v, &opt);
 
-    print_mat(x);
-
+    if (!silent) {
+      print_mat(x);
+    }
+  
 
     file = fopen(fxresname,"w");
     gsl_matrix_fprintf(file, x, "%.10f");
@@ -127,7 +136,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     diff=sqrt(diff);
     
     /* print and save result */
-    fprintf(log, "Result: (time, fmin, diff) = %10.8f %10.8f %f\n", opt.time, opt.fmin, diff);
+    if (!silent) {
+      fprintf(log, "Result: (time, fmin, diff) = %10.8f %10.8f %f\n", opt.time, opt.fmin, diff);
+    }
     time = opt.time;
     fmin = opt.fmin;
     
@@ -157,7 +168,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 }
 
 
-#define TEST_NUM 5
+
 
 int main(int argc, char *argv[])
 {
@@ -168,20 +179,30 @@ int main(int argc, char *argv[])
   if (argc == 2) {
     run_test(stdout, argv[1], times[0], misfits[0], diffs[0]);
   } else { /* test all examples */
-    printf("\n------------------ Testing all examples ------------------\n\n");
+    printf("\n------------------ Testing all examples (run each test 5 times) ------------------\n\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i) ;
       run_test(stdout, num, times[i], misfits[i], diffs[i]);
+
+/*   		int time, misfit, diff; 
+      for (int j = 0; j < 4; j++) {  
+        time 
+        run_test(stdout, num, time, misfit, diff);
+        times[i] += time;
+        misfits[i] += misfit;
+        diffs[i] += diff;
+      } */
+
     }
 
     /* print results */
     printf("\n------------ Results summary -----------\n\n");
-    printf("-----------------------------------------------\n");
-    printf("|  # |   Time |     Minimum |            Diff |\n");
-    printf("-----------------------------------------------\n");
+    printf("---------------------------------------------------\n");
+    printf("|  # |       Time |     Minimum |            Diff |\n");
+    printf("---------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ )
-      printf("| %2d | %6.2f | %11.3f | %1.13f |\n", i, times[i], misfits[i], diffs[i]);
-    printf("-----------------------------------------------\n\n");
+      printf("| %2d | %10.6f | %11.3f | %1.13f |\n", i, times[i], misfits[i], diffs[i]);
+    printf("---------------------------------------------------\n\n");
   }
 
   return(0);

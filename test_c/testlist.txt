@@ -1,0 +1,7 @@
+1 sine
+2 TLS problem
+3 LS problem
+4 block hankel matrix
+5 Deconvolution problem
+6 16 sines, N = 2000, slow convergence
+
