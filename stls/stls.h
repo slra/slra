@@ -76,7 +76,18 @@ typedef struct {
     k_times_d_times_s_minus_1,  /* = col_dim(gamma) - 1 */
     m_times_d, 			/* = row_dim(rb) */
     m_div_k, s_minus_1, 
-    size_of_gamma, size_of_rb, size_of_dwork;
+    size_of_gamma, size_of_rb;
+  /* Preallocated arrays */  
+  gsl_matrix *x_ext; 
+  double *rb;   /* Result of Cholesky factorization */
+  gsl_vector *yr;
+  
+  /* Preallocated arrays for cholgam */
+  gsl_matrix *tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
+  gsl_matrix *gamma;
+  double *gamma_vec;
+  int ldwork;       /* Size of Dwork for MB02GD  */
+  double *dwork;    /* Dwork for MB02GD  */
 } stls_opt_data;
 
 /* Prototypes of functions */
@@ -108,7 +119,7 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 
 void xmat2xext( gsl_matrix_const_view, gsl_matrix*, stls_opt_data* );
-void cholgam( gsl_matrix*, stls_opt_data*, double* );
+void cholgam( stls_opt_data* );
 void jacobian( gsl_matrix*, stls_opt_data*, double*, gsl_vector *, gsl_matrix* );
 
 /* SLICOT and LAPACK functions */

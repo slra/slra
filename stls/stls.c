@@ -9,6 +9,9 @@
 #include <gsl/gsl_math.h>
 #include "stls.h"
 
+
+#define mymax(a,b) ((a) > (b) ? (a) : (b)) 
+
 /*********************/
 /* stls: STLS solver */
 /*********************/
@@ -72,11 +75,30 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   params.m_times_d = m * d;
   params.m_div_k = (int) m / s->k;
   params.s_minus_1 = w.s - 1;
-  params.size_of_gamma = params.k_times_d * 
-    params.k_times_d_times_s * sizeof(double);
-  params.size_of_rb = params.m_times_d * 
-    params.k_times_d_times_s * sizeof(double);
-  params.size_of_dwork = LDWORK * sizeof(double);
+  params.size_of_gamma = params.k_times_d * params.k_times_d_times_s * sizeof(double);
+  params.size_of_rb = params.m_times_d * params.k_times_d_times_s * sizeof(double);
+
+  params.ldwork = 1 + (params.s_minus_1 + 1)* params.k_times_d * params.k_times_d +  /* pDW */ 
+                       3 * params.k_times_d + /* 3 * K */
+                       mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * params.k_times_d * params.k_times_d; /* Space needed for MB02CV */
+
+
+  
+  /* Preallocate memory for f and df */
+  params.x_ext = gsl_matrix_calloc(params.w->a[0]->size1, params.k_times_d);
+  params.rb = (double*) malloc(params.size_of_rb);
+  params.yr = gsl_vector_alloc(params.m_times_d);  
+
+  params.gamma_vec = (double*) malloc(params.size_of_gamma);
+  params.dwork  = (double*) malloc((size_t)params.ldwork * sizeof(double));
+  params.gamma = gsl_matrix_alloc(params.k_times_d, params.k_times_d_times_s);
+  params.tmp   = gsl_matrix_alloc(params.k_times_d, params.w->a[0]->size1);
+  
+  
+  
+
+
+
 
   /* vectorize x row-wise */
   x_vec = gsl_vector_view_array(x->data, params.n_times_d);
@@ -244,6 +266,16 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   for (k = 0; k < w.s; k++) 
     gsl_matrix_free(w.a[k]);
   free(w.a);
+  
+  /* free preallocated memory for computations */
+  gsl_matrix_free(params.tmp);
+  gsl_matrix_free(params.gamma);
+  free(params.dwork);
+  free(params.gamma_vec);
+
+  gsl_vector_free(params.yr);
+  free(params.rb);
+  gsl_matrix_free(params.x_ext);
 
   return GSL_SUCCESS; /* <- correct with status */
 }
@@ -254,6 +286,28 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
 #define D (P->b->size2)
 #define S (P->w->s)
 #define SIZE_W (P->w->a[0]->size1)
+
+
+/* Compute x_ext into params */
+static void compute_xext( const gsl_vector* x, void* params ) {
+  /* reshape x as an nxd matrix x_mat */
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+
+  /* Form x_ext */
+  xmat2xext( x_mat, P->x_ext, params );
+}
+
+
+
+/* compute f = vec((ax-b)') */
+static void compute_f( gsl_vector* f, const gsl_vector* x, void* params ) {
+  gsl_matrix_view submat = gsl_matrix_view_vector(f, M, D); 
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+ 
+  gsl_matrix_memcpy(&submat.matrix, P->b);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
+		 P->a, &x_mat.matrix, -1.0, &submat.matrix);
+}
 
 /* 
 *  STLS_F: STLS cost function evaluation 
@@ -267,40 +321,21 @@ int stls_f (const gsl_vector* x, void* params, gsl_vector* f)
 {
   int info;
   const int one = 1;
-  gsl_matrix *x_ext;
-  gsl_matrix_view submat; 
-  double *rb;
 
-  /* reshape x as an nxd matrix x_mat */
-  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+  compute_xext(x, params);
+  cholgam(params);
+  compute_f(f, x, params);
 
-  /* reserve memory for x_ext and form it */
-  x_ext = gsl_matrix_calloc(SIZE_W, P->k_times_d); /* SIZE_W = ndk */
-  xmat2xext( x_mat, x_ext, params );
-
-  /* Cholesky factorization */
-  rb = (double*) malloc(P->size_of_rb);
-  cholgam(x_ext, params, rb);
-
-  /* compute f = vec((ax-b)') */
-  submat = gsl_matrix_view_vector(f, M, D);
-  gsl_matrix_memcpy(&submat.matrix, P->b);
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-		 P->a, &x_mat.matrix, -1.0, &submat.matrix);
-  
   /* compute the cost function from the Choleski factor */
   dtbtrs_("U", "T", "N", 
 	  &P->m_times_d, 
 	  &P->k_times_d_times_s_minus_1, 
 	  &one, 
-	  rb, 
+	  P->rb, 
 	  &P->k_times_d_times_s, 
 	  f->data, 
 	  &P->m_times_d, 
 	  &info);
-
-  free(rb);
-  gsl_matrix_free(x_ext);
 
   return GSL_SUCCESS;
 }
@@ -314,14 +349,12 @@ int stls_f (const gsl_vector* x, void* params, gsl_vector* f)
 
 double stls_f_ (const gsl_vector* x, void* params)
 {
-  gsl_vector* f;
   double ftf;
 
-  f = gsl_vector_alloc( ((stls_opt_data*) params)->m_times_d );
-  stls_f(x, params, f);
-  gsl_blas_ddot(f, f, &ftf);
+  /* Use yr as a temporary variable */
+  stls_f(x, params, P->yr);
+  gsl_blas_ddot(P->yr, P->yr, &ftf);
 
-  gsl_vector_free(f);
   return ftf;
 }
 
@@ -337,45 +370,26 @@ double stls_f_ (const gsl_vector* x, void* params)
 int stls_df (const gsl_vector* x, 
 	     void* params, gsl_matrix* deriv)
 {
+  compute_xext(x, params);
+  cholgam(params);
+  compute_f(P->yr, x, params);
+
+
   int info;
   const int one = 1;
-  double* rb;
-  gsl_matrix *x_ext;
-  gsl_matrix_view submat; 
-  gsl_vector *yr;
-
-  /* reshape x as an nxd matrix x_mat */
-  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
-
-  /* reserve memory for x_ext and form it */
-  x_ext = gsl_matrix_calloc(SIZE_W, P->k_times_d); /* SIZE_W = ndk */
-  xmat2xext( x_mat, x_ext, params );
-
-  /* Cholesky factorization */
-  rb = (double*) malloc(P->size_of_rb);
-  cholgam(x_ext, params, rb);
   
-  /* compute vec((ax-b)') */
-  yr = gsl_vector_alloc(P->m_times_d);
-  submat = gsl_matrix_view_vector(yr, M, D);
-  gsl_matrix_memcpy(&submat.matrix, P->b);
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-		 P->a, &x_mat.matrix, -1.0, &submat.matrix);
-
   /* solve for yr by forward substitution */
   dpbtrs_("U",
 	  &P->m_times_d, 
 	  &P->k_times_d_times_s_minus_1, 
 	  &one,
-	  rb,
+	  P->rb,
 	  &P->k_times_d_times_s, 
-	  yr->data, 
+	  P->yr->data, 
 	  &P->m_times_d, 
 	  &info);
-
-  jacobian(x_ext, params, rb, yr, deriv);
-
-  free(rb);
+	  
+  jacobian(P->x_ext, params, P->rb, P->yr, deriv);
 
   return GSL_SUCCESS;
 }
@@ -394,57 +408,38 @@ int stls_fdf (const gsl_vector* x, void* params, gsl_vector* f,
 {
   int info;
   const int one = 1;
-  double* rb;
-  gsl_matrix *x_ext;
-  gsl_matrix_view submat; 
-  gsl_vector *yr;
+  
 
-  /* reshape x as an nxd matrix x_mat */
-  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D);     
-
-  /* reserve memory for x_ext and form it */
-  x_ext = gsl_matrix_calloc(SIZE_W, P->k_times_d); /* SIZE_W = ndk */
-  xmat2xext( x_mat, x_ext, params );
-
-  /* Cholesky factorization */
-  rb = (double*) malloc(P->size_of_rb);
-  cholgam(x_ext, params, rb);
-
-  /* compute f = vec((ax-b)') */
-  submat = gsl_matrix_view_vector(f, M, D);
-  gsl_matrix_memcpy(&submat.matrix, P->b);
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-		 P->a, &x_mat.matrix, -1.0, &submat.matrix);
+  compute_xext(x, params);
+  cholgam(params);
+  compute_f(f, x,  params);
 
   /* compute the cost function from the Choleski factor */
   dtbtrs_("U", "T", "N", 
 	  &P->m_times_d, 
 	  &P->k_times_d_times_s_minus_1, 
 	  &one, 
-	  rb, 
+	  P->rb, 
 	  &P->k_times_d_times_s, 
 	  f->data, 
 	  &P->m_times_d, 
 	  &info);
 
   /* compute vec((ax-b)') */
-  yr = gsl_vector_alloc(P->m_times_d);
-  gsl_vector_memcpy(yr, f);
+  gsl_vector_memcpy(P->yr, f);
 
   /* solve for yr by forward substitution */
   dtbtrs_("U", "N", "N", 
 	  &P->m_times_d, 
 	  &P->k_times_d_times_s_minus_1, 
 	  &one, 
-	  rb,
+	  P->rb,
 	  &P->k_times_d_times_s, 
-	  yr->data, 
+	  P->yr->data, 
 	  &P->m_times_d, 
 	  &info);
 
-  jacobian( x_ext, params, rb, yr, deriv );
-
-  free(rb);
+  jacobian( P->x_ext, params, P->rb, P->yr, deriv );
 
   return GSL_SUCCESS;
 }
@@ -485,66 +480,59 @@ void xmat2xext( gsl_matrix_const_view x_mat,
 }
 
 
-#define mymax(a,b) ((a) > (b) ? (a) : (b)) 
+
 
 /* 
 *  CHOLGAM: Choleski factorization of the Gamma matrix
 *
-*  x_ext  = kron( I_k, [ x; -I_d ] ),
 *  params - used for the dimensions n = rowdim(X), 
 *           d = coldim(X), k, and n_plus_d = n + d
-*  rb     - Choleski factor in a packed form
+*
+*  params.x_ext  = kron( I_k, [ x; -I_d ] ),
+*
+*  Output:
+*    params.rb     - Cholesky factor in a packed form
 */
 
-void cholgam( gsl_matrix* x_ext, 
-	      stls_opt_data* params, double* rb )
+void cholgam( stls_opt_data* params )
 {
   int k, info;
-  gsl_matrix *tmp, *gamma;
   gsl_matrix_view submat, source;
-  double *gamma_vec, *dwork;
+
+
+
   const int zero = 0;
   /* MB02GD has very bad description of parameters */
-  const int ldwork = 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d +  /* pDW */ 
-                       3 * P->k_times_d + /* 3 * K */
-                       mymax(P->s_minus_1 + 1,  P->m_div_k - 1 - P->s_minus_1) * P->k_times_d * P->k_times_d; /* Space needed for MB02CV */
 
   /* compute gamma_k = x_ext' * w_k * x_ext */
-  gamma = gsl_matrix_alloc(P->k_times_d, P->k_times_d_times_s);
-  tmp   = gsl_matrix_alloc(P->k_times_d, SIZE_W);
   for (k = 0; k < S; k++) {
-    submat = gsl_matrix_submatrix(gamma, 0, 
+    submat = gsl_matrix_submatrix(P->gamma, 0, 
 				  k*P->k_times_d, P->k_times_d, P->k_times_d);
     /* compute tmp = x_ext' * w_k */
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, 
-		   x_ext, P->w->a[k], 0.0, tmp);
+		   P->x_ext, P->w->a[k], 0.0, P->tmp);
     /* compute tmp * x_ext */
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-		   tmp, x_ext, 0.0, &submat.matrix);
+		   P->tmp, P->x_ext, 0.0, &submat.matrix);
   }
-  gsl_matrix_free(tmp);
 
-  gamma_vec = (double*) malloc(P->size_of_gamma);
-  gsl_matrix_vectorize(gamma_vec, gamma);
-  gsl_matrix_free(gamma);
+  gsl_matrix_vectorize(P->gamma_vec, P->gamma);
   
   /*PRINTF("cholgam: PDW = %d, LDWORK = %d, 3K = %d\n, s-1 = %d", 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d, ldwork, 3 * P->k_times_d, P->s_minus_1 );*/
 
   /* Cholesky factorization of Gamma */
-  dwork  = (double*) malloc((size_t)ldwork * sizeof(double));
   mb02gd_("R", "N",  
 	  &P->k_times_d, 	/* block size */
 	  &P->m_div_k,		/* block_dim(GAMMA) */
 	  &P->s_minus_1, 	/* non-zero block superdiagonals */
 	  &zero, 		/* previous computations */
 	  &P->m_div_k, 	        /* to-be-computed */
-	  gamma_vec, /* non-zero part of first block row of GAMMA */
+	  P->gamma_vec, /* non-zero part of first block row of GAMMA */
 	  &P->k_times_d,      	/* row_dim(gamma) */
-	  rb, 			/* packed Cholesky factor */
+	  P->rb, 			/* packed Cholesky factor */
 	  &P->k_times_d_times_s, /* row_dim(rb) */
-	  dwork, &ldwork, &info);
-  free(dwork);
-  free(gamma_vec);
+	  P->dwork, &P->ldwork, &info);
+
 
   /* check for errors of mb02gd */
   if (info) { 
