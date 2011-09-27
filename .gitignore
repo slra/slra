@@ -12,5 +12,6 @@ rstls/src/stls/*
 rstls/src/SLICOT/*
 # Ignore test results
 res_*.txt
+test_c/test
 
 

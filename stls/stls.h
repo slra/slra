@@ -88,6 +88,13 @@ typedef struct {
   double *gamma_vec;
   int ldwork;       /* Size of Dwork for MB02GD  */
   double *dwork;    /* Dwork for MB02GD  */
+  
+  /* Preallocated arrays for jacobian */
+  gsl_matrix *dgamma, *st;
+  double *jres1, * jres2;
+
+  
+  
 } stls_opt_data;
 
 /* Prototypes of functions */
@@ -120,7 +127,7 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 void xmat2xext( gsl_matrix_const_view, gsl_matrix*, stls_opt_data* );
 void cholgam( stls_opt_data* );
-void jacobian( gsl_matrix*, stls_opt_data*, double*, gsl_vector *, gsl_matrix* );
+void jacobian( stls_opt_data*,  gsl_matrix*);
 
 /* SLICOT and LAPACK functions */
 /*
