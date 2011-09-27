@@ -78,9 +78,6 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   params.size_of_gamma = params.k_times_d * params.k_times_d_times_s * sizeof(double);
   params.size_of_rb = params.m_times_d * params.k_times_d_times_s * sizeof(double);
 
-  params.ldwork = 1 + (params.s_minus_1 + 1)* params.k_times_d * params.k_times_d +  /* pDW */ 
-                       3 * params.k_times_d + /* 3 * K */
-                       mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * params.k_times_d * params.k_times_d; /* Space needed for MB02CV */
 
 
   
@@ -90,10 +87,30 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   params.yr = gsl_vector_alloc(params.m_times_d);  
 
   /*CholGam */
+  params.ldwork = 1 + (params.s_minus_1 + 1)* params.k_times_d * params.k_times_d +  /* pDW */ 
+                       3 * params.k_times_d + /* 3 * K */
+                       mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * params.k_times_d * params.k_times_d; /* Space needed for MB02CV */
+
   params.gamma_vec = (double*) malloc(params.size_of_gamma);
   params.dwork  = (double*) malloc((size_t)params.ldwork * sizeof(double));
   params.gamma = gsl_matrix_alloc(params.k_times_d, params.k_times_d_times_s);
   params.tmp   = gsl_matrix_alloc(params.k_times_d, params.w->a[0]->size1);
+
+
+
+  /* New CholGam */
+  params.d_times_s = d * w.s;
+  params.d_times_s_minus_1 = params.d_times_s - 1;
+
+  params.size_of_newgamma = d * params.d_times_s * sizeof(double);
+  params.cg_ldwork = 1 + (params.s_minus_1 + 1)* d * d +  /* pDW */ 
+                       3 * d + /* 3 * K */
+                       mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * d * d; /* Space needed for MB02CV */
+
+  params.cg_gamma_vec = (double*) malloc(params.size_of_newgamma);
+  params.cg_dwork  = (double*) malloc((size_t)params.cg_ldwork * sizeof(double));
+  params.cg_gamma = gsl_matrix_alloc(d, params.d_times_s);
+  params.cg_tmp   = gsl_matrix_alloc(d, params.n_plus_d);
   
   
   /* Jacobian*/

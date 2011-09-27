@@ -88,6 +88,20 @@ typedef struct {
   double *gamma_vec;
   int ldwork;       /* Size of Dwork for MB02GD  */
   double *dwork;    /* Dwork for MB02GD  */
+
+  /* Preallocated arrays for cholgam (new) */
+  int  size_of_newgamma;
+  int  d_times_s;		/* = col_dim(new gamma) */
+  int  d_times_s_minus_1;  /* = col_dim(new gamma) - 1 */
+
+
+  gsl_matrix *cg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
+  gsl_matrix *cg_gamma;
+  double *cg_gamma_vec;
+  int cg_ldwork;       /* Size of Dwork for MB02GD  */
+  double *cg_dwork;    /* Dwork for MB02GD  */
+
+
   
   /* Preallocated arrays for jacobian */
   gsl_matrix *dgamma, *st;
