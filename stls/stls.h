@@ -69,19 +69,23 @@ typedef struct {
   gsl_matrix* b;
   w_data* w;
   int k; 
-  int n_plus_d, 		/* = col_dim(C) */
+  int m, n, d,
+    n_plus_d, 		/* = col_dim(C) */
     n_times_d,			/* = number of elements in x */
     k_times_d,			/* = row_dim(gamma) */
     k_times_d_times_s,		/* = col_dim(gamma) */
     k_times_d_times_s_minus_1,  /* = col_dim(gamma) - 1 */
     m_times_d, 			/* = row_dim(rb) */
     m_div_k, s_minus_1;
+
+  int one; /* One for blas routines */
+
   /* Preallocated arrays */  
   gsl_matrix *x_ext; 
-  double *rb;   /* Result of Cholesky factorization */
   gsl_vector *yr;
   
   /* Preallocated arrays for cholgam */
+  double *rb;   /* Result of Cholesky factorization */
   gsl_matrix *tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
   gsl_matrix *gamma;
   double *gamma_vec;
@@ -91,22 +95,23 @@ typedef struct {
   /* Preallocated arrays for cholgam (new) */
   int  d_times_s;		/* = col_dim(new gamma) */
   int  d_times_s_minus_1;  /* = col_dim(new gamma) - 1 */
+  int  d_times_m_div_k;  /* */
 
+  double *rb2;   /* Result of Cholesky factorization (test) */
 
-  gsl_matrix *cg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
-  gsl_matrix *cg_gamma;
-  double *cg_gamma_vec;
-  int cg_ldwork;       /* Size of Dwork for MB02GD  */
-  double *cg_dwork;    /* Dwork for MB02GD  */
+  double *brg_rb;   /* Result of Cholesky factorization */
+  gsl_matrix *brg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
+  gsl_matrix *brg_gamma;
+  double *brg_gamma_vec;
+  int brg_ldwork;       /* Size of Dwork for MB02GD  */
+  double *brg_dwork;    /* Dwork for MB02GD  */
 
-
+  gsl_vector *brg_f;    /* Reshaped vector holding f */
+  gsl_vector *brg_yr;    /* Reshaped vector holding y_r */
   
   /* Preallocated arrays for jacobian */
   gsl_matrix *dgamma, *st;
   double *jres1, * jres2;
-
-  
-  
 } stls_opt_data;
 
 /* Prototypes of functions */
@@ -117,11 +122,16 @@ extern "C" {
 
 int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
 	 gsl_matrix*, gsl_matrix*, opt_and_info* );
-int stls_f (const gsl_vector*, void*, gsl_vector*);
 double stls_f_ (const gsl_vector*, void*);
+
+int stls_f (const gsl_vector*, void*, gsl_vector*);
 int stls_df (const gsl_vector*, void*, gsl_matrix*);
 int stls_fdf (const gsl_vector*, 
 	      void*, gsl_vector*, gsl_matrix*);
+
+int stls_f_new (const gsl_vector*, void*, gsl_vector*);
+int stls_df_new (const gsl_vector*, void*, gsl_matrix*);
+
 void print_state (int, gsl_multifit_fdfsolver*);
 int s2w(const data_struct*, w_data*);
 void print_mat(const gsl_matrix*);
@@ -139,6 +149,8 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 void xmat2xext( gsl_matrix_const_view, gsl_matrix*, stls_opt_data* );
 void cholgam( stls_opt_data* );
+void cholbrg( stls_opt_data* );
+void cholbrg2gamma( stls_opt_data* );
 void jacobian( stls_opt_data*,  gsl_matrix*);
 
 /* SLICOT and LAPACK functions */

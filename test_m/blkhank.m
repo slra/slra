@@ -2,10 +2,10 @@ load test-blkhank.mat
 
 addpath support
 
-opt.maxiter = 100;
-opt.epsrel  = 1e-7; 
+opt.maxiter = 600;
+opt.epsrel  = 1e-6; 
 opt.epsabs  = 0; 
-opt.epsgrad = 1e-5; 
+opt.epsgrad = 1e-6; 
 opt.disp    = 'disp';
 opt.maxiter = 50;
 
@@ -106,10 +106,10 @@ sg.k = 2;
 sg.q = 1;
 sg.a = [2 (L*3) 3];
 
-[zh, info, v] =  stls(ag,bg,sg);
-[zh0, info, v] =  stls(ag0,bg0,sg);
+%[zh, info, v] =  stls(ag,bg,sg);
+%[zh0, info, v] =  stls(ag0,bg0,sg);
 
-zh0
-zh
+%zh0
+%zh
 
 
