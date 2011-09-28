@@ -75,8 +75,7 @@ typedef struct {
     k_times_d_times_s,		/* = col_dim(gamma) */
     k_times_d_times_s_minus_1,  /* = col_dim(gamma) - 1 */
     m_times_d, 			/* = row_dim(rb) */
-    m_div_k, s_minus_1, 
-    size_of_gamma, size_of_rb;
+    m_div_k, s_minus_1;
   /* Preallocated arrays */  
   gsl_matrix *x_ext; 
   double *rb;   /* Result of Cholesky factorization */
@@ -90,7 +89,6 @@ typedef struct {
   double *dwork;    /* Dwork for MB02GD  */
 
   /* Preallocated arrays for cholgam (new) */
-  int  size_of_newgamma;
   int  d_times_s;		/* = col_dim(new gamma) */
   int  d_times_s_minus_1;  /* = col_dim(new gamma) - 1 */
 

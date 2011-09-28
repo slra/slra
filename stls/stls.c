@@ -75,15 +75,13 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   params.m_times_d = m * d;
   params.m_div_k = (int) m / s->k;
   params.s_minus_1 = w.s - 1;
-  params.size_of_gamma = params.k_times_d * params.k_times_d_times_s * sizeof(double);
-  params.size_of_rb = params.m_times_d * params.k_times_d_times_s * sizeof(double);
 
 
 
   
   /* Preallocate memory for f and df */
   params.x_ext = gsl_matrix_calloc(params.w->a[0]->size1, params.k_times_d);
-  params.rb = (double*) malloc(params.size_of_rb);
+  params.rb = (double*) malloc(params.m_times_d * params.k_times_d_times_s * sizeof(double));
   params.yr = gsl_vector_alloc(params.m_times_d);  
 
   /*CholGam */
@@ -91,9 +89,10 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
                        3 * params.k_times_d + /* 3 * K */
                        mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * params.k_times_d * params.k_times_d; /* Space needed for MB02CV */
 
-  params.gamma_vec = (double*) malloc(params.size_of_gamma);
   params.dwork  = (double*) malloc((size_t)params.ldwork * sizeof(double));
-  params.gamma = gsl_matrix_alloc(params.k_times_d, params.k_times_d_times_s);
+  params.gamma = gsl_matrix_alloc(params.k_times_d, params.k_times_d_times_s);  
+  params.gamma_vec = (double*) malloc(params.k_times_d * params.k_times_d_times_s *sizeof(double));
+
   params.tmp   = gsl_matrix_alloc(params.k_times_d, params.w->a[0]->size1);
 
 
@@ -102,14 +101,13 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   params.d_times_s = d * w.s;
   params.d_times_s_minus_1 = params.d_times_s - 1;
 
-  params.size_of_newgamma = d * params.d_times_s * sizeof(double);
   params.cg_ldwork = 1 + (params.s_minus_1 + 1)* d * d +  /* pDW */ 
                        3 * d + /* 3 * K */
                        mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * d * d; /* Space needed for MB02CV */
 
-  params.cg_gamma_vec = (double*) malloc(params.size_of_newgamma);
-  params.cg_dwork  = (double*) malloc((size_t)params.cg_ldwork * sizeof(double));
+  params.cg_gamma_vec = (double*) malloc(d * params.d_times_s * sizeof(double));
   params.cg_gamma = gsl_matrix_alloc(d, params.d_times_s);
+  params.cg_dwork  = (double*) malloc((size_t)params.cg_ldwork * sizeof(double));
   params.cg_tmp   = gsl_matrix_alloc(d, params.n_plus_d);
   
   
@@ -299,6 +297,11 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   gsl_matrix_free(params.gamma);
   free(params.dwork);
   free(params.gamma_vec);
+
+  gsl_matrix_free(params.cg_tmp);
+  gsl_matrix_free(params.cg_gamma);
+  free(params.cg_dwork);
+  free(params.cg_gamma_vec);
 
   gsl_vector_free(params.yr);
   free(params.rb);
