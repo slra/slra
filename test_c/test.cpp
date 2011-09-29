@@ -180,13 +180,12 @@ int main(int argc, char *argv[])
     run_test(stdout, argv[1], times[0], misfits[0], diffs[0]);
   } else { /* test all examples */
     printf("\n------------------ Testing all examples (run each test 5 times) ------------------\n\n");
-    for( i = 1; i <= 4; i++ ) {
 
-/*    for( i = 1; i <= TEST_NUM; i++ ) {*/
-      sprintf(num, "%d", i) ;
+    for( i = 1; i <= TEST_NUM; i++ ) {
+      sprintf(num, "%d", i);
       run_test(stdout, num, times[i], misfits[i], diffs[i]);
 
-/*   		int time, misfit, diff; 
+  /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  
         time 
         run_test(stdout, num, time, misfit, diff);
@@ -197,17 +196,14 @@ int main(int argc, char *argv[])
 
     }
 
-    /* print results */
     printf("\n------------ Results summary -----------\n\n");
     printf("---------------------------------------------------\n");
     printf("|  # |       Time |     Minimum |            Diff |\n");
     printf("---------------------------------------------------\n");
-    for( i = 1; i <= 4; i++ ) {
-
-/*    for( i = 1; i <= TEST_NUM; i++ ) {*/
+    for( i = 1; i <= TEST_NUM; i++ ) {
       printf("| %2d | %10.6f | %11.3f | %1.13f |\n", i, times[i], misfits[i], diffs[i]);
     }
-    printf("---------------------------------------------------\n\n");
+    printf("---------------------------------------------------\n\n"); 
   }
 
   return(0);

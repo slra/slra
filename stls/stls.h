@@ -135,6 +135,7 @@ int stls_df_new (const gsl_vector*, void*, gsl_matrix*);
 void print_state (int, gsl_multifit_fdfsolver*);
 int s2w(const data_struct*, w_data*);
 void print_mat(const gsl_matrix*);
+void print_mat_tr(const gsl_matrix*);
 void print_arr(double*, int);
 void gsl_matrix_vectorize(double*, gsl_matrix*);
 void gsl_matrix_vec_inv(gsl_matrix*, double*);
@@ -152,7 +153,7 @@ void cholgam( stls_opt_data* );
 void cholbrg( stls_opt_data* );
 void cholbrg2gamma( stls_opt_data* );
 void jacobian( stls_opt_data*,  gsl_matrix*);
-
+void jacobian_new( stls_opt_data*,  gsl_matrix*);
 /* SLICOT and LAPACK functions */
 /*
 void mb02gd_(char*, char*, int*, int*, int*, const int*, int*, double*, int*, double*, int*, double*, const int*, int*);

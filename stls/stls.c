@@ -11,6 +11,7 @@
 
 
 #define mymax(a,b) ((a) > (b) ? (a) : (b)) 
+#define mymin(a,b) ((a) < (b) ? (a) : (b))
 
 /*********************/
 /* stls: STLS solver */
@@ -91,7 +92,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   params.yr = gsl_vector_alloc(params.m_times_d);  
 
   /*CholGam */
-  params.rb = (double*) malloc(params.m_times_d * params.k_times_d_times_s * sizeof(double));
+  params.rb = (double*) calloc(params.m_times_d * params.k_times_d_times_s, sizeof(double));
   params.ldwork = 1 + (params.s_minus_1 + 1)* params.k_times_d * params.k_times_d +  /* pDW */ 
                        3 * params.k_times_d + /* 3 * K */
                        mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * params.k_times_d * params.k_times_d; /* Space needed for MB02CV */
@@ -385,6 +386,7 @@ static void compute_c_minus_1_2_f( gsl_vector* f, int trans, void* params ) {
 
 
 
+
 static void compute_c_minus_1_f( gsl_vector* f, void* params ) {
   int info;
   
@@ -564,30 +566,8 @@ int stls_df_new (const gsl_vector* x, void* params, gsl_matrix* deriv)
 
 
   cholgam(params);
-    cholbrg(params);
-  cholbrg2gamma(params);
-  
-  
-  gsl_matrix_view rb_mat = gsl_matrix_view_array(P->rb, P->k_times_d_times_s, P->m_times_d );
-  gsl_matrix_view rb2_mat = gsl_matrix_view_array(P->rb2,P->k_times_d_times_s, P->m_times_d);
-  PRINTF("stls_df_new: maxg, ming, maxg2, ming2, maxd, mind = %f, %f, %f, %f, ", 
-       gsl_matrix_max(&rb_mat.matrix), gsl_matrix_min(&rb_mat.matrix),
-       gsl_matrix_max(&rb2_mat.matrix), gsl_matrix_min(&rb2_mat.matrix));
 
-  if (M == 96 || M == 100) {
-    PRINTF("rb\n");
-  	print_mat(&rb_mat.matrix);
-    PRINTF("rb2\n");
-  	print_mat(&rb2_mat.matrix);
-  
-  }
-
-  gsl_matrix_sub(&rb2_mat.matrix, &rb_mat.matrix);
-  PRINTF("%f, %f, \n", gsl_matrix_max(&rb2_mat.matrix), gsl_matrix_min(&rb2_mat.matrix));
-  
-  
-
-  jacobian(params, deriv);
+  jacobian_new(params, deriv);
 
   return GSL_SUCCESS;
 }
@@ -655,50 +635,7 @@ void xmat2xext( gsl_matrix_const_view x_mat,
 
 
 
-/* Convert block of reshaped Gamma  matrix to Gamma matrix  */
-void cholbrg2gamma( stls_opt_data* params ) {
-  int i1, i2, k, l, irb, ibr_rb, irb1;
-  int j1, j2, jrb, jbr_rb, jrb1;
-  double br_rb_value;
-  
-  
-  int br_rb_rowdim = P->d_times_s;
-  int rb_rowdim = P->k_times_d_times_s;
-  int rb_coldim = P->m_times_d;
 
-  for (jrb = 0; jrb < rb_coldim; jrb++) {
-    for (irb = 0; irb < rb_rowdim; irb++) {
-			P->rb2[jrb * rb_rowdim + irb] = 0;
-    }
-  }
-
-   for (i1 = 0; i1 < S; i1++) {
-    for (i2 = 0; i2 < P->d; i2++) {
-			ibr_rb = i2 + P->d * i1;
-
-      for (j1 = 0; j1 < P->m_div_k; j1++) {
-				for (j2 = 0; j2 < P->d; j2++) {
-					jbr_rb = j2 + P->d * j1;
-
-          br_rb_value = P->brg_rb[jbr_rb * br_rb_rowdim + ibr_rb];
-
-					for (k = 0; k < P->k; k++) {
-					/*for (l = 0; l < P->k; l++) */
-					{
-					  l = k;
-						irb = i2 + P->d * k + P->k_times_d * i1;
-						jrb = j2 + P->d * k + P->k_times_d * j1;
-						irb1 = i2 + P->d * 0 + P->k_times_d * i1;
-						jrb1 = j2 + P->d * 0 + P->k_times_d * j1;
-						
-						P->rb2[jrb * rb_rowdim + irb] = P->brg_rb[jbr_rb * br_rb_rowdim + ibr_rb];/*P->rb[jrb1 * rb_rowdim + irb1];/*br_rb_value;*/
-					}
-					}
-				}
-			}    
-  	}
-  }
-}
 
 
 /* 
@@ -843,7 +780,6 @@ void jacobian( stls_opt_data* params, gsl_matrix* deriv )
   const int zero = 0, one = 1;
   gsl_matrix_view submat; 
   gsl_vector_view subvec, res_vec;
-  double *dwork,  *gamma_vec;
 
 	gsl_vector_view tmp1_row, tmp1_col;
 	gsl_vector_view w_k_row, w_k_col;
@@ -931,6 +867,228 @@ void jacobian( stls_opt_data* params, gsl_matrix* deriv )
   gsl_matrix_sub(deriv, P->st);
 
 }
+
+
+
+
+void jacobian_new( stls_opt_data* params, gsl_matrix* deriv )
+{
+  int i, j, l, k, info;
+  const int zero = 0, one = 1;
+  gsl_matrix_view submat, mat; 
+  gsl_vector_view subvec, res_vec;
+
+    
+  
+  
+  
+
+	gsl_vector_view tmp1_row, tmp1_col;
+	gsl_vector_view w_k_row, w_k_col;
+
+
+  /* first term of the Jacobian Gamma^{-1/2} kron(a,I_d) */
+
+  /* deriv = kron(a,I_d) * /
+  gsl_matrix_set_zero(deriv);
+  for (i = 0; i < M; i++)
+    for (j = 0; j < N; j++) {
+      submat = gsl_matrix_submatrix(deriv, i*D, j*D, D, D);
+      /* assign a(i,j) on the diagonal of submat * /
+      for (l = 0; l < D; l++)
+				gsl_matrix_set(&submat.matrix, l, l, gsl_matrix_get(P->a, i, j));
+    }
+    
+  
+  /* res1 = vec(deriv), FORTRAN column-major convention * /
+  gsl_matrix_vectorize(P->jres1, deriv);
+
+  /* res =  Gamma^{-1/2} * res  * /
+  dtbtrs_("U", "T", "N", 
+	  &P->m_times_d, 
+	  &P->k_times_d_times_s_minus_1, 
+	  &deriv->size2, 
+	  P->rb, 
+	  &P->k_times_d_times_s, 
+	  P->jres1, 
+	  &P->m_times_d, 
+	  &info);
+  
+  /* convert back deriv = res1 in the C row-major convention * /
+  gsl_matrix_vec_inv(deriv, P->jres1); */
+
+  double *test = calloc(P->d_times_m_div_k * D, sizeof(double));
+  gsl_matrix *mattemp = gsl_matrix_calloc(P->d_times_m_div_k, D);
+
+  gsl_matrix_view submat1, submat2;
+  int ibr, ik, i1, j1, kbr;
+  double a_kj;
+  
+  gsl_matrix_set_zero(P->st);
+  
+  for (j = 0; j < N; j++) {
+    for (ik = 0; ik < P->k; ik++) {
+
+      /* Fill right-hand matrix */
+      for (ibr = 0; ibr < P->m_div_k; ibr++) {
+        for (k = 0; k < D; k++) {
+          for (l = 0; l < D ;l++) {
+            gsl_matrix_set(mattemp, k + ibr*D, l, 0);
+          }
+          
+          
+          gsl_matrix_set(mattemp, k + ibr*D, k, gsl_matrix_get(P->a, ik + ibr * P->k,j)) ;
+        }
+      }
+      
+
+      gsl_matrix_vectorize(test, mattemp);
+      
+      
+      dtbtrs_("U", "T", "N", 
+	      &P->d_times_m_div_k, 
+	      &P->d_times_s_minus_1, 
+	      &P->d, 
+  	    P->brg_rb, 
+	      &P->d_times_s, 
+	      test, 
+	      &P->d_times_m_div_k, 
+  	    &info);
+
+      gsl_matrix_vec_inv(mattemp, test);
+
+
+      for (ibr = 0; ibr < P->m_div_k; ibr++) {
+        submat1 = gsl_matrix_submatrix(P->st, (ik + ibr*P->k) * D, j*D, D, D); 
+        submat2 = gsl_matrix_submatrix(mattemp, ibr*D, 0, D, D); 
+        
+        gsl_matrix_memcpy(&submat1.matrix, &submat2.matrix);
+			}
+    }
+  }
+    
+  free(test);
+  gsl_matrix_free(mattemp);
+  
+  
+
+  gsl_matrix_memcpy(deriv, P->st);
+/*  PRINTF("jacobian_new: step1 max, min = %f, %f, \n", gsl_matrix_max(P->st), gsl_matrix_min(P->st));*/
+
+
+
+
+
+  /* second term (naive implementation) */
+  res_vec = gsl_vector_view_array(P->jres2, P->m_times_d);
+
+  for (i = 0; i < N; i++) {
+    for (j = 0; j < D; j++) {
+			/* form dgamma = d/d x_ij gamma */
+			gsl_matrix_set_zero(P->dgamma);
+
+			for (k = 0; k < S; k++) {
+	  	  submat = gsl_matrix_submatrix(P->dgamma, 0, k*P->k_times_d, P->k_times_d, P->k_times_d);
+
+  	  	/* compute tmp1 = dx_ext' * w_k * x_ext * /
+		    /* Iterate over rows of dx_ext' * w_k */
+			  for (l = 0; l < P->k; l++) {
+			    tmp1_row = gsl_matrix_row (&submat.matrix, l*D+j);
+			    w_k_row = gsl_matrix_row (P->w->a[k], l*P->n_plus_d+i);
+			    gsl_blas_dgemv(CblasTrans, 1.0, P->x_ext, &w_k_row.vector, 0.0, &tmp1_row.vector); 
+			  }
+			  
+    	  /* compute submat = submat  + x_ext' * tmp * dx_ext * /
+		    /* Iterate over rows of dx_ext' * w_k' */
+			  for (l = 0; l < P->k; l++) {
+			    tmp1_col = gsl_matrix_column (&submat.matrix, l*D+j);
+			    w_k_col = gsl_matrix_column (P->w->a[k], l*P->n_plus_d+i);
+			    gsl_blas_dgemv(CblasTrans, 1.0, P->x_ext, &w_k_col.vector, 1.0, &tmp1_col.vector); 
+			  }
+     	}
+    	/* compute st_ij = DGamma * yr * /
+    	subvec = gsl_matrix_column(P->st, i*D+j);
+    	tmv_prod(P->dgamma, S, P->yr, P->m_div_k, &subvec.vector);
+    	gsl_vector_memcpy(&res_vec.vector, &subvec.vector);
+
+    	/* solve st_ij = Gamma^{-1/2}st_ij * /
+      compute_c_minus_1_2_f(&res_vec.vector, 1, params);
+
+			gsl_vector_memcpy(&subvec.vector, &res_vec.vector);*/
+
+
+    	tmv_prod(P->dgamma, S, P->yr, P->m_div_k, &res_vec.vector);
+
+    	/* solve st_ij = Gamma^{-1/2}st_ij */
+      compute_c_minus_1_2_f(&res_vec.vector, 1, params);
+    	subvec = gsl_matrix_column(P->st, i*D+j);
+			gsl_vector_memcpy(&subvec.vector, &res_vec.vector);
+
+
+      /* Alternative */
+
+		  /* form dgamma = d/d x_ij gamma */
+			gsl_matrix_set_zero(P->dgamma);
+
+			for (k = 0; k < S; k++) {
+			  gsl_matrix_view  b_w_k = gsl_matrix_submatrix(P->w->a[k], 0, 0, P->n_plus_d, P->n_plus_d);
+			  gsl_matrix_view  b_x_ext =  gsl_matrix_submatrix(P->x_ext, 0, 0, P->n_plus_d, D);
+
+	  	  submat = gsl_matrix_submatrix(P->dgamma, 0, k*P->d, P->d, P->d);
+
+  	  	/* compute tmp1 = dx_ext' * w_k * x_ext * /
+		    /* Iterate over rows of dx_ext' * w_k */
+		    tmp1_row = gsl_matrix_row (&submat.matrix, j);
+		    w_k_row = gsl_matrix_row (&b_w_k.matrix, i);
+		    gsl_blas_dgemv(CblasTrans, 1.0, &b_x_ext.matrix, &w_k_row.vector, 0.0, &tmp1_row.vector); 
+			  
+    	  /* compute submat = submat  + x_ext' * tmp * dx_ext * /
+		    /* Iterate over rows of dx_ext' * w_k' */
+  	    tmp1_col = gsl_matrix_column (&submat.matrix, j);
+		    w_k_col = gsl_matrix_column (&b_w_k.matrix, i);
+		    gsl_blas_dgemv(CblasTrans, 1.0, &b_x_ext.matrix, &w_k_col.vector, 1.0, &tmp1_col.vector); 
+     	}
+     	
+     	submat = gsl_matrix_submatrix(P->dgamma, 0, 0, P->d, S*P->d);
+     	
+    	/* compute st_ij = DGamma * yr */
+  /* 	subvec = gsl_matrix_column(P->st, i*D+j);*/
+  
+      for (l = 0; l < P->k; l++) { 
+     /*   gsl_vector_view subvec1 = gsl_vector_subvector();
+        gsl_vector_view subvec2 = gsl_vector_subvector();*/
+      
+  
+    /*  	tmv_prod(&submat->matrix, S, P->yr, P->m_div_k, &res_vec.vector);*.g
+      	/* solve st_ij = Gamma^{-1/2}st_ij * /
+      	dtbtrs_("U", "T", "N", 
+			  		&P->m_times_d, 
+				  	&P->k_times_d_times_s_minus_1, 
+  					&one, 
+	  				P->rb, 
+		  			&P->k_times_d_times_s, 
+			  		P->jres2,
+				  	&P->m_times_d, 
+    				&info);*/
+    	}
+
+
+
+
+
+
+    }
+  }
+
+
+
+
+  /* deriv = deriv - 0.5 * st */
+  gsl_matrix_scale(P->st, 0.5);
+  gsl_matrix_sub(deriv, P->st);
+
+}
+
 
 
 /*
@@ -1144,6 +1302,22 @@ void print_mat(const gsl_matrix* m)
   for (i = 0; i < m->size1; i++) {
     for (j = 0; j < m->size2; j++)
       PRINTF("%16.14f ", gsl_matrix_get(m, i, j));
+    PRINTF("\n");
+  }
+  PRINTF("\n");
+}
+
+
+/* print matrix */
+void print_mat_tr(const gsl_matrix* m)
+{
+  int i, j;
+
+  PRINTF("\n");
+  for (j = 0; j < m->size2; j++) {
+    for (i = 0; i < m->size1; i++) {
+      PRINTF("%16.14f ", gsl_matrix_get(m, i, j));
+    }
     PRINTF("\n");
   }
   PRINTF("\n");

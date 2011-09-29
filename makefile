@@ -34,7 +34,11 @@ R:
 	
 testc : test.o stls.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
-	-lgfortran -lgsl -lgslcblas -lcblas -lm -lgfortran -llapack -lf77blas -latlas	
+	-lgfortran -lgsl -lgslcblas -lcblas -lm -lgfortran -lf77blas -llapack  -latlas	
+#	/home/kdu/src/lapack-3.2.1/lapack_LINUX.a /home/kdu/src/lapack-3.2.1/blas_LINUX.a  \
+#	-lgfortran -lgsl -lgslcblas -lcblas -lm -lgfortran 
+	
+
 
 test.o : test_c/test.cpp $(STLS_INCLUDE_FILES) 
 	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -c test_c/test.cpp
