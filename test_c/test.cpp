@@ -17,7 +17,7 @@
 #define EPSGRAD 1e-5
 #define DISP    3     /* per iteration */
 
-#define TEST_NUM 6
+#define TEST_NUM 7
 
 #define MAX_FN_LEN  60
 

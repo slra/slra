@@ -99,6 +99,9 @@ typedef struct {
 
   double *rb2;   /* Result of Cholesky factorization (test) */
 
+  /* Preallocated data for block computations */
+  gsl_matrix *bx_ext;  
+
   double *brg_rb;   /* Result of Cholesky factorization */
   gsl_matrix *brg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
   gsl_matrix *brg_gamma;
@@ -129,6 +132,9 @@ int stls_df (const gsl_vector*, void*, gsl_matrix*);
 int stls_fdf (const gsl_vector*, 
 	      void*, gsl_vector*, gsl_matrix*);
 
+int stls_fdf_new (const gsl_vector*, 
+	      void*, gsl_vector*, gsl_matrix*);
+
 int stls_f_new (const gsl_vector*, void*, gsl_vector*);
 int stls_df_new (const gsl_vector*, void*, gsl_matrix*);
 
@@ -148,7 +154,8 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 
 
-void xmat2xext( gsl_matrix_const_view, gsl_matrix*, stls_opt_data* );
+void xmat2xext( gsl_matrix_const_view, gsl_matrix *, stls_opt_data* );
+void xmat2bxext( gsl_matrix_const_view, gsl_matrix *, stls_opt_data* );
 void cholgam( stls_opt_data* );
 void cholbrg( stls_opt_data* );
 void cholbrg2gamma( stls_opt_data* );
