@@ -17,7 +17,7 @@
 #define EPSGRAD 1e-5
 #define DISP    3     /* per iteration */
 
-#define TEST_NUM 7
+#define TEST_NUM 6
 
 #define MAX_FN_LEN  60
 
@@ -204,6 +204,9 @@ int main(int argc, char *argv[])
       printf("| %2d | %10.6f | %11.3f | %1.13f |\n", i, times[i], misfits[i], diffs[i]);
     }
     printf("---------------------------------------------------\n\n"); 
+    
+    
+    printf("sizeof(stls_opt_data) = %d, %d, %d\n", sizeof(stls_opt_data), sizeof(int), sizeof(void*));
   }
 
   return(0);

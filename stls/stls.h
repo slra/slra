@@ -33,6 +33,11 @@
 #define LDWORK 1000
 #define EITER 1 /* maximum number of iterations reached */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* optimization options and output information structure */
 typedef struct {
   /* input options */
@@ -63,6 +68,9 @@ typedef struct {
   gsl_matrix **a;
 } w_data;
 
+
+
+
 /* data needed for cost function and Jacobian evaluation */
 typedef struct {
   gsl_matrix* a;
@@ -79,6 +87,7 @@ typedef struct {
     m_div_k, s_minus_1;
 
   int one; /* One for blas routines */
+
 
   /* Preallocated arrays */  
   gsl_matrix *x_ext; 
@@ -112,16 +121,18 @@ typedef struct {
   gsl_vector *brg_f;    /* Reshaped vector holding f */
   gsl_vector *brg_yr;    /* Reshaped vector holding y_r */
   
+  gsl_matrix *brg_a, *brg_b;
+  
+  
   /* Preallocated arrays for jacobian */
   gsl_matrix *dgamma, *st;
   double *jres1, * jres2;
 } stls_opt_data;
 
+
+
 /* Prototypes of functions */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
 	 gsl_matrix*, gsl_matrix*, opt_and_info* );

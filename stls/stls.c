@@ -18,6 +18,9 @@
 /*********************/
 /* on exit: zero success, otherwise error code: EITER, GSL_ETOLF, GSL_ETOLX, GSL_ETOLG */
 
+
+
+
 int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s, 
          gsl_matrix* x, gsl_matrix* v, opt_and_info* opt)
 {
@@ -26,7 +29,17 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   int status_dx, status_grad, k;
   double g_norm;
   w_data w;
+  stls_opt_data *P;
+  
   stls_opt_data params;
+  P = &params;
+  
+/*    P = malloc(6000);
+  
+  
+  printf("P = %p, sizeof(stls_opt_data) = %i\n", P, sizeof(stls_opt_data));*/
+
+
   gsl_vector_view x_vec;
   time_t t_b;
 
@@ -53,6 +66,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   gsl_multimin_function fnm;
 
 
+
   t_b = clock();
 
   /* constants */
@@ -63,77 +77,92 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   /* find Wk */
   s2w(s, &w);
 
+
+
+
   /* set the parameters */
-  params.m = m;
-  params.n = n;
-  params.d = d;
+  P->m = m;
+  P->n = n;
+  P->d = d;
 
 
-  params.a = a;
-  params.b = b;
-  params.w = &w;
-  params.k = s->k;  
-  params.n_plus_d = n + d;   
-  params.n_times_d = n * d;   
-  params.k_times_d = s->k * d; 
-  params.k_times_d_times_s = params.k_times_d * w.s;
-  params.k_times_d_times_s_minus_1 = params.k_times_d_times_s - 1;
-  params.m_times_d = m * d;
-  params.m_div_k = (int) m / s->k;
-  params.s_minus_1 = w.s - 1;
+  P->a = a;
+  P->b = b;
+  P->w = &w;
+  P->k = s->k;  
+  P->n_plus_d = n + d;   
+  P->n_times_d = n * d;   
+  P->k_times_d = s->k * d; 
+  P->k_times_d_times_s = P->k_times_d * w.s;
+  P->k_times_d_times_s_minus_1 = P->k_times_d_times_s - 1;
+  P->m_times_d = m * d;
+  P->m_div_k = (int) m / s->k;
+  P->s_minus_1 = w.s - 1;
 
 
 
-  params.one = 1;
+  P->one = 1;
 
   
   /* Preallocate memory for f and df */
-  params.x_ext = gsl_matrix_calloc(params.w->a[0]->size1, params.k_times_d);
-  params.yr = gsl_vector_alloc(params.m_times_d);  
+  P->x_ext = gsl_matrix_calloc(P->w->a[0]->size1, P->k_times_d);
+  P->yr = gsl_vector_alloc(P->m_times_d);  
 
   /*CholGam */
-  params.rb = (double*) calloc(params.m_times_d * params.k_times_d_times_s, sizeof(double));
-  params.ldwork = 1 + (params.s_minus_1 + 1)* params.k_times_d * params.k_times_d +  /* pDW */ 
-                       3 * params.k_times_d + /* 3 * K */
-                       mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * params.k_times_d * params.k_times_d; /* Space needed for MB02CV */
+  P->rb = (double*) calloc(P->m_times_d * P->k_times_d_times_s, sizeof(double));
+  P->ldwork = 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d +  /* pDW */ 
+                       3 * P->k_times_d + /* 3 * K */
+                       mymax(P->s_minus_1 + 1,  P->m_div_k - 1 - P->s_minus_1) * P->k_times_d * P->k_times_d; /* Space needed for MB02CV */
 
-  params.dwork  = (double*) malloc((size_t)params.ldwork * sizeof(double));
-  params.gamma = gsl_matrix_alloc(params.k_times_d, params.k_times_d_times_s);  
-  params.gamma_vec = (double*) malloc(params.k_times_d * params.k_times_d_times_s *sizeof(double));
+  P->dwork  = (double*) malloc((size_t)P->ldwork * sizeof(double));
+  P->gamma = gsl_matrix_alloc(P->k_times_d, P->k_times_d_times_s);  
+  P->gamma_vec = (double*) malloc(P->k_times_d * P->k_times_d_times_s *sizeof(double));
 
-  params.tmp   = gsl_matrix_alloc(params.k_times_d, params.w->a[0]->size1);
-
+  P->tmp   = gsl_matrix_alloc(P->k_times_d, P->w->a[0]->size1);
+  
+  P->d_times_s = d * w.s;
+  P->d_times_m_div_k = d* (int) m / s->k;
+  P->d_times_s_minus_1 = P->d_times_s - 1;
 
 
   /* New CholGam */
-  params.bx_ext =  gsl_matrix_alloc(params.n_plus_d, d);
+  P->brg_a =  gsl_matrix_alloc(a->size1, a->size2);
+  P->brg_b =  gsl_matrix_alloc(b->size1, b->size2);
+  
+  
+  
+  gsl_matrix_view src_a = gsl_matrix_view_array(a->data, s->k * n, P->m_div_k);
+  gsl_matrix_view src_b = gsl_matrix_view_array(b->data, s->k * d, P->m_div_k);
+  
 
-  params.rb2 = (double*) malloc(params.m_times_d * params.k_times_d_times_s * sizeof(double));
-  params.brg_rb = (double*) malloc(params.m_div_k * d * params.d_times_s * sizeof(double));
-  params.d_times_s = d * w.s;
-  params.d_times_m_div_k = d* (int) m / s->k;
-  params.d_times_s_minus_1 = params.d_times_s - 1;
+  
+  P->bx_ext =  gsl_matrix_alloc(P->n_plus_d, d);
 
-  params.brg_ldwork = 1 + (params.s_minus_1 + 1)* d * d +  /* pDW */ 
+  P->rb2 = (double*) malloc(P->m_times_d * P->k_times_d_times_s * sizeof(double));
+  P->brg_rb = (double*) malloc(P->m_div_k * d * P->d_times_s * sizeof(double));
+  
+
+
+  P->brg_ldwork = 1 + (P->s_minus_1 + 1)* d * d +  /* pDW */ 
                        3 * d + /* 3 * K */
-                       mymax(params.s_minus_1 + 1,  params.m_div_k - 1 - params.s_minus_1) * d * d; /* Space needed for MB02CV */
+                       mymax(P->s_minus_1 + 1,  P->m_div_k - 1 - P->s_minus_1) * d * d; /* Space needed for MB02CV */
 
-  params.brg_gamma_vec = (double*) malloc(d * params.d_times_s * sizeof(double));
-  params.brg_gamma = gsl_matrix_alloc(d, params.d_times_s);
-  params.brg_dwork  = (double*) malloc((size_t)params.brg_ldwork * sizeof(double));
-  params.brg_tmp   = gsl_matrix_alloc(d, params.n_plus_d);
+  P->brg_gamma_vec = (double*) malloc(d * P->d_times_s * sizeof(double));
+  P->brg_gamma = gsl_matrix_alloc(d, P->d_times_s);
+  P->brg_dwork  = (double*) malloc((size_t)P->brg_ldwork * sizeof(double));
+  P->brg_tmp   = gsl_matrix_alloc(d, P->n_plus_d);
 
-  params.brg_yr = gsl_vector_alloc(params.m_times_d);  
-  params.brg_f = gsl_vector_alloc(params.m_times_d);  
+  P->brg_yr = gsl_vector_alloc(P->m_times_d);  
+  P->brg_f = gsl_vector_alloc(P->m_times_d);  
 
   
   
   /* Jacobian*/
-  params.jres1 = malloc(params.m_times_d * params.n_times_d * sizeof(double));
-  params.jres2  = malloc( params.m_times_d * sizeof(double));
+  P->jres1 = malloc(P->m_times_d * P->n_times_d * sizeof(double));
+  P->jres2  = malloc( P->m_times_d * sizeof(double));
 
-  params.dgamma = gsl_matrix_alloc(params.k_times_d, params.k_times_d_times_s);
-  params.st   = gsl_matrix_alloc(params.m_times_d, params.n_times_d);
+  P->dgamma = gsl_matrix_alloc(P->k_times_d, P->k_times_d_times_s);
+  P->st   = gsl_matrix_alloc(P->m_times_d, P->n_times_d);
 
 
   
@@ -143,41 +172,46 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
 
 
   /* vectorize x row-wise */
-  x_vec = gsl_vector_view_array(x->data, params.n_times_d);
+  x_vec = gsl_vector_view_array(x->data, P->n_times_d);
 
   /* initiaalize the optimization method */
   switch (method) {
   case 'l': /* LM */
+/*    fdflm.f      = &stls_f;
+    fdflm.df     = &stls_df;
+    fdflm.fdf    = &stls_fdf;*/
+
     fdflm.f      = &stls_f_new;
     fdflm.df     = &stls_df_new;
     fdflm.fdf    = &stls_fdf_new;
-    fdflm.n      = params.m_times_d;
-    fdflm.p      = params.n_times_d;
-    fdflm.params = &params;
+    
+    fdflm.n      = P->m_times_d;
+    fdflm.p      = P->n_times_d;
+    fdflm.params = P;
     
     solverlm = gsl_multifit_fdfsolver_alloc
-      (Tlm, params.m_times_d, params.n_times_d);
+      (Tlm, P->m_times_d, P->n_times_d);
     gsl_multifit_fdfsolver_set(solverlm, &fdflm, &x_vec.vector);
-    g = gsl_vector_alloc(params.n_times_d);
+    g = gsl_vector_alloc(P->n_times_d);
     break;
   case 'q': /* QN 
     fdfqn.f      = &stls_f_;
     fdfqn.df     = &stls_df_;
     fdfqn.fdf    = &stls_fdf_;
-    fdfqn.n      = params.n_times_d;
-    fdfqn.params = &params;
+    fdfqn.n      = P->n_times_d;
+    fdfqn.params = P;
 
-    solverqn = gsl_multimin_fdfminimizer_alloc(Tqn, params.n_times_d);
+    solverqn = gsl_multimin_fdfminimizer_alloc(Tqn, P->n_times_d);
     gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, &x_vec.vector, stepqn, opt->epsabs);
     status_dx = GSL_CONTINUE; */
     break;
   case 'n': /* NM */
     fnm.f = &stls_f_;
-    fnm.n = params.n_times_d;
-    fnm.params = &params;
+    fnm.n = P->n_times_d;
+    fnm.params = P;
 
-    solvernm = gsl_multimin_fminimizer_alloc( Tnm, params.n_times_d );
-    stepnm = gsl_vector_alloc( params.n_times_d );
+    solvernm = gsl_multimin_fminimizer_alloc( Tnm, P->n_times_d );
+    stepnm = gsl_vector_alloc( P->n_times_d );
     gsl_vector_set_all( stepnm, 0.001 ); /* ??? */
     gsl_multimin_fminimizer_set( solvernm, &fnm, &x_vec.vector, stepnm );
     status_dx   = GSL_CONTINUE;
@@ -310,33 +344,40 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   free(w.a);
   
   /* free preallocated memory for computations */
-  gsl_matrix_free(params.tmp);
-  gsl_matrix_free(params.gamma);
-  free(params.dwork);
-  free(params.gamma_vec);
+  gsl_matrix_free(P->tmp);
+  gsl_matrix_free(P->gamma);
+  free(P->dwork);
+  free(P->gamma_vec);
 
-  gsl_matrix_free(params.bx_ext);
-  gsl_matrix_free(params.brg_tmp);
-  gsl_matrix_free(params.brg_gamma);
-  free(params.brg_dwork);
-  free(params.brg_gamma_vec);
-  gsl_vector_free(params.brg_yr);
-  gsl_vector_free(params.brg_f);
-  free(params.rb2);
+  gsl_matrix_free(P->brg_a);
+  gsl_matrix_free(P->brg_b);
+
+  gsl_matrix_free(P->bx_ext);
+  gsl_matrix_free(P->brg_tmp);
+  gsl_matrix_free(P->brg_gamma);
+  free(P->brg_dwork);
+  free(P->brg_gamma_vec);
+  gsl_vector_free(P->brg_yr);
+  gsl_vector_free(P->brg_f);
+  free(P->rb2);
 
 
-  gsl_vector_free(params.yr);
-  free(params.rb);
-  gsl_matrix_free(params.x_ext);
+  gsl_vector_free(P->yr);
+  free(P->rb);
+  gsl_matrix_free(P->x_ext);
 
-  free(params.jres1);
-  free(params.jres2);
-  gsl_matrix_free(params.dgamma);
-  gsl_matrix_free(params.st);
+  free(P->jres1);
+  free(P->jres2);
+  gsl_matrix_free(P->dgamma);
+  gsl_matrix_free(P->st);
 
+
+/*  free(P);*/
 
   return GSL_SUCCESS; /* <- correct with status */
 }
+
+
 
 #define P ((stls_opt_data*) params)
 
@@ -653,7 +694,10 @@ void xmat2bxext( gsl_matrix_const_view x_mat, gsl_matrix *bx_ext,  stls_opt_data
   submat = gsl_matrix_submatrix(bx_ext, 0, 0, N, D); /* select x in (1,1) */
   gsl_matrix_memcpy(&submat.matrix, &x_mat.matrix); /* assign x */
   submat = gsl_matrix_submatrix(bx_ext, N, 0, D, D); /* select -I in (1,1)*/
+  gsl_matrix_set_all(&submat.matrix,0);
   diag   = gsl_matrix_diagonal(&submat.matrix);     /* assign -I */
+  
+  
   gsl_vector_set_all(&diag.vector, -1);
 }
 
@@ -700,15 +744,23 @@ void cholbrg( stls_opt_data* params )
   gsl_matrix *bx_ext = P->bx_ext;
 
 
+/*  printf("cholbrg: %p\n", P);*/
+
 
   const int zero = 0;
   /* MB02GD has very bad description of parameters */
 
 
-  /* Take block of x_ext - b_x_ext = x_ext(1:(n+d),1:d) * /
-  gsl_matrix_view b_x_ext;
+  /* Take block of x_ext - b_x_ext = x_ext(1:(n+d),1:d) */
+  
+/*  gsl_matrix_view b_x_ext;
   b_x_ext =  gsl_matrix_submatrix(P->x_ext, 0, 0, P->n_plus_d, D);
   bx_ext = &b_x_ext.matrix; */
+  
+  
+/*  PRINTF("x_ext_b:");
+  print_mat(bx_ext);*/
+  
   
 
   /* compute brgamma_k = b_x_ext' * w_k(1:(n+d),1:(n+d)) * b_x_ext */
@@ -738,6 +790,8 @@ void cholbrg( stls_opt_data* params )
 	  P->brg_rb, 			/* packed Cholesky factor */
 	  &P->d_times_s, /* row_dim(rb) */
 	  P->brg_dwork, &P->brg_ldwork, &info); /**/
+
+
 
 
   /* check for errors of mb02gd */
