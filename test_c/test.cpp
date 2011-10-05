@@ -11,7 +11,7 @@
 #include "stls.h"
 
 /* default constants for the exit condition */
-#define MAXITER 600
+#define MAXITER 2000
 #define EPSABS  0
 #define EPSREL  1e-5
 #define EPSGRAD 1e-5
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   if (argc == 2) {
     run_test(stdout, argv[1], times[0], misfits[0], diffs[0]);
   } else { /* test all examples */
-    printf("\n------------------ Testing all examples (run each test 5 times) ------------------\n\n");
+    printf("\n------------------ Testing all examples  ------------------\n\n");
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);

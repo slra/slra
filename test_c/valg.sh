@@ -1,2 +1,2 @@
-valgrind --leak-check="yes" --log-file="vl.txt" ./test
+valgrind --leak-check="full" --log-file="vl.txt" ./test
 

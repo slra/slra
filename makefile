@@ -1,28 +1,28 @@
 # makefile: STLS makefile
 
-CC  = gcc -fPIC 
-CCPP  = g++ -fPIC 
-F77 = gcc -fPIC 
+CC  = gcc  -v -g -fPIC -static
+CCPP  = g++ -v -g -fPIC -static 
+F77 = gcc -v -g -fPIC -static
 OCTAVE_MEX = mkoctfile --mex -v -DMEX_OCTAVE #mex  -v -compatibleArrayDims
 
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f SLICOT/MB02MD.f
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o MB02MD.o
-STLS_SRC_FILES = stls/stls.c stls/mgsl.c
-STLS_OBJ_FILES = stls.o mgsl.o
+STLS_SRC_FILES = stls/stls.c  stls/mgsl.c stls/stls_old.c stls/stls_new.c
+STLS_OBJ_FILES = stls.o  mgsl.o stls_old.o stls_new.o
 STLS_INCLUDE_DIR = stls
 STLS_INCLUDE_FILES = stls/stls.h
 MEX_SRC_FILES = mex/mex_stls.c
 
 
-INC_FLAGS = -I/home/kdu/local/include -I./$(STLS_INCLUDE_DIR) # -g
-OPT_FLAGS = -O #-pg # gprof ./test gmon.out > gmon.txt
+INC_FLAGS =  -I./$(STLS_INCLUDE_DIR) # -I/home/kdu/local/include -g
+OPT_FLAGS = -O -pg # gprof ./test gmon.out > gmon.txt
 
 # Building octave mex-file
 mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lgslcblas \
 	-llapack -lblas  -o stls.mex
-#	cp -f mex_stls.mex ../stls.mex
 	cp -f stls.mex test_m
+#	cp -f mex_stls.mex ../stls.mex
 
 R: 
 	cp $(STLS_INCLUDE_FILES) rstls/src/stls
@@ -34,13 +34,16 @@ R:
 	
 testc : test.o stls.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
-	-lgfortran -lgsl -lgslcblas -lcblas -lm -lgfortran -lf77blas -llapack  -latlas	
-#	/home/kdu/src/lapack-3.2.1/lapack_LINUX.a \
-#	 /home/kdu/local/lib/libgsl.a \
-#	 /home/kdu/src/CBLAS/lib/cblas_LINUX.a  \
-# 	 /home/kdu/src/lapack-3.2.1/blas_LINUX.a \
-#	 -lgfortran -lm -lgfortran 
+	/home/kdu/src/lapack-3.2.1/lapack_LINUX.a \
+	 /home/kdu/src/gsl-1.15/.libs/libgsl.a \
+	 /home/kdu/src/gsl-1.15/cblas/.libs/libgslcblas.a \
+	 /home/kdu/src/CBLAS/lib/cblas_LINUX.a  \
+ 	 /home/kdu/src/lapack-3.2.1/blas_LINUX.a \
+	 -lgfortran -lm -lgfortran 
 
+#testc : test.o stls.a SLICOT.a
+#	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
+#	 -lm   -latlas -lgfortran -lf77blas -llapack 	-lcblas -lgslcblas -lgsl
 
 
 test.o : test_c/test.cpp $(STLS_INCLUDE_FILES) 

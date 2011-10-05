@@ -70,24 +70,53 @@ typedef struct {
 
 
 
+#define mymax(a,b) ((a) > (b) ? (a) : (b)) 
+#define mymin(a,b) ((a) < (b) ? (a) : (b))
 
-/* data needed for cost function and Jacobian evaluation */
+
+#define COMMON_PARAMS  \
+    gsl_matrix* a; \
+	  gsl_matrix* b; \
+	  w_data w; \
+	  int k;  \
+	  int  n_plus_d, 		/* = col_dim(C) */ \
+    n_times_d,			/* = number of elements in x */ \
+    k_times_d,			/* = row_dim(gamma) */ \
+    k_times_d_times_s,		/* = col_dim(gamma) */ \
+    k_times_d_times_s_minus_1,  /* = col_dim(gamma) - 1 */ \
+    m_times_d, 			/* = row_dim(rb) */ \
+    m_div_k,  \
+    s_minus_1;  \
+    int one; /* One for blas routines */ 
+
+
+#define PREPARE_COMMON_PARAMS(A, B, S, PP, isblock) \
+  do {\
+   int m = A->size1, n = A->size2, d = B->size2;		\
+  /* set other parameters */\
+  PP->a = A;\
+  PP->b = B;\
+  /* find Wk */ \
+  s2w(S, &PP->w, isblock);\
+  PP->k = S->k;  \
+  PP->n_plus_d = n + d;   \
+  PP->n_times_d = n * d;   \
+  PP->k_times_d = S->k * d; \
+  PP->k_times_d_times_s = PP->k_times_d * PP->w.s;\
+  PP->k_times_d_times_s_minus_1 = PP->k_times_d_times_s - 1;\
+  PP->m_times_d = m * d;\
+  PP->m_div_k = (int) m / S->k;\
+  PP->s_minus_1 = PP->w.s - 1;\
+  PP->one = 1;\
+  \
+  } while (0)
+
+
+
+
+
 typedef struct {
-  gsl_matrix* a;
-  gsl_matrix* b;
-  w_data* w;
-  int k; 
-  int m, n, d,
-    n_plus_d, 		/* = col_dim(C) */
-    n_times_d,			/* = number of elements in x */
-    k_times_d,			/* = row_dim(gamma) */
-    k_times_d_times_s,		/* = col_dim(gamma) */
-    k_times_d_times_s_minus_1,  /* = col_dim(gamma) - 1 */
-    m_times_d, 			/* = row_dim(rb) */
-    m_div_k, s_minus_1;
-
-  int one; /* One for blas routines */
-
+  COMMON_PARAMS;
 
   /* Preallocated arrays */  
   gsl_matrix *x_ext; 
@@ -101,6 +130,18 @@ typedef struct {
   int ldwork;       /* Size of Dwork for MB02GD  */
   double *dwork;    /* Dwork for MB02GD  */
 
+  /* Preallocated arrays for jacobian */
+  gsl_matrix *dgamma, *st;
+  double *jres1, * jres2;
+} stls_old_opt_data;
+
+
+
+/* data needed for cost function and Jacobian evaluation */
+typedef struct {
+  COMMON_PARAMS;
+
+  int m, n, d;
   /* Preallocated arrays for cholgam (new) */
   int  d_times_s;		/* = col_dim(new gamma) */
   int  d_times_s_minus_1;  /* = col_dim(new gamma) - 1 */
@@ -114,6 +155,11 @@ typedef struct {
   double *brg_rb;   /* Result of Cholesky factorization */
   gsl_matrix *brg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
   gsl_matrix *brg_gamma;
+  gsl_matrix *brg_dgamma;
+  gsl_matrix *brg_tdgamma;
+  gsl_matrix *brg_st;
+  double *brg_jres2;
+  
   double *brg_gamma_vec;
   int brg_ldwork;       /* Size of Dwork for MB02GD  */
   double *brg_dwork;    /* Dwork for MB02GD  */
@@ -123,10 +169,8 @@ typedef struct {
   
   gsl_matrix *brg_a, *brg_b;
   
-  
-  /* Preallocated arrays for jacobian */
-  gsl_matrix *dgamma, *st;
-  double *jres1, * jres2;
+  double *brg_j1b_vec;
+  gsl_matrix *brg_j1b;
 } stls_opt_data;
 
 
@@ -136,21 +180,18 @@ typedef struct {
 
 int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
 	 gsl_matrix*, gsl_matrix*, opt_and_info* );
-double stls_f_ (const gsl_vector*, void*);
-
-int stls_f (const gsl_vector*, void*, gsl_vector*);
-int stls_df (const gsl_vector*, void*, gsl_matrix*);
-int stls_fdf (const gsl_vector*, 
-	      void*, gsl_vector*, gsl_matrix*);
 
 int stls_fdf_new (const gsl_vector*, 
 	      void*, gsl_vector*, gsl_matrix*);
+
+
+double stls_f_new_ (const gsl_vector*, void*);
 
 int stls_f_new (const gsl_vector*, void*, gsl_vector*);
 int stls_df_new (const gsl_vector*, void*, gsl_matrix*);
 
 void print_state (int, gsl_multifit_fdfsolver*);
-int s2w(const data_struct*, w_data*);
+int s2w(const data_struct*, w_data*, int);
 void print_mat(const gsl_matrix*);
 void print_mat_tr(const gsl_matrix*);
 void print_arr(double*, int);
@@ -158,6 +199,9 @@ void gsl_matrix_vectorize(double*, gsl_matrix*);
 void gsl_matrix_vec_inv(gsl_matrix*, double*);
 void tmv_prod(gsl_matrix*, int, 
 	      gsl_vector*, int, gsl_vector*);
+void tmv_prod_new(gsl_matrix*, int, 
+	      gsl_vector*, int, gsl_vector*);
+
 int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
  
@@ -165,13 +209,31 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 
 
-void xmat2xext( gsl_matrix_const_view, gsl_matrix *, stls_opt_data* );
-void xmat2bxext( gsl_matrix_const_view, gsl_matrix *, stls_opt_data* );
-void cholgam( stls_opt_data* );
+void xmat2xext( gsl_matrix_const_view, gsl_matrix *, int);
+void xmat2bxext( gsl_matrix_const_view, gsl_matrix *);
 void cholbrg( stls_opt_data* );
-void cholbrg2gamma( stls_opt_data* );
-void jacobian( stls_opt_data*,  gsl_matrix*);
 void jacobian_new( stls_opt_data*,  gsl_matrix*);
+
+void allocate_and_prepare_data_new( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data *P );
+void free_memory_new( stls_opt_data *P );
+
+
+
+/* Old functions */
+void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_old_opt_data *P );
+void free_memory_old( stls_old_opt_data *P );
+
+
+void cholgam( stls_old_opt_data* );
+void jacobian( stls_old_opt_data*,  gsl_matrix*);
+double stls_f_ (const gsl_vector*, void*);
+
+int stls_f (const gsl_vector*, void*, gsl_vector*);
+int stls_df (const gsl_vector*, void*, gsl_matrix*);
+int stls_fdf (const gsl_vector*, 
+	      void*, gsl_vector*, gsl_matrix*);
+
+
 /* SLICOT and LAPACK functions */
 /*
 void mb02gd_(char*, char*, int*, int*, int*, const int*, int*, double*, int*, double*, int*, double*, const int*, int*);
