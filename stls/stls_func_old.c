@@ -13,7 +13,7 @@
 
 
 
-void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_old_opt_data *P ) {
+void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_old *P ) {
   PREPARE_COMMON_PARAMS(a, b, s, P,1); 
   
   /* Preallocate memory for f and df */
@@ -44,7 +44,7 @@ void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_str
 }
 
 
-void free_memory_old( stls_old_opt_data *P ) {
+void free_memory_old( stls_opt_data_old *P ) {
   int k;
   /* free the allocated memory for w */
   for (k = 0; k < P->w.s; k++) 
@@ -75,7 +75,7 @@ void free_memory_old( stls_old_opt_data *P ) {
 #define SIZE_W (P->w.a[0]->size1)
 
 /* Compute x_ext into params */
-static void compute_xext( const gsl_vector* x, stls_old_opt_data *P ) {
+static void compute_xext( const gsl_vector* x, stls_opt_data_old *P ) {
   /* reshape x as an nxd matrix x_mat */
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
 
@@ -84,7 +84,7 @@ static void compute_xext( const gsl_vector* x, stls_old_opt_data *P ) {
 }
 
 /* compute f = vec((ax-b)') */
-static void compute_f( gsl_vector* f, const gsl_vector* x, stls_old_opt_data *P ) {
+static void compute_f( gsl_vector* f, const gsl_vector* x, stls_opt_data_old *P ) {
 
   gsl_matrix_view f_mat = gsl_matrix_view_vector(f, M, D); 
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
@@ -94,7 +94,7 @@ static void compute_f( gsl_vector* f, const gsl_vector* x, stls_old_opt_data *P 
 		 P->a, &x_mat.matrix, -1.0, &f_mat.matrix);
 }
 
-static void compute_c_minus_1_2_f( gsl_vector* f, int trans, stls_old_opt_data *P ) {
+static void compute_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_data_old *P ) {
   int info;
  /* compute the cost function from the Choleski factor */
   dtbtrs_("U", (trans ? "T" : "N"), "N", 
@@ -111,7 +111,7 @@ static void compute_c_minus_1_2_f( gsl_vector* f, int trans, stls_old_opt_data *
 
 
 
-static void compute_c_minus_1_f( gsl_vector* f, stls_old_opt_data *P ) {
+static void compute_c_minus_1_f( gsl_vector* f, stls_opt_data_old *P ) {
   int info;
   
   /* solve for yr by forward substitution */
@@ -137,7 +137,7 @@ static void compute_c_minus_1_f( gsl_vector* f, stls_old_opt_data *P ) {
 
 int stls_f (const gsl_vector* x, void* params, gsl_vector* f)
 {
-  stls_old_opt_data *P = params;
+  stls_opt_data_old *P = params;
 
 
   compute_f(f, x, P);
@@ -158,7 +158,7 @@ int stls_f (const gsl_vector* x, void* params, gsl_vector* f)
 
 double stls_f_ (const gsl_vector* x, void* params)
 {
-  stls_old_opt_data *P = params;
+  stls_opt_data_old *P = params;
 
   double ftf;
 
@@ -183,7 +183,7 @@ double stls_f_ (const gsl_vector* x, void* params)
 int stls_df (const gsl_vector* x, 
 	     void* params, gsl_matrix* deriv)
 {
-  stls_old_opt_data *P = params;
+  stls_opt_data_old *P = params;
 
   compute_xext(x, P);
   cholgam(P);
@@ -208,7 +208,7 @@ int stls_df (const gsl_vector* x,
 int stls_fdf (const gsl_vector* x, void* params, gsl_vector* f, 
 	      gsl_matrix* deriv)
 {
-  stls_old_opt_data *P = params;
+  stls_opt_data_old *P = params;
 
 
   compute_f(f, x, P);
@@ -234,7 +234,7 @@ int stls_fdf (const gsl_vector* x, void* params, gsl_vector* f,
 *    params.rb     - Cholesky factor in a packed form
 */
 
-void cholgam( stls_old_opt_data* P )
+void cholgam( stls_opt_data_old* P )
 {
   int k, info;
   gsl_matrix_view submat, source;
@@ -293,7 +293,7 @@ void cholgam( stls_old_opt_data* P )
 *  deriv  - Jacobian
 */
 
-void jacobian( stls_old_opt_data* P, gsl_matrix* deriv )
+void jacobian( stls_opt_data_old* P, gsl_matrix* deriv )
 {
   int i, j, l, k, info;
   const int zero = 0, one = 1;

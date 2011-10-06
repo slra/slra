@@ -5,7 +5,7 @@ PKG_CFLAGS+=-W -Wall -pedantic -DBUILD_R_PACKAGE
 .PHONY: all clean shlib-clean
 
 SLICOT_OBJS=SLICOT/MA02FD.o  SLICOT/MB02CU.o  SLICOT/MB02CV.o  SLICOT/MB02GD.o SLICOT/MB02MD.o
-STLS_OBJS=stls/stls.o stls/mgsl.o
+STLS_OBJS=stls/stls.o stls/mgsl.o stls/stls_func.o # stls/stls_func_old.o
 RSTLS_OBJS=rstls.o
 
 OBJECTS=$(RSTLS_OBJS) $(STLS_OBJS)  $(SLICOT_OBJS) 

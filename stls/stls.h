@@ -133,7 +133,7 @@ typedef struct {
   /* Preallocated arrays for jacobian */
   gsl_matrix *dgamma, *st;
   double *jres1, * jres2;
-} stls_old_opt_data;
+} stls_opt_data_old;
 
 
 
@@ -171,7 +171,7 @@ typedef struct {
   
   double *brg_j1b_vec;
   gsl_matrix *brg_j1b;
-} stls_opt_data;
+} stls_opt_data_reshaped;
 
 
 
@@ -181,14 +181,8 @@ typedef struct {
 int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
 	 gsl_matrix*, gsl_matrix*, opt_and_info* );
 
-int stls_fdf_new (const gsl_vector*, 
-	      void*, gsl_vector*, gsl_matrix*);
 
 
-double stls_f_new_ (const gsl_vector*, void*);
-
-int stls_f_new (const gsl_vector*, void*, gsl_vector*);
-int stls_df_new (const gsl_vector*, void*, gsl_matrix*);
 
 void print_state (int, gsl_multifit_fdfsolver*);
 int s2w(const data_struct*, w_data*, int);
@@ -209,23 +203,35 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 
 
-void xmat2xext( gsl_matrix_const_view, gsl_matrix *, int);
-void xmat2bxext( gsl_matrix_const_view, gsl_matrix *);
-void cholbrg( stls_opt_data* );
-void jacobian_new( stls_opt_data*,  gsl_matrix*);
+void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *);
 
-void allocate_and_prepare_data_new( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data *P );
-void free_memory_new( stls_opt_data *P );
+
+void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_reshaped *P );
+void free_memory_reshaped( stls_opt_data_reshaped *P );
+
+double stls_f_reshaped_ (const gsl_vector*, void*);
+
+int stls_f_reshaped (const gsl_vector*, void*, gsl_vector*);
+int stls_df_reshaped (const gsl_vector*, void*, gsl_matrix*);
+int stls_fdf_reshaped (const gsl_vector*, 
+	      void*, gsl_vector*, gsl_matrix*);
+
+
+void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* );
+void jacobian_reshaped( stls_opt_data_reshaped*,  gsl_matrix*);
 
 
 
 /* Old functions */
-void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_old_opt_data *P );
-void free_memory_old( stls_old_opt_data *P );
+void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_old *P );
+void free_memory_old( stls_opt_data_old *P );
 
 
-void cholgam( stls_old_opt_data* );
-void jacobian( stls_old_opt_data*,  gsl_matrix*);
+void cholgam( stls_opt_data_old* );
+void jacobian( stls_opt_data_old*,  gsl_matrix*);
+void xmat2xext( gsl_matrix_const_view, gsl_matrix *, int);
+
+
 double stls_f_ (const gsl_vector*, void*);
 
 int stls_f (const gsl_vector*, void*, gsl_vector*);

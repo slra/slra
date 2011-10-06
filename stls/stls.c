@@ -31,8 +31,8 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   char method = 'l';
   int status_dx, status_grad, k;
   double g_norm;
-  //stls_old_opt_data params;
-  stls_opt_data params;
+  //stls_opt_data_old params;
+  stls_opt_data_reshaped params;
   
 
   
@@ -77,7 +77,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   
   //allocate_and_prepare_data_old(a, b, s, P);
 
-  allocate_and_prepare_data_new(a, b, s, &params);
+  allocate_and_prepare_data_reshaped(a, b, s, &params);
   //allocate_and_prepare_data_old(a, b, s, &params);
 
 
@@ -92,9 +92,9 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
     fdflm.df     = &stls_df;
     fdflm.fdf    = &stls_fdf; /**/
 
-    fdflm.f      = &stls_f_new;
-    fdflm.df     = &stls_df_new;
-    fdflm.fdf    = &stls_fdf_new; /**/
+    fdflm.f      = &stls_f_reshaped;
+    fdflm.df     = &stls_df_reshaped;
+    fdflm.fdf    = &stls_fdf_reshaped; /**/
     
     fdflm.n      = m * d;
     fdflm.p      = n * d;
@@ -116,7 +116,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
     status_dx = GSL_CONTINUE; */
     break;
   case 'n': /* NM */
-    fnm.f = &stls_f_new_;
+    fnm.f = &stls_f_reshaped_;
     fnm.n = n * d;
     fnm.params = &params;
 
@@ -248,7 +248,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
     break;
   }
 
-   free_memory_new(&params);
+   free_memory_reshaped(&params);
 
 // free_memory_old(&params);
 

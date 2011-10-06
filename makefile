@@ -1,14 +1,14 @@
 # makefile: STLS makefile
 
-CC  = gcc  -v -g -fPIC -static
-CCPP  = g++ -v -g -fPIC -static 
-F77 = gcc -v -g -fPIC -static
+CC  = gcc  -g -fPIC -static
+CCPP  = g++  -g -fPIC -static 
+F77 = gcc -g -fPIC -static
 OCTAVE_MEX = mkoctfile --mex -v -DMEX_OCTAVE #mex  -v -compatibleArrayDims
 
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f SLICOT/MB02MD.f
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o MB02MD.o
-STLS_SRC_FILES = stls/stls.c  stls/mgsl.c stls/stls_old.c stls/stls_new.c
-STLS_OBJ_FILES = stls.o  mgsl.o stls_old.o stls_new.o
+STLS_SRC_FILES = stls/stls.c  stls/mgsl.c  stls/stls_func.c # stls/stls_func_old.c
+STLS_OBJ_FILES = stls.o  mgsl.o stls_func.o  #stls_func_old.o
 STLS_INCLUDE_DIR = stls
 STLS_INCLUDE_FILES = stls/stls.h
 MEX_SRC_FILES = mex/mex_stls.c

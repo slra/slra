@@ -7,7 +7,7 @@
 
 #include "stls.h"
 
-void allocate_and_prepare_data_new( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data *P ) {
+void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_reshaped *P ) {
   PREPARE_COMMON_PARAMS(a, b, s, P, 1); 
   
   P->m = a->size1;
@@ -75,7 +75,7 @@ void allocate_and_prepare_data_new( gsl_matrix* a, gsl_matrix* b, const data_str
 /*  PRINTF("%p %p %p", P->brg_rb, P->brg_dwork, P->brg_gamma_vec);*/
 }
 
-void free_memory_new( stls_opt_data *P ) {
+void free_memory_reshaped( stls_opt_data_reshaped *P ) {
   int k;
 
   for (k = 0; k < P->w.s; k++) 
@@ -118,22 +118,8 @@ void free_memory_new( stls_opt_data *P ) {
 
 
 
-
-/* Compute bx_ext into params */
-static void compute_bxext( const gsl_vector* x, stls_opt_data * P ) {
-  /* reshape x as an nxd matrix x_mat */
-  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
-
-  /* Form x_ext */
-  xmat2bxext( x_mat, P->bx_ext );
-}
-
-
-
-
-static void compute_reshaped_f( gsl_vector* f, const gsl_vector* x, stls_opt_data * P ) {
+static void compute_reshaped_f( gsl_vector* f, gsl_matrix_const_view x_mat, stls_opt_data_reshaped * P ) {
   gsl_matrix_view f_mat = gsl_matrix_view_vector(f, M, D); 
-  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
  
   gsl_matrix_memcpy(&f_mat.matrix, P->brg_b);
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
@@ -144,7 +130,7 @@ static void compute_reshaped_f( gsl_vector* f, const gsl_vector* x, stls_opt_dat
 
 
 
-static void compute_reshaped_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_data * P ) {
+static void compute_reshaped_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_data_reshaped * P ) {
   int info;
   int i;
 
@@ -159,7 +145,7 @@ static void compute_reshaped_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_d
 	  &info);
 }
 
-static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data * P ) {
+static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data_reshaped * P ) {
   int info;
   
     dpbtrs_("U", 
@@ -208,95 +194,6 @@ static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data * P ) {
 
 
 
-
-
-
-
-
-
-
-int stls_f_new (const gsl_vector* x, void* params, gsl_vector* f)
-{
-  stls_opt_data *P = params;
-  
-  compute_bxext(x, P);
-  cholbrg(P);
-  
-  compute_reshaped_f(P->brg_f, x, P);
-  compute_reshaped_c_minus_1_2_f(P->brg_f, 1, P);
-  gsl_vector_memcpy(f, P->brg_f);
-
-  return GSL_SUCCESS;
-}
-
-
-
-/* 
-*  STLS_F_: STLS cost function evaluation for QN 
-*
-*  x      - row-wise vectorized matrix X
-*  params - parameters for the optimization
-*/
-
-double stls_f_new_ (const gsl_vector* x, void* params)
-{
-  stls_opt_data *P = params;
-
-  double ftf;
-
-  /* Use yr as a temporary variable */
-  stls_f_new(x, P, P->brg_yr);
-  gsl_blas_ddot(P->brg_yr, P->brg_yr, &ftf);
-
-  return ftf;
-}
-
-
-
-
-
-int stls_df_new (const gsl_vector* x, void* params, gsl_matrix* deriv)
-{
-  stls_opt_data *P = params;
-
-  compute_bxext(x, params);
-  cholbrg(P);
-  compute_reshaped_f(P->brg_yr, x, P);
-  compute_reshaped_c_minus_1_f(P->brg_yr, P);
-
-  jacobian_new(P, deriv);
-
-  return GSL_SUCCESS;
-}
-
-
-
-
-
-
-int stls_fdf_new (const gsl_vector* x, void* params, gsl_vector* f, 
-	      gsl_matrix* deriv)
-{
-  stls_opt_data *P = params;
-
-  compute_bxext(x, P);
-  cholbrg(P);
-
-  compute_reshaped_f(P->brg_yr, x, P);
-  compute_reshaped_c_minus_1_2_f(P->brg_yr, 1, P);
-
-  gsl_vector_memcpy(f, P->brg_yr);
-
-  compute_reshaped_c_minus_1_2_f(P->brg_yr, 0, P);
-  
-  jacobian_new(P, deriv);
-
-  return GSL_SUCCESS;
-}
-
-
-
-
 /* ---- Auxiliary functions ---- */
 
 /* 
@@ -310,7 +207,7 @@ int stls_fdf_new (const gsl_vector* x, void* params, gsl_vector* f,
 
 
 
-void xmat2bxext( gsl_matrix_const_view x_mat, gsl_matrix *bx_ext )
+void xmat2_block_of_xext( gsl_matrix_const_view x_mat, gsl_matrix *bx_ext )
 {
   gsl_vector_view diag;
   gsl_matrix_view submat;
@@ -349,7 +246,7 @@ void xmat2bxext( gsl_matrix_const_view x_mat, gsl_matrix *bx_ext )
 *    params.brg_rb     - Cholesky factor in a packed form
 */
 
-void cholbrg( stls_opt_data* P )
+void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* P )
 {
   int k, info;
   gsl_matrix_view submat;
@@ -424,7 +321,7 @@ void cholbrg( stls_opt_data* P )
 
 
 
-void jacobian_new( stls_opt_data* P, gsl_matrix* deriv )
+void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
 {
   int i, j, l, k, info;
   const int zero = 0, one = 1;
@@ -563,3 +460,88 @@ void jacobian_new( stls_opt_data* P, gsl_matrix* deriv )
 }
 
 
+
+/* 
+*  STLS_F_: STLS cost function evaluation for QN 
+*
+*  x      - row-wise vectorized matrix X
+*  params - parameters for the optimization
+*/
+
+double stls_f_reshaped_ (const gsl_vector* x, void* params)
+{
+  stls_opt_data_reshaped *P = params;
+
+  double ftf;
+
+  /* Use yr as a temporary variable */
+  stls_f_reshaped(x, P, P->brg_yr);
+  gsl_blas_ddot(P->brg_yr, P->brg_yr, &ftf);
+
+  return ftf;
+}
+
+
+
+
+int stls_f_reshaped (const gsl_vector* x, void* params, gsl_vector* f)
+{
+  stls_opt_data_reshaped *P = params;
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+
+  
+  xmat2_block_of_xext( x_mat, P->bx_ext );
+  cholesky_of_block_of_reshaped_gamma(P);
+  
+  compute_reshaped_f(P->brg_f, x_mat, P);
+  compute_reshaped_c_minus_1_2_f(P->brg_f, 1, P);
+  gsl_vector_memcpy(f, P->brg_f);
+
+  return GSL_SUCCESS;
+}
+
+
+
+
+
+int stls_df_reshaped (const gsl_vector* x, void* params, gsl_matrix* deriv)
+{
+  stls_opt_data_reshaped *P = params;
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+
+  xmat2_block_of_xext(x_mat, P->bx_ext);
+  cholesky_of_block_of_reshaped_gamma(P);
+  compute_reshaped_f(P->brg_yr, x_mat, P);
+  compute_reshaped_c_minus_1_f(P->brg_yr, P);
+
+  jacobian_reshaped(P, deriv);
+
+  return GSL_SUCCESS;
+}
+
+
+
+
+
+
+int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f, 
+	      gsl_matrix* deriv)
+{
+  stls_opt_data_reshaped *P = params;
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+
+
+  xmat2_block_of_xext( x_mat, P->bx_ext );
+  cholesky_of_block_of_reshaped_gamma(P);
+
+  compute_reshaped_f(P->brg_yr, x_mat, P);
+  compute_reshaped_c_minus_1_2_f(P->brg_yr, 1, P);
+
+  gsl_vector_memcpy(f, P->brg_yr);
+
+  compute_reshaped_c_minus_1_2_f(P->brg_yr, 0, P);
+  
+  jacobian_reshaped(P, deriv);
+
+  return GSL_SUCCESS;
+}

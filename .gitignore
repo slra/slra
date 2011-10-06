@@ -13,5 +13,7 @@ rstls/src/SLICOT/*
 # Ignore test results
 res_*.txt
 test_c/test
+test_c/gmot.out
+test_m/octave-core
 
 

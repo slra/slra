@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
     printf("---------------------------------------------------\n\n"); 
     
     
-    printf("sizeof(stls_opt_data) = %d, %d, %d\n", sizeof(stls_opt_data), sizeof(int), sizeof(void*));
+
   }
 
   return(0);
