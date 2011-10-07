@@ -35,11 +35,11 @@ R:
 testc : test.o stls.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
 	/home/kdu/src/lapack-3.2.1/lapack_LINUX.a \
-	 /home/kdu/src/gsl-1.15/.libs/libgsl.a \
-	 /home/kdu/src/gsl-1.15/cblas/.libs/libgslcblas.a \
-	 /home/kdu/src/CBLAS/lib/cblas_LINUX.a  \
- 	 /home/kdu/src/lapack-3.2.1/blas_LINUX.a \
-	 -lgfortran -lm -lgfortran 
+	/home/kdu/src/gsl-1.15/.libs/libgsl.a \
+	/home/kdu/src/gsl-1.15/cblas/.libs/libgslcblas.a \
+	/home/kdu/src/CBLAS/lib/cblas_LINUX.a  \
+	/home/kdu/src/lapack-3.2.1/blas_LINUX.a \
+	-lgfortran -lm -lgfortran 
 
 #testc : test.o stls.a SLICOT.a
 #	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
