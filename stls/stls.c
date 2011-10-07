@@ -77,8 +77,8 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
   
   //allocate_and_prepare_data_old(a, b, s, P);
 
-  allocate_and_prepare_data_reshaped(a, b, s, &params);
-  //allocate_and_prepare_data_old(a, b, s, &params);
+  allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
+  //allocate_and_prepare_data_old(a, b, s, opt,  &params);
 
 
   /* vectorize x row-wise */
@@ -272,13 +272,14 @@ int stls(gsl_matrix* a, gsl_matrix* b, const data_struct* s,
 *
 * tt - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].
 * s - number of blocks in t, t = [t_0 ... t_s-1]
-* s_1 = s - 1;  m = (int) v->size1 / t->size1
+* s_1 = s - 1;  m = (int) v->size1 / tt->size1
 * p - result
 */ 
 void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m, 
 	      gsl_vector* p)
 {
   int i, imax, temp, s_1 = s - 1;
+  int row_lim = GSL_MIN(s_1, m/2);
   gsl_vector_view subv, subp; 	/* subvector of v and p */
 
   int TM = tt->size1; 		/* = block size */
@@ -289,13 +290,13 @@ void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m,
   /* form tt */
 
 
-
+/*  PRINTF("s = %d, m = %d, row_lim = %d", s, m, row_lim);*/
   /* construct p = T*v */
   gsl_vector_set_zero(p);
 
   /* beginning and end parts of the product p */
-  for (i = 0; i < s_1; i++) {
-    temp = (s+i)*TM;
+  for (i = 0; i < row_lim; i++) {
+    temp = GSL_MIN(s+i, m)*TM;
     /* beginning part */
     subp = gsl_vector_subvector(p, i*TM, TM);
     subv = gsl_vector_subvector(v, 0, temp);
@@ -306,7 +307,7 @@ void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m,
     /* last part */
     subp = gsl_vector_subvector(p, p->size - (i+1)*TM, TM);
     subv = gsl_vector_subvector(v, v->size - temp, temp);
-    submat = gsl_matrix_submatrix(tt, 0, 0, TM, temp);    
+    submat = gsl_matrix_submatrix(tt, 0, (s+i)*TM -temp, TM, temp);    
     gsl_blas_dgemv(CblasNoTrans, 1.0, &submat.matrix, 
 		   &subv.vector, 0.0, &subp.vector);
   }
@@ -375,28 +376,34 @@ void tmv_prod(gsl_matrix* t, int s, gsl_vector* v, int m,
 
 
 
+ /* find n_d = n+d = sum_{l=1}^q n_l and w->s */
+int get_bandwidth_from_structure( const data_struct* s ) {
+  int l, max_nl = 1;
+
+  for (l = 0; l < s->q; l++) {
+    if ((s->a[l].type == 'T' || s->a[l].type == 'H')) {
+      max_nl = mymax(s->a[l].ncol / s->a[l].nb, max_nl);
+    }
+  }
+  
+  return max_nl;
+}
+
+
 
 
 /* s2w: finds the covariance matrices w from the data structure */
-
-#define NL  (s->a[l].ncol) 	/* # col. in C^l */
-#define NBL (s->a[l].nb) 	/* # col. in a repeated block of C^l */
-
-int s2w(const data_struct* s, w_data* w, int blocked )
+int s2w(const data_struct* s, w_data* w, int n_d, int blocked )
 {
-  int n_d, k, l, i, offset, imax, sum_nl;
+  int k, l, i, offset, imax, sum_nl;
   gsl_matrix *zk;
   gsl_matrix_view wi, zkl;
   char err_msg[70];
   int rep;
   int size_wk;
   
-  /* find n_d = n+d = sum_{l=1}^q n_l and w->s */
-  for (n_d = l = 0, w->s = 1; l < s->q; l++) {
-    n_d = n_d + NL;
-    if ((s->a[l].type == 'T' || s->a[l].type == 'H') && NL/NBL > w->s)
-      w->s = NL/NBL;
-  }
+ 
+  w->s = get_bandwidth_from_structure(s);
   
   if (blocked) {
     rep = s->k;
@@ -412,11 +419,11 @@ int s2w(const data_struct* s, w_data* w, int blocked )
   for (k = 0; k < w->s; k++) { 
     gsl_matrix_set_zero(zk);
     for (l = sum_nl = 0; l < s->q; sum_nl += s->a[l++].ncol) { 
-      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, NL, NL); 
+      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, s->a[l].ncol, s->a[l].ncol); 
       switch (s->a[l].type) {
       case 'T': case 'H':
-	offset = NBL*k;
-	imax   = NL - offset;
+	offset = s->a[l].nb * k;
+	imax   = s->a[l].ncol  - offset;
 	for (i = 0; i < imax; i++)
 	  if (s->a[l].type == 'H')
 	    gsl_matrix_set(&zkl.matrix, i+offset, i, 1);

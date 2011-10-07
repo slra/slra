@@ -24,8 +24,6 @@ y  = y0 + 0.01 * randn(p,m,T);
 
 h0 = blkhankel(y0, 3);
 
-svd(h0);
-svd(h);
 
 
 h = blkhankel(y, 3);
@@ -39,4 +37,7 @@ a0 = h0(:,1:n);
 b0 = h0(:,(n+1):(3*p));
 
 plot([reshape(y0(1,1,:),50,1) reshape(y(1,1,:),50,1)]);
+
+svd(h0)
+svd(h)
 

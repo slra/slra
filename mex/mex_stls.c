@@ -17,6 +17,7 @@ X0   - initial approximation (default TLS).
 OPT  - optimization parameters, structure with fields: 
   OPT.MAXITER - maximum number of iterations, 
   OPT.EPSREL, OPT.EPSABS, OPT.EPSGRAD - convergence tolerances, and 
+  OPT.REGGAMMA - regularization parameter for gamma, absolute (to be changed)
   OPT.DISP - level of display ['notify','final','iter',off] (default 'notify').
 Exit condition: # iterations >= MAXITER, |xi(k+1)-xi(k)| < EPSABS + EPSREL*|xi(k+1)|
 for all i, where x(k) is the approximation on the i-th step, or ||f'|| < EPSGRAD, 
@@ -55,17 +56,13 @@ Author: Ivan Markovsky, Last modified: November 2004.
 #include "mex.h"
 
 /* default constants for the exit condition */
-#define EPSABS 0
-#define EPSREL 1e-6
-#define EPSGRAD 1e-6
-#define MAXITER 100
-#define DISP 3
 
 /* field names for opt */
 #define EPSABS_STR "epsabs"
 #define EPSREL_STR "epsrel"
 #define EPSGRAD_STR "epsgrad"
 #define MAXITER_STR "maxiter"
+#define REGGAMMA_STR "reggamma"
 #define DISP_STR "disp"
 #define STR_MAX_LEN 25
 
@@ -89,6 +86,35 @@ void gsl_to_m_matrix( double*, gsl_matrix* );
 
 
 
+#define DEF_disp 3 
+#define DEF_epsabs 0
+#define DEF_epsrel 1e-6
+#define DEF_epsgrad 1e-6
+#define DEF_maxiter 100
+#define DEF_reggamma 0.00001
+
+
+
+#define IfCheckAndStoreFieldBoundL(name, lvalue)   \
+          if (! strcmp(field_name, #name)) {  \
+            opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); \
+            if (opt.name < lvalue) { \
+              opt.name = DEF_##name; \
+              mexWarnMsgTxt("Ignoring optimization option '"#name"' because '"#name"' < "#lvalue"."); \
+            } \
+          }
+                
+#define IfCheckAndStoreFieldBoundLU(name, lvalue, uvalue)   \
+          if (! strcmp(field_name, #name)) {  \
+            opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); \
+            if (opt.name < lvalue || opt.name > uvalue) { \
+              opt.name = DEF_##name; \
+              mexWarnMsgTxt("Ignoring optimization option '"#name"' because '"#name"' < "#lvalue" or '"#name"' > "#uvalue"."); \
+            } \
+          }
+
+
+
 
 void mexFunction( int nlhs, mxArray *plhs[], 
 		  int nrhs, const mxArray *prhs[] )
@@ -98,9 +124,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
   opt_and_info opt;
   char str_buf[STR_MAX_LEN];
   char str_codes[] = " THUE";
+  char *str_disp[] = {"",  "notify", "final", "iter", "off" };
+  
 
   double *s_m;
-  int l; 
+  int l, i; 
   size_t m, n, d;
   char err_msg[100];
 
@@ -192,16 +220,16 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
   
 
-    PRINTF("X\n");
-    print_mat(x);
+  /*  PRINTF("X\n");
+    print_mat(x);*/
 
   /* optimization options prhs[4] */
   /* default options */
-  opt.maxiter = MAXITER;
-  opt.epsrel  = EPSREL;
-  opt.epsabs  = EPSABS;
-  opt.epsgrad = EPSGRAD;
-  opt.disp    = DISP;
+  opt.maxiter = DEF_maxiter;
+  opt.epsrel  = DEF_epsrel;
+  opt.epsabs  = DEF_epsabs;
+  opt.epsgrad = DEF_epsgrad;
+  opt.disp    = DEF_disp;
   /* user supplied options */
   if (nrhs == 5) {
     if (! mxIsStruct(prhs[4]))
@@ -217,44 +245,25 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	for (c = field_name; *c != '\0'; c++)
 	  *c = tolower(*c);
 	/* which option */
- 	if (! strcmp(field_name, MAXITER_STR)) {
- 	  opt.maxiter = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l));
-	  if (opt.maxiter < 1) {
-	    opt.maxiter = MAXITER;
-	    mexWarnMsgTxt("Ignoring optimization option 'maxiter' because 'maxiter' < 1.");
-	  }
- 	} else if (! strcmp(field_name, EPSREL_STR)) {
- 	  opt.epsrel = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); 
-	  if (opt.epsrel < 0 || opt.epsrel > 1) {
-	     opt.epsrel = EPSREL;
-	     mexWarnMsgTxt("Ignoring optimization option 'epsrel' because 'epsrel' < 0 or 'epsrel' > 1.");
-	  }	  
- 	} else if (! strcmp(field_name, EPSABS_STR)) {
- 	  opt.epsabs = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); 
-	  if (opt.epsabs < 0 || opt.epsabs > 1) {
-	     opt.epsabs = EPSABS;
-	     mexWarnMsgTxt("Ignoring optimization option 'epsabs' because 'epsabs' < 0 or 'epsabs' > 1.");
-	  }	  
- 	} else if (! strcmp(field_name, EPSGRAD_STR)) {
- 	  opt.epsgrad = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); 
-	  if (opt.epsgrad < 0 || opt.epsgrad > 1) {
-	     opt.epsabs = EPSGRAD;
-	     mexWarnMsgTxt("Ignoring optimization option 'epsgrad' because 'epsgrad' < 0 or 'epsgrad' > 1.");
-	  }	  
- 	} else if (! strcmp(field_name, DISP_STR)) {
+	IfCheckAndStoreFieldBoundL(maxiter, 1) 
+        else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
+	else IfCheckAndStoreFieldBoundL(reggamma, 0) 
+        else if (! strcmp(field_name, DISP_STR)) {
  	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, STR_MAX_LEN); 
 	  /* lowercase str_buf */
-	  for (c = str_buf; *c != '\0'; c++)
+	  for (c = str_buf; *c != '\0'; c++) {
 	    *c = tolower(*c);
-	  if (! strcmp(str_buf, NOTIFY_STR)) {
-	    opt.disp = 1;
-	  } else if (! strcmp(str_buf, FINAL_STR)) {
-	    opt.disp = 2;
-	  } else if (! strcmp(str_buf, ITER_STR)) { 
-	    opt.disp = 3;
-	  } else if (! strcmp(str_buf, OFF_STR)) {
-	    opt.disp = 4;
-	  } else {  
+	  }
+	    
+	  for (i = sizeof(str_disp)/sizeof(str_disp[0]) - 1; i > 0; i--)  {
+	    if (!strcmp(str_buf, str_disp[i])) {
+	      opt.disp = i;
+	      break;
+	    }
+	  }
+	  if (i == 0) {
 	    mexWarnMsgTxt("Ignoring optimization option 'disp'. Unrecognized value.");
 	  }
  	} else { 

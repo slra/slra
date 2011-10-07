@@ -13,8 +13,8 @@
 
 
 
-void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_old *P ) {
-  PREPARE_COMMON_PARAMS(a, b, s, P,1); 
+void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, stls_opt_data_old *P ) {
+  PREPARE_COMMON_PARAMS(a, b, s, opt, P,1); 
   
   /* Preallocate memory for f and df */
   P->x_ext = gsl_matrix_calloc(P->w.a[0]->size1, P->k_times_d);

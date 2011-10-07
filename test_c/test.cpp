@@ -11,13 +11,13 @@
 #include "stls.h"
 
 /* default constants for the exit condition */
-#define MAXITER 2000
+#define MAXITER 600
 #define EPSABS  0
 #define EPSREL  1e-5
 #define EPSGRAD 1e-5
 #define DISP    3     /* per iteration */
 
-#define TEST_NUM 6
+#define TEST_NUM 7
 
 #define MAX_FN_LEN  60
 

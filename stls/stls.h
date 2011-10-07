@@ -30,7 +30,6 @@
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
 
 /* size of the work array for mb02gd */
-#define LDWORK 1000
 #define EITER 1 /* maximum number of iterations reached */
 
 #ifdef __cplusplus
@@ -43,6 +42,8 @@ typedef struct {
   /* input options */
   int maxiter, disp; /* displayed information: 1 - notify, 2 - final, 3 - iter, 4 - off */
   double epsrel, epsabs, epsgrad;
+  
+  double reggamma; /* To be worked out */
   /* output information */
   int iter;
   double fmin;
@@ -77,6 +78,7 @@ typedef struct {
 #define COMMON_PARAMS  \
     gsl_matrix* a; \
 	  gsl_matrix* b; \
+	  double reggamma; \
 	  w_data w; \
 	  int k;  \
 	  int  n_plus_d, 		/* = col_dim(C) */ \
@@ -90,14 +92,15 @@ typedef struct {
     int one; /* One for blas routines */ 
 
 
-#define PREPARE_COMMON_PARAMS(A, B, S, PP, isblock) \
+#define PREPARE_COMMON_PARAMS(A, B, S, OPT, PP, isblock) \
   do {\
    int m = A->size1, n = A->size2, d = B->size2;		\
   /* set other parameters */\
   PP->a = A;\
   PP->b = B;\
-  /* find Wk */ \
-  s2w(S, &PP->w, isblock);\
+  PP->reggamma = OPT->reggamma; \
+  /* find Wk  */ \
+  s2w(S, &PP->w, n+d, isblock);\
   PP->k = S->k;  \
   PP->n_plus_d = n + d;   \
   PP->n_times_d = n * d;   \
@@ -185,7 +188,10 @@ int stls(gsl_matrix*, gsl_matrix*, const data_struct*,
 
 
 void print_state (int, gsl_multifit_fdfsolver*);
-int s2w(const data_struct*, w_data*, int);
+
+int get_bandwidth_from_structure(const data_struct*);
+
+int s2w(const data_struct*, w_data*, int,  int);
 void print_mat(const gsl_matrix*);
 void print_mat_tr(const gsl_matrix*);
 void print_arr(double*, int);
@@ -206,7 +212,7 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *);
 
 
-void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_reshaped *P );
+void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, stls_opt_data_reshaped *P );
 void free_memory_reshaped( stls_opt_data_reshaped *P );
 
 double stls_f_reshaped_ (const gsl_vector*, void*);
@@ -223,7 +229,7 @@ void jacobian_reshaped( stls_opt_data_reshaped*,  gsl_matrix*);
 
 
 /* Old functions */
-void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_old *P );
+void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, stls_opt_data_old *P );
 void free_memory_old( stls_opt_data_old *P );
 
 

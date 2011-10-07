@@ -4,4 +4,6 @@
 4 block hankel matrix
 5 Deconvolution problem
 6 16 sines, N = 2000, slow convergence
+7 Block hankel matrix
+8 Big example
 

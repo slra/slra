@@ -3,10 +3,10 @@ load test-blkhank.mat
 addpath support
 
 opt.maxiter = 600;
-opt.epsrel  = 1e-6; 
+opt.epsrel  = 1e-5; 
 opt.epsabs  = 0; 
-opt.epsgrad = 1e-6; 
-opt.disp    = 'disp';
+opt.epsgrad = 1e-5; 
+opt.disp    = 'iter';
 opt.maxiter = 50;
 
 
@@ -53,7 +53,7 @@ endfunction
 
 
 [p, m, T] = size(y);
-y = y0 + 0.01 * randn(p, m, T);
+y = y0 + 0.05 * randn(p, m, T);
 h = blkhankel(y, 3);
 
 
@@ -91,24 +91,31 @@ infoh
 
 
 
-rk = 6;
-L = 4;
+rk = 55;
+L = 19;
+%L = 14;
+%rk = 38;
 
 g = blkhankel(y, L);
-g0 = blkhankel(y0, L);
+%g0 = blkhankel(y0, L);
 
 ag = g(1:rk,:)';
 bg = g((rk+1):(L*3),:)';
-ag0 = g0(1:rk,:)';
-bg0 = g0((rk+1):(L*3),:)';
+%ag0 = g0(1:rk,:)';
+%bg0 = g0((rk+1):(L*3),:)';
 
 sg.k = 2;
 sg.q = 1;
 sg.a = [2 (L*3) 3];
 
-%[zh, info, v] =  stls(ag,bg,sg);
-%[zh0, info, v] =  stls(ag0,bg0,sg);
+opt.disp    = 'iter';
+opt.maxiter = 400;
 
+
+
+[zh, infog, v] =  stls(ag,bg,sg, [], opt);
+%[zh0, info, v] =  stls(ag0,bg0,sg, [], opt);
+%infog
 %zh0
 %zh
 

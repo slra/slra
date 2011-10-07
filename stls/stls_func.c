@@ -7,8 +7,8 @@
 
 #include "stls.h"
 
-void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, stls_opt_data_reshaped *P ) {
-  PREPARE_COMMON_PARAMS(a, b, s, P, 1); 
+void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, stls_opt_data_reshaped *P ) {
+  PREPARE_COMMON_PARAMS(a, b, s, opt, P, 1); 
   
   P->m = a->size1;
   P->n = a->size2;
@@ -253,23 +253,7 @@ void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* P )
   gsl_matrix_view  b_w_k; 
   gsl_matrix *bx_ext = P->bx_ext;
 
-
-/*  printf("cholbrg: %p\n", P);*/
-
-
   const int zero = 0;
-  /* MB02GD has very bad description of parameters */
-
-
-  /* Take block of x_ext - b_x_ext = x_ext(1:(n+d),1:d) */
-  
-/*  gsl_matrix_view b_x_ext;
-  b_x_ext =  gsl_matrix_submatrix(P->x_ext, 0, 0, P->n_plus_d, D);
-  bx_ext = &b_x_ext.matrix; */
-  
-  
-/*  PRINTF("x_ext_b:");
-  print_mat(bx_ext);*/
   
   
 
@@ -287,10 +271,6 @@ void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* P )
 
   gsl_matrix_vectorize(P->brg_gamma_vec, P->brg_gamma);
 
-/*  PRINTF("%p %p %p", P->brg_rb, P->brg_dwork, P->brg_gamma_vec);*/
-
-  
-/*  PRINTF("cholgam: PDW = %d, LDWORK = %d, 3K = %d\n, s-1 = %d", 1 + (P->s_minus_1 + 1)* P->k_times_d * P->k_times_d, ldwork, 3 * P->k_times_d, P->s_minus_1 );*/
   /* Cholesky factorization of Gamma */
   mb02gd_("R", "N",
     &P->d,   /* block size */
@@ -308,6 +288,10 @@ void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* P )
 
 
   /* check for errors of mb02gd */
+  if (info == 1) {
+  }
+  
+  
   if (info) { 
     PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
   }
@@ -388,6 +372,8 @@ void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
   /* second term (naive implementation) */
   res_vec = gsl_vector_view_array(P->brg_jres2, P->m_times_d);
 
+
+
   gsl_matrix *bx_ext = P->bx_ext;
   for (i = 0; i < N; i++) {
     for (j = 0; j < D; j++) {
@@ -422,18 +408,25 @@ void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
         gsl_matrix_transpose_memcpy(&submat.matrix, &source.matrix);
       }
        
+
        
       /* compute st_ij = DGamma * yr */
       subvec = gsl_matrix_column(P->brg_st, i*D+j);
+
+
         
       for (l = 0; l < P->k; l++) { 
         gsl_vector_view subvec_res = gsl_vector_subvector(&res_vec.vector, l * P->d_times_m_div_k, P->d_times_m_div_k);
         gsl_vector_view subvec_yr = gsl_vector_subvector(P->brg_yr, l * P->d_times_m_div_k, P->d_times_m_div_k);
-        
+
         
         tmv_prod_new(P->brg_tdgamma, S, &subvec_yr.vector, P->m_div_k, &subvec_res.vector);  
         
       }
+      
+/*      PRINTF("hello4\n");*/
+
+
         /* solve st_ij = Gamma^{-1/2}st_ij */
         dtbtrs_("U", "T", "N", 
             &P->d_times_m_div_k, 
@@ -474,6 +467,7 @@ double stls_f_reshaped_ (const gsl_vector* x, void* params)
 
   double ftf;
 
+
   /* Use yr as a temporary variable */
   stls_f_reshaped(x, P, P->brg_yr);
   gsl_blas_ddot(P->brg_yr, P->brg_yr, &ftf);
@@ -488,6 +482,8 @@ int stls_f_reshaped (const gsl_vector* x, void* params, gsl_vector* f)
 {
   stls_opt_data_reshaped *P = params;
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+
+
 
   
   xmat2_block_of_xext( x_mat, P->bx_ext );
@@ -531,6 +527,8 @@ int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f,
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
 
 
+/*  PRINTF("test");*/
+
   xmat2_block_of_xext( x_mat, P->bx_ext );
   cholesky_of_block_of_reshaped_gamma(P);
 
@@ -541,6 +539,7 @@ int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f,
 
   compute_reshaped_c_minus_1_2_f(P->brg_yr, 0, P);
   
+/*    PRINTF("test2"); */
   jacobian_reshaped(P, deriv);
 
   return GSL_SUCCESS;
