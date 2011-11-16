@@ -482,7 +482,7 @@ int tls(gsl_matrix* a, gsl_matrix* b, gsl_matrix* x)
   }
   
   /* c = [a b] in FORTRAN format */
-  c = malloc( m * (n+l) * sizeof(double));
+  c = malloc( ldc * (n+l) * sizeof(double));
   gsl_matrix_vectorize(c, a);
   gsl_matrix_vectorize(c + m*n, b);
 

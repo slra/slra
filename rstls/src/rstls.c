@@ -5,6 +5,7 @@
 #include <Rdefines.h>
 #include <R_ext/Utils.h>
 #include <R_ext/Print.h>
+#include <R_ext/PrtUtil.h>
 #include <R_ext/BLAS.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
@@ -94,8 +95,8 @@ SEXP rstls(SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS) {
   char *str_disp_value = "";
   opt.disp = 3;
 
-  if (isSymbol(str_disp_value_sexp = getListElement(OPTS, "disp"))) {
-    str_disp_value = CHAR(str_disp_value_sexp); 
+  if (TYPEOF((str_disp_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
+    str_disp_value = CHAR(STRING_ELT(str_disp_value_sexp, 0));
 
     for (int i = 1; i < sizeof(str_disp) / sizeof(str_disp[0]); i++) {
       if (strcmp(str_disp[i], str_disp_value) != 0) {
@@ -104,6 +105,7 @@ SEXP rstls(SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS) {
       }
     }
   }
+ 
  
   stls(a, b, &s, x, v, &opt); 
 
