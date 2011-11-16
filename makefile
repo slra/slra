@@ -38,8 +38,9 @@ R:
 	cp $(STLS_SRC_FILES) rstls/src/stls
 	R CMD check rstls
 	R CMD build rstls
-	R CMD INSTALL stls
-	
+	R CMD INSTALL rstls
+
+
 testc : test.o stls.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
 	/home/kdu/local/lib/liblapack.a \
