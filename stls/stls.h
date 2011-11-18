@@ -45,6 +45,7 @@ typedef struct {
   
   double reggamma; /* To be worked out */
   /* output information */
+  int corr; /* 1 - compute correction, 0 - don't */
   int iter;
   double fmin;
   double time;
@@ -53,6 +54,8 @@ typedef struct {
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
 typedef struct {
+  /* Parameters given by the user */
+  int m;        /* number of rows */               
   int k;	/* = rowdim(block in T/H blocks) */ 
   int q;	/* number of blocks in C = [C1 ... Cq] */
   struct {
@@ -61,6 +64,7 @@ typedef struct {
     int ncol;	/* number of columns */
     int nb;     /* number of columns in a block of T/H blocks */
   } a[MAXQ];	/* q-element array describing C1,...,Cq; */
+  
 } data_struct;
 
 /* three dimensional array of covariances w */
@@ -77,11 +81,11 @@ typedef struct {
 
 #define COMMON_PARAMS  \
     gsl_matrix* a; \
-	  gsl_matrix* b; \
-	  double reggamma; \
-	  w_data w; \
-	  int k;  \
-	  int  n_plus_d, 		/* = col_dim(C) */ \
+    gsl_matrix* b; \
+    double reggamma; \
+    w_data w; \
+    int k;  \
+    int  n_plus_d, 		/* = col_dim(C) */ \
     n_times_d,			/* = number of elements in x */ \
     k_times_d,			/* = row_dim(gamma) */ \
     k_times_d_times_s,		/* = col_dim(gamma) */ \
@@ -181,8 +185,13 @@ typedef struct {
 /* Prototypes of functions */
 
 
-int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
-	 gsl_matrix*, gsl_matrix*, opt_and_info* );
+int stls(gsl_matrix*, gsl_matrix*, data_struct*, 
+	 gsl_matrix*, gsl_matrix*, opt_and_info*, gsl_vector * );
+	 
+
+int check_and_adjust_parameters( data_struct *s, int *n_plus_d, int *np );
+int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p);
+int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const gsl_vector* x);
 
 
 

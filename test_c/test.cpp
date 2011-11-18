@@ -40,7 +40,7 @@ int read_mat( gsl_matrix *a,  char * filename, FILE * log ) {
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &diff, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
   char str_codes[] = " THUE";
-  data_struct s = {1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
+  data_struct s = {9599, 1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
   opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0, 0.0, 0.0};
   int i, j, m = 9599, n = 12, d = 4, tmp;
   char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN];
@@ -113,7 +113,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
 
     /* call stls */  
-    stls(a, b, &s, x, v, &opt);
+    stls(a, b, &s, x, v, &opt, NULL);
 
     if (!silent) {
       print_mat(x);
