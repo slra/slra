@@ -47,7 +47,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
       return GSL_EINVAL;
     }
     
-    if (check_and_adjust_parameters(s, &np, &n_plus_d) != GSL_SUCCESS) {
+    if (check_and_adjust_parameters(s, &n_plus_d, &np) != GSL_SUCCESS) {
       PRINTF("Error in structure specification: incorrect number of columns/rows in a block.\n");   
       return GSL_EINVAL;
     }
@@ -59,7 +59,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
 
     
     if (np != p->size) {
-      PRINTF("Error in structure specification: incorrect length of the parameter vector.\n");
+      PRINTF("Incorrect length of the parameter vector: np = %d, p->size = %d.\n", np, p->size);
       return GSL_EINVAL;
     }
   
@@ -85,7 +85,6 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     gsl_matrix_sub(&c_sub_a.matrix, a);
     gsl_matrix_sub(&c_sub_b.matrix, b);
     
-    PRINTF("a and b don't coincide with a and b computed from p\n");
     double minc, maxc;
     
     gsl_matrix_minmax(c, &minc,&maxc);

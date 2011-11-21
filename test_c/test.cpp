@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <gsl/gsl_blas.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
@@ -36,23 +37,44 @@ int read_mat( gsl_matrix *a,  char * filename, FILE * log ) {
 }
 
 
+int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
+  FILE * file;
+  file = fopen(filename,"r");
+  if (file == NULL ) {
+    fprintf(log, "Error opening file %s\n", filename);
 
-void run_test( FILE * log, char * testname, double & time, double & fmin, double &diff, bool silent = false ) {
+    return 0;
+  }
+  gsl_vector_fscanf(file,a);
+  fclose(file);
+
+  return 1;
+}
+
+
+
+void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
+  gsl_vector *p = NULL, * p2 = NULL;
+  
   char str_codes[] = " THUE";
   data_struct s = {9599, 1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
-  opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0, 0.0, 0.0};
-  int i, j, m = 9599, n = 12, d = 4, tmp;
-  char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN];
+  opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0.01, 1, 0, 0.0, 0.0};
+  int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
+  char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
+       fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN],
+       fpresname[MAX_FN_LEN];
   FILE *file;
 
   /* default file names */
   sprintf(faname,"a%s.txt",testname);
   sprintf(fbname,"b%s.txt",testname);
   sprintf(fxname,"x%s.txt",testname);
+  sprintf(fpname,"p%s.txt",testname);
   sprintf(fxtname,"xt%s.txt",testname);
   sprintf(fsname,"s%s.txt",testname);
   sprintf(fxresname,"res_x%s.txt",testname);
+  sprintf(fpresname,"res_p%s.txt",testname);
 
   try {
     if (!silent) {
@@ -65,7 +87,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       fprintf(log, "Error opening file %s\n", fsname);
       throw 1;
     }
-    fscanf(file, "%d %d %d %d %d", &m, &n, &d, &s.k, &s.q); 
+    fscanf(file, "%d %d %d %d %d %d", &s.m, &n, &d, &s.k, &s.q, &np); 
+    m = s.m;
     if ((s.k <= 0) || (m % s.k != 0)) {
       fprintf(log, "Bad k: %d \n", s.k);
     }
@@ -96,8 +119,26 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (!read_mat(x, fxname, log)) {
        tls(a,b,x);
     }
+
+
+    if (((p = gsl_vector_alloc(np)) == NULL)) { 
+      throw 1;
+    }
+
+    if (((p2 = gsl_vector_alloc(np)) == NULL)) { 
+      throw 1;
+    }
+
     
-    print_mat(x);
+    if (!read_vec(p, fpname, log)) {
+      gsl_vector_free(p);
+      p = NULL;
+    }
+    
+    gsl_vector_memcpy(p2,p);
+
+    
+//    print_mat(x);
 
     if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
@@ -112,12 +153,25 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       opt.disp = 0;
     }
 
+
+    
+
     /* call stls */  
-    stls(a, b, &s, x, v, &opt, NULL);
+    stls(a, b, &s, x, v, &opt, p);
 
     if (!silent) {
       print_mat(x);
     }
+
+
+    file = fopen(fpresname,"w");
+    gsl_vector_fprintf(file, p, "%.10f");
+    fclose(file);
+
+
+    gsl_vector_sub(p, p2);
+    double dp_norm = gsl_blas_dnrm2(p);
+    
   
 
     file = fopen(fxresname,"w");
@@ -141,7 +195,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     time = opt.time;
     fmin = opt.fmin;
-    
+    iter = opt.iter;
+    fmin2 = dp_norm * dp_norm;
     
 
     
@@ -164,6 +219,12 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (v != NULL) {
       gsl_matrix_free(v);
     }
+    if (p != NULL) {
+      gsl_vector_free(p);
+    }
+    if (p2 != NULL) {
+      gsl_vector_free(p2);
+    }
   }
 }
 
@@ -172,18 +233,19 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 
 int main(int argc, char *argv[])
 {
-  double times[TEST_NUM+1], misfits[TEST_NUM+1],  diffs[TEST_NUM+1];
+  double times[TEST_NUM+1], misfits[TEST_NUM+1], misfits2[TEST_NUM+1],  diffs[TEST_NUM+1];
+  int iters[TEST_NUM+1];
   char num[10];
   int  i;
 
   if (argc == 2) {
-    run_test(stdout, argv[1], times[0], misfits[0], diffs[0]);
+    run_test(stdout, argv[1], times[0], misfits[0], misfits2[0], iters[0], diffs[0]);
   } else { /* test all examples */
     printf("\n------------------ Testing all examples  ------------------\n\n");
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
-      run_test(stdout, num, times[i], misfits[i], diffs[i]);
+      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], true);
 
   /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  
@@ -196,14 +258,14 @@ int main(int argc, char *argv[])
 
     }
 
-    printf("\n------------ Results summary -----------\n\n");
-    printf("---------------------------------------------------\n");
-    printf("|  # |       Time |     Minimum |            Diff |\n");
-    printf("---------------------------------------------------\n");
+    printf("\n------------ Results summary --------------------\n\n");
+    printf("------------------------------------------------------------------------\n");
+    printf("|  # |       Time | Iter |     Minimum |   Min(comp) |            Diff |\n");
+    printf("------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
-      printf("| %2d | %10.6f | %11.3f | %1.13f |\n", i, times[i], misfits[i], diffs[i]);
+      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);
     }
-    printf("---------------------------------------------------\n\n"); 
+    printf("------------------------------------------------------------------------\n\n"); 
     
     
 
