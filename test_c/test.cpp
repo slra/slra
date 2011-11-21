@@ -59,8 +59,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   
   char str_codes[] = " THUE";
   data_struct s = {9599, 1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
-  opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0.01, 1, 0, 0.0, 0.0};
+  opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0.01,  0, 0.0, 0.0};
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
+  int x_given;
   char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
        fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN],
        fpresname[MAX_FN_LEN];
@@ -116,9 +117,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
-    if (!read_mat(x, fxname, log)) {
-       tls(a,b,x);
-    }
+    
+    x_given = read_mat(x, fxname, log);
 
 
     if (((p = gsl_vector_alloc(np)) == NULL)) { 
@@ -157,7 +157,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
 
     /* call stls */  
-    stls(a, b, &s, x, v, &opt, p);
+    stls(a, b, &s, x, v, &opt, p, x_given, 1 /* Compute correction */);
 
     if (!silent) {
       print_mat(x);

@@ -45,7 +45,6 @@ typedef struct {
   
   double reggamma; /* To be worked out */
   /* output information */
-  int corr; /* 1 - compute correction, 0 - don't */
   int iter;
   double fmin;
   double time;
@@ -55,7 +54,8 @@ typedef struct {
 #define MAXQ 10	/* maximum number of blocks in C */
 typedef struct {
   /* Parameters given by the user */
-  int m;        /* number of rows */               
+  int m;        /* number of rows */       
+        
   int k;	/* = rowdim(block in T/H blocks) */ 
   int q;	/* number of blocks in C = [C1 ... Cq] */
   struct {
@@ -186,7 +186,7 @@ typedef struct {
 
 
 int stls(gsl_matrix*, gsl_matrix*, data_struct*, 
-	 gsl_matrix*, gsl_matrix*, opt_and_info*, gsl_vector * );
+	 gsl_matrix*, gsl_matrix*, opt_and_info*, gsl_vector *, int, int );
 	 
 
 int check_and_adjust_parameters( data_struct *s, int *n_plus_d, int *np );

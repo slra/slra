@@ -20,12 +20,12 @@
 
 
 int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s, 
-         gsl_matrix* x, gsl_matrix* v, opt_and_info* opt, gsl_vector *p) {
+         gsl_matrix* x, gsl_matrix* v, opt_and_info* opt, gsl_vector *p, int x_given, int compute_ph ) {
   int status;
   char method = 'l';
   int status_dx, status_grad, k;
   double g_norm, x_norm;
-  int m,n,d;
+  int m,n,d ;
   int np, n_plus_d;
   time_t t_b;
   //stls_opt_data_old params;
@@ -38,8 +38,16 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
 
   t_b = clock();
   /* constants */
+  
+  if (check_and_adjust_parameters(s, &n_plus_d, &np) != GSL_SUCCESS) {
+    PRINTF("Error in structure specification: incorrect number of columns/rows in a block.\n");   
+    return GSL_EINVAL;
+  }  
+
+  
   n = x->size1;
   d = x->size2;
+  
   
   if (p != NULL) {
     if (a != NULL && s->m != a->size1) {
@@ -47,10 +55,6 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
       return GSL_EINVAL;
     }
     
-    if (check_and_adjust_parameters(s, &n_plus_d, &np) != GSL_SUCCESS) {
-      PRINTF("Error in structure specification: incorrect number of columns/rows in a block.\n");   
-      return GSL_EINVAL;
-    }
     
     if (n+d != n_plus_d) {
       PRINTF("Error in structure specification: total number of columns.\n");   
@@ -69,7 +73,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     c_sub_b = gsl_matrix_submatrix(c, 0, n, s->m, d);
   } else {
     if (a == NULL) {
-      PRINTF("Both a and p are NULL specified \n");
+      PRINTF("Both a and p are NULL \n");
       return GSL_EINVAL;
     }
   }
@@ -81,21 +85,37 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     b = &c_sub_b.matrix;
   } else {
     m = a->size1;
+
     
-    gsl_matrix_sub(&c_sub_a.matrix, a);
-    gsl_matrix_sub(&c_sub_b.matrix, b);
+    if (p != NULL) {
+      gsl_matrix_sub(&c_sub_a.matrix, a);
+      gsl_matrix_sub(&c_sub_b.matrix, b);
+
+      double minc, maxc;
     
-    double minc, maxc;
-    
-    gsl_matrix_minmax(c, &minc,&maxc);
-    
-    if (minc != 0.0 || maxc != 0.0) {
-      PRINTF("a and b don't coincide with a and b computed from p\n");
+      gsl_matrix_minmax(c, &minc,&maxc);
+      
+      if (minc != 0.0 || maxc != 0.0) {
+        PRINTF("a and b don't coincide with a and b computed from p\n");
+      }
     }
     
-    /* !! Comparison of old parameters and new */
-    
   } 
+  
+  if (!x_given) {
+    PRINTF("X not given, computing TLS initial approximation..\n");
+    
+    /* compute default initial approximation */
+    status = tls(a, b, x);
+    if (status) {
+      PRINTF("Initial approximation can not be computed: MB02MD failed with an error info = %d.\n", status);
+      if (c !=  NULL) {
+        gsl_matrix_free(c);
+      }
+      return GSL_EINVAL;
+    }
+  }
+
 
 
   //allocate_and_prepare_data_old(a, b, s, opt,  &params);
@@ -231,7 +251,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
 
 
   if (p != NULL) {
-    if (opt->corr) {
+    if (compute_ph) {
       stls_correction_reshaped(p, s, &params, &(x_vec.vector));
     }
     gsl_matrix_free(c);
