@@ -151,7 +151,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   has_ab = (!mxIsEmpty(prhs[0])) &&  (!mxIsEmpty(prhs[1]));
   has_p = (nrhs >= 6) && (!mxIsEmpty(prhs[5]));
-  has_x = nrhs >= 4 && !mxIsEmpty(prhs[3]);
+  has_x = (nrhs >= 4) && (!mxIsEmpty(prhs[3]));
 
   if (!(has_ab || has_p)) {
     mexErrMsgTxt("Either (a,b) or (p) should be given.");

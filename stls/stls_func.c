@@ -221,16 +221,16 @@ void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const dat
   P->brg_a =  gsl_matrix_alloc(a->size1, a->size2);
   P->brg_b =  gsl_matrix_alloc(b->size1, b->size2);
   
-  gsl_matrix_view src_a = gsl_matrix_view_array(a->data, P->m_div_k, s->k * P->n);
-  gsl_matrix_view src_b = gsl_matrix_view_array(b->data, P->m_div_k, s->k * P->d);
+  gsl_matrix_view src_a = gsl_matrix_view_array(a->data, P->m_div_k, s->k * a->tda);
+  gsl_matrix_view src_b = gsl_matrix_view_array(b->data, P->m_div_k, s->k * b->tda);
   gsl_matrix_view src_submat, brg_submat;
   int l;
   for (l = 0; l < s->k; l++) {
-    src_submat = gsl_matrix_submatrix(&src_a.matrix, 0, l * P->n, P->m_div_k, P->n);        
+    src_submat = gsl_matrix_submatrix(&src_a.matrix, 0, l * a->tda, P->m_div_k, P->n);        
     brg_submat = gsl_matrix_submatrix(P->brg_a, P->m_div_k * l, 0, P->m_div_k, P->n);
     gsl_matrix_memcpy(&brg_submat.matrix, &src_submat.matrix);
 
-    src_submat = gsl_matrix_submatrix(&src_b.matrix, 0, l * P->d, P->m_div_k, P->d);
+    src_submat = gsl_matrix_submatrix(&src_b.matrix, 0, l * b->tda, P->m_div_k, P->d);
     brg_submat = gsl_matrix_submatrix(P->brg_b, P->m_div_k * l, 0, P->m_div_k, P->d);
     gsl_matrix_memcpy(&brg_submat.matrix, &src_submat.matrix);
   }

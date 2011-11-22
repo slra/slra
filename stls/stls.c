@@ -97,6 +97,8 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
       
       if (minc != 0.0 || maxc != 0.0) {
         PRINTF("a and b don't coincide with a and b computed from p\n");
+      } else {
+        PRINTF("a and b coincide with a and b computed from p\n");
       }
     }
     
@@ -116,8 +118,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     }
   }
 
-
-
+  
   /*allocate_and_prepare_data_old(a, b, s, opt,  &params);*/
   allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
 
