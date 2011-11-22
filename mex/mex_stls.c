@@ -121,7 +121,7 @@ void gsl_to_m_matrix( double*, gsl_matrix* );
 void mexFunction( int nlhs, mxArray *plhs[], 
 		  int nrhs, const mxArray *prhs[] )
 {
-  gsl_matrix *a, *b, *x, *v;
+  gsl_matrix *a = NULL, *b = NULL, *x = NULL, *v;
   gsl_vector *p;
   gsl_vector_view vec_p;
   data_struct s;
@@ -404,8 +404,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
     gsl_vector_free(p);
   }
   
-  gsl_matrix_free(a);
-  gsl_matrix_free(b);
+  if (has_ab) {
+    gsl_matrix_free(a);
+    gsl_matrix_free(b);
+  }
   gsl_matrix_free(x);
   gsl_matrix_free(v);
 }
