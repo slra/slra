@@ -29,6 +29,8 @@ mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 
 mex : stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -lm -latlas -llapack -lblas 
+	rename -f 's/^mex_//' mex_stls.*
+	cp -f stls.mex* test_m/
 
 
 
