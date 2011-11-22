@@ -47,35 +47,49 @@ static SEXP getListElement(SEXP list, const char *str) {
  ******************************/
 
 
-SEXP rstls(SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS) {
+SEXP rstls(SEXP M, SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SEXP COMPDP) {
   static const char *str_codes = " THUE";
   SEXP S_A = getListElement(S, "A");
   int *dimS_A = INTEGER(getAttrib(S_A, R_DimSymbol));
   int *s_m = INTEGER(S_A);
+  int *pm = INTEGER(M), *pn = INTEGER(N), *pd = INTEGER(D), *pcompdp = INTEGER(COMPDP);
+  int m = *pm, n = *pn, d = *pd, compdp = *pcompdp;
+  int np;
+  gsl_vector_view p_vec;
+   
 
-  if (dimS_A[1] != 3) {
-     error("Structure specification matrix has incorrect number of columns");
-  }
-  if (dimS_A[0] > 10) {
-     error("Structure specification matrix has > 10 rows");
-  }
-
-  int *dimA = INTEGER(getAttrib(A, R_DimSymbol));
-  int *dimB = INTEGER(getAttrib(B, R_DimSymbol));
+/*  int *dimA = INTEGER(getAttrib(A, R_DimSymbol));
+  int *dimB = INTEGER(getAttrib(B, R_DimSymbol));*/
 
   /* Variables for input into stls */
-  size_t m = dimA[0], n = dimA[1], d = dimB[1];
-  gsl_matrix *a, *b, *x, *v;
+  gsl_matrix *a = NULL, *b = NULL, *x = NULL, *v;
+  gsl_vector *p = NULL;
   data_struct s;
   opt_and_info opt;
 
-  m_to_gsl_matrix(a = gsl_matrix_alloc(m, n), REAL(A));
-  m_to_gsl_matrix(b = gsl_matrix_alloc(m, d), REAL(B));
-  m_to_gsl_matrix(x = gsl_matrix_alloc(n, d), REAL(X));
+  if (TYPEOF(A) != NILSXP && TYPEOF(B) != NILSXP) {
+    m_to_gsl_matrix(a = gsl_matrix_alloc(m, n), REAL(A));
+    m_to_gsl_matrix(b = gsl_matrix_alloc(m, d), REAL(B));
+  }
+  
+  x = gsl_matrix_alloc(n, d);
+  if (TYPEOF(X) != NILSXP) {
+    m_to_gsl_matrix(x, REAL(X));
+  }
   v = gsl_matrix_calloc(n * d, n * d);
+
+  if (TYPEOF(P) != NILSXP) {
+    np = length(P);
+    p_vec = gsl_vector_view_array(REAL(P), np);
+    p = gsl_vector_alloc(np);
+  
+    gsl_vector_memcpy(p, &p_vec.vector);
+  }
+
 
   /* Convert structure specification */
   getScalarListElement(s.k, S, "k", asInteger, 1);
+  getScalarListElement(s.m, S, "m", asInteger, m);
   s.q = dimS_A[0];
 
   for (int l = 0; l < s.q; l++) {
@@ -107,10 +121,10 @@ SEXP rstls(SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS) {
   }
  
  
-  stls(a, b, &s, x, v, &opt); 
+  stls(a, b, &s, x, v, &opt, p, TYPEOF(X) != NILSXP, compdp); 
 
   /* Form the result */
-  SEXP XH, INFO, VXH, res;
+  SEXP XH, INFO, VXH, PH, res;
 
   PROTECT(INFO = list3(ScalarInteger(opt.iter), ScalarReal(opt.time), ScalarReal(opt.fmin)));
   SET_TAG(INFO, install("iter"));
@@ -122,15 +136,42 @@ SEXP rstls(SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS) {
   gsl_to_m_matrix(REAL(XH), x); 
   gsl_to_m_matrix(REAL(VXH), v); 
 
-  PROTECT(res = list3(XH, INFO, VXH));
-  SET_TAG(res, install("xh"));
-  SET_TAG(CDR(res), install("info"));
-  SET_TAG(CDDR(res), install("vxh"));
 
-  UNPROTECT(4);
+  if (TYPEOF(P) == NILSXP) {
+    PROTECT(res = list3(XH, INFO, VXH));
+    SET_TAG(res, install("xh"));
+    SET_TAG(CDR(res), install("info"));
+    SET_TAG(CDDR(res), install("vxh"));
 
-  gsl_matrix_free(a);
-  gsl_matrix_free(b);
+    UNPROTECT(4);
+  } else {
+    PROTECT(PH = allocVector(REALSXP, np));
+
+    p_vec = gsl_vector_view_array(REAL(PH), np);
+    gsl_vector_memcpy(&p_vec.vector, p);
+  
+    PROTECT(res = list4(XH, INFO, VXH, PH));
+    SET_TAG(res, install("xh"));
+    SET_TAG(CDR(res), install("info"));
+    SET_TAG(CDDR(res), install("vxh"));
+    SET_TAG(CDR(CDDR(res)), install("ph"));
+
+    UNPROTECT(5);
+  }
+  
+
+  if (a != NULL) {
+    gsl_matrix_free(a);
+  }
+  
+  if (b != NULL) {
+    gsl_matrix_free(b);
+  }  
+
+  if (p != NULL) {
+    gsl_vector_free(p);
+  } 
+    
   gsl_matrix_free(x);
   gsl_matrix_free(v);
 

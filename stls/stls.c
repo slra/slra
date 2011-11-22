@@ -277,16 +277,18 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     default:
       break;
     }
-    if ( !status && (opt->disp == 2 || opt->disp == 3) ) /* no error and ( final or iter ) */
-      if (status_grad == GSL_CONTINUE)
+    if ( !status && (opt->disp == 2 || opt->disp == 3) ) { /* no error and ( final or iter ) */ 
+      if (status_grad == GSL_CONTINUE) {
 	PRINTF("Optimization terminated by reaching the convergence " 
 	       "tolerance for X.\n");
-      else if (status_dx == GSL_CONTINUE)
+      } else if (status_dx == GSL_CONTINUE) {
 	PRINTF("Optimization terminated by reaching the convergence " 
 	       "tolerance for the gradient.\n");
-      else
+      } else {
 	PRINTF("Optimization terminated by reaching the convergence " 
-	       "tolerance for both X and the gradient.\n");
+	       "tolerance for both X and the gradient.\n"); 
+      }
+    }
   }
 
   switch (method) {

@@ -816,7 +816,7 @@ int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
   
   tmp = gsl_blas_dnrm2(P->brg_f);
   
-  PRINTF("Obj: %11.7f\n", tmp*tmp);
+/*  PRINTF("Obj: %11.7f\n", tmp*tmp);*/
   compute_reshaped_c_minus_1_2_f(P->brg_f, 0, P);
   brgf_matr = gsl_matrix_view_vector(P->brg_f, P->m, P->d);
 
