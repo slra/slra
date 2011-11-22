@@ -1,13 +1,11 @@
 % DEMO - Demo file for structured total least squares
 
-
 opt.maxiter = 100;
 opt.epsrel  = 1e-7; 
 opt.epsabs  = 0; 
 opt.epsgrad = 1e-5; 
 opt.disp    = 'disp';
 opt.maxiter = 400;
-
 
 addpath support
 addpath stln
@@ -37,19 +35,15 @@ m = 100; n = 5; d = 1;
 a = rand(m,n);
 b = rand(m,d);
 
-
-
 % Find the LS estimate by Matlab's \
 tic, x_ls = a\b; t_ls = toc
-x_ls #(1,1:d)
-
-
+x_ls(1,1:d)
 
 % Define and solve the LS problem as a (very special) STLS problem
-s_ls = [4 n 1; 3 d 1];
+s_ls.a = [4 n 1; 3 d 1]; s_ls.m = m; s_ls.d = d; s_ls.k = 1;
 pause
-tic, [x_stls,i_stls] = stls(a,b,s_ls); t_stls = toc
-x_stls #(1,1:d)
+tic, [x_stls, i_stls] = stls([], [], s_ls, [], [], vec([a b])); t_stls = toc
+x_stls(1,1:d)
 
 % Press any key to continue 
 pause
@@ -67,12 +61,12 @@ x0 = rand(n,d);
 b0 = a0 * x0;  b = b0 + 0.2 * randn(m,d);
 
 tic, x_tls = tls(a,b); t_tls = toc
-x_tls #(1,1:d)
+x_tls(1,1:d)
 
 % Define and solve the TLS problem as an STLS problem
 s_tls = [3 n+d 1];
 tic, [x_stls,i_stls] = stls(a,b,s_tls); t_stls = toc
-x_stls #(1,1:d)
+x_stls(1,1:d)
 
 % Press any key to continue
 pause
@@ -126,18 +120,18 @@ tic, xh_tls = tls(a,b); t_ls = toc
 % Define the structure and solve the deconvolution problem via STLS
 s = [1 n 1; 3 1 1];
 tic, [xh_stls,i_stls] = stls(a,b,s); t_stls = toc
-xh_stls#(1:2)'
+xh_stls(1:2)'
 i_stls.fmin % value of the cost function at xh_stls
 
 % Solve via an alternative STLS method
 tic, xh_stln = faststln1(a,b, xh_ls); t_stln = toc
-xh_stln#(1:2)'
+xh_stln(1:2)'
 cost1(xh_stln,a,b,s) % value of the cost function at xh_stln
 
 % Compare the relative errors of estimation 
-e_ls   = norm(xh_ls-x0)/norm(x0); #disp(e_ls)
-e_tls  = norm(xh_tls-x0)/norm(x0);# disp(e_tls)
-e_stls = norm(xh_stls-x0)/norm(x0);# disp(e_stls)
+e_ls   = norm(xh_ls-x0)/norm(x0); disp(e_ls)
+e_tls  = norm(xh_tls-x0)/norm(x0); disp(e_tls)
+e_stls = norm(xh_stls-x0)/norm(x0); disp(e_stls)
 
 % Press any key to continue
 pause

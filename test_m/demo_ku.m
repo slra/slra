@@ -34,8 +34,7 @@ h(1:4,:)
 
 f_stls = (f'-dp)';
 plot([f0' f' f_stls' fh]);
-git
-f0-f_stls'
+norm(f_stls - fh)
 
 
 
