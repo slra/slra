@@ -28,7 +28,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
   int m,n,d ;
   int np, n_plus_d;
   time_t t_b;
-  //stls_opt_data_old params;
+  /*stls_opt_data_old params;*/
   stls_opt_data_reshaped params;
 
 
@@ -118,14 +118,14 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
 
 
 
-  //allocate_and_prepare_data_old(a, b, s, opt,  &params);
+  /*allocate_and_prepare_data_old(a, b, s, opt,  &params);*/
   allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
 
   /* LM */
   const gsl_multifit_fdfsolver_type *Tlm
     = gsl_multifit_fdfsolver_lmder;
   gsl_multifit_fdfsolver* solverlm;
-//  gsl_multifit_function_fdf fdflm = { &stls_f, &stls_df, &stls_fdf, m * d, n * d, &params};
+/*  gsl_multifit_function_fdf fdflm = { &stls_f, &stls_df, &stls_fdf, m * d, n * d, &params};*/
   gsl_multifit_function_fdf fdflm = { &stls_f_reshaped, &stls_df_reshaped, &stls_fdf_reshaped, m * d, n * d, &params};
   gsl_vector *g;
 
@@ -135,7 +135,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     = gsl_multimin_fdfminimizer_vector_bfgs;
   gsl_multimin_fdfminimizer* solverqn;
   gsl_multimin_function_fdf fdfqn;
-//  gsl_multimin_function_fdf fdfqn = { &stls_f_, &stls_df_, &stls_fdf_, P->n_times_d, P };
+/*  gsl_multimin_function_fdf fdfqn = { &stls_f_, &stls_df_, &stls_fdf_, P->n_times_d, P };*/
 
   /* NM */
   double size;
@@ -305,7 +305,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
 
 
   free_memory_reshaped(&params);
-// free_memory_old(&params);
+/* free_memory_old(&params);*/
 
   return GSL_SUCCESS; /* <- correct with status */
 }

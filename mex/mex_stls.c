@@ -283,7 +283,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     p = NULL;
     
     np = mxGetM(prhs[5]);
-//    PRINTF("np = %d", np);
+
     p = gsl_vector_alloc(np);
     vec_p = gsl_vector_view_array(mxGetPr(prhs[5]), np);
     gsl_vector_memcpy(p, &vec_p.vector);
