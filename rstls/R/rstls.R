@@ -26,10 +26,10 @@ stls <- function(A = NULL, B = NULL, S, X = NULL, opts = list(epsabs = 0, epsrel
   
   storage.mode(S$A) <- 'integer'
   if (nrow(S$A) > 10) {
-    error("There is more than 10 blocks");
+    stop("There is more than 10 blocks");
   }
   if (ncol(S$A) != 3) {
-     error("Structure specification matrix has incorrect number of columns (!= 3)");
+     stop("Structure specification matrix has incorrect number of columns (!= 3)");
   }
   if (!prod((S$A[,1] >= 1) & (S$A[,1] <= 4))) {
     stop('Unrecognized block structure');
