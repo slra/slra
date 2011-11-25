@@ -4,6 +4,7 @@ CC  = gcc  -g -fPIC -static
 CCPP  = g++  -g -fPIC -static 
 F77 = gcc -g -fPIC -static
 OCTAVE_MEX = mkoctfile --mex -v -DMEX_OCTAVE #mex  -v -compatibleArrayDims
+MEX = mex -v -compatibleArrayDims
 
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f SLICOT/MB02MD.f
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o MB02MD.o
@@ -13,7 +14,6 @@ STLS_INCLUDE_DIR = stls
 STLS_INCLUDE_FILES = stls/stls.h
 MEX_SRC_FILES = mex/mex_stls.c
 
-
 INC_FLAGS =  -I./$(STLS_INCLUDE_DIR) # -I/home/kdu/local/include -g
 OPT_FLAGS = -O -pg # gprof ./test gmon.out > gmon.txt
 
@@ -22,16 +22,19 @@ mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lgslcblas \
 	-llapack -lblas  -o stls.mex
 	cp -f stls.mex test_m
-#	cp -f mex_stls.mex ../stls.mex
+	cp -f mex_stls.mex ../stls.mex
 
+mex : stls.a SLICOT.a $(MEX_SRC_FILES)
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran # -static-libgfortran
+	cp -f mex_stls.mexa64 ../stls.mexa64
 R: 
 	cp $(STLS_INCLUDE_FILES) rstls/src/stls
 	cp $(SLICOT_SRC_FILES) rstls/src/SLICOT
 	cp $(STLS_SRC_FILES) rstls/src/stls
 	R CMD check rstls
 	R CMD build rstls
-	R CMD INSTALL stls
-	
+	R CMD INSTALL stls 
+
 testc : test.o stls.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
 	/home/kdu/src/lapack-3.2.1/lapack_LINUX.a \
@@ -60,4 +63,3 @@ SLICOT.a : $(SLICOT_SRC_FILES)
 clean : 
 	rm *.o SLICOT.a stls.a
 
- 
