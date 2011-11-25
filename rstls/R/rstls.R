@@ -48,11 +48,6 @@ stls <- function(A = NULL, B = NULL, S, X = NULL, opts = list(epsabs = 0, epsrel
       stop("At least one of (A,B) or P should be given");
     }
   
-    if (is.null(S$m)) {
-      stop("m is not defined");
-    }
-    m <- S$m;
-    
     if (!is.matrix(X)) {
       if (is.null(S$d)) {
         stop("d is not defined");
@@ -90,7 +85,7 @@ stls <- function(A = NULL, B = NULL, S, X = NULL, opts = list(epsabs = 0, epsrel
   }
 
 
-  .Call("rstls", m, n, d, A, B, S, X, opts, P, compute.dp);
+  .Call("rstls", n, d, A, B, S, X, opts, P, compute.dp);
 }
 
 

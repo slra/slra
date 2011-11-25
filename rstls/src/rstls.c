@@ -47,7 +47,7 @@ static SEXP getListElement(SEXP list, const char *str) {
  ******************************/
 
 
-SEXP rstls(SEXP M, SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SEXP COMPDP) {
+SEXP rstls(SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SEXP COMPDP) {
   static const char *str_codes = " THUE";
   SEXP S_A = getListElement(S, "A");
   int *dimS_A = INTEGER(getAttrib(S_A, R_DimSymbol));
@@ -89,7 +89,6 @@ SEXP rstls(SEXP M, SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SE
 
   /* Convert structure specification */
   getScalarListElement(s.k, S, "k", asInteger, 1);
-  getScalarListElement(s.m, S, "m", asInteger, m);
   s.q = dimS_A[0];
 
   for (int l = 0; l < s.q; l++) {
