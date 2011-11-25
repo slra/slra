@@ -75,6 +75,7 @@ Author: Ivan Markovsky, Last modified: November 2004.
 /* field names for s */
 #define ARRAY_STR "a"
 #define NUM_ROLES_STR "k"
+#define RANK_REDUCTION_STR "d"
 
 /* field names for info */
 #define FMIN_STR "fmin"
@@ -119,7 +120,9 @@ void gsl_to_m_matrix( double*, gsl_matrix* );
 void mexFunction( int nlhs, mxArray *plhs[], 
 		  int nrhs, const mxArray *prhs[] )
 {
-  gsl_matrix *a, *b, *x, *v;
+  gsl_matrix *a = NULL, *b = NULL, *x = NULL, *v;
+  gsl_vector *p;
+  gsl_vector_view vec_p;
   data_struct s;
   opt_and_info opt;
   char str_buf[STR_MAX_LEN];
@@ -129,51 +132,56 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   double *s_m;
   int l, i; 
+  int n_plus_d, np;
+
   size_t m, n, d;
   char err_msg[100];
+  int has_ab, has_p, has_x;
+  
+  
 
   /* ---------- */
   /* Input data */
   /* ---------- */
 
-  if (nrhs < 3)
-      mexErrMsgTxt("Error: at least three parameters (a,b,s) are needed.");
+  if (nrhs < 3) {
+    mexErrMsgTxt("Error: at least three parameters (a,b,s) are needed.");
+  }
 
-  m = mxGetM( prhs[0] );
-  n = mxGetN( prhs[0] );
-  d = mxGetN( prhs[1] );
+  has_ab = (!mxIsEmpty(prhs[0])) &&  (!mxIsEmpty(prhs[1]));
+  has_p = (nrhs >= 6) && (!mxIsEmpty(prhs[5]));
+  has_x = (nrhs >= 4) && (!mxIsEmpty(prhs[3]));
 
-  /* check dimensions of a and b */
-  if ( m != mxGetM(prhs[1]) ) /* check m */
-    mexErrMsgTxt("Error: size(a,1) ~= size(b,1).");
-  if ( m < n ) /* check if it is a least squares problem */
-    mexErrMsgTxt("Error: size(a,1) < size(a,2).");
+  if (!(has_ab || has_p)) {
+    mexErrMsgTxt("Either (a,b) or (p) should be given.");
+  
+  } 
 
-  /* creat GSL matrices with the Matlab arrays */
-  a = gsl_matrix_alloc(m, n);
-  b = gsl_matrix_alloc(m, d);
-  x = gsl_matrix_alloc(n, d);
-
-  m_to_gsl_matrix(a, mxGetPr( prhs[0] ));
-  m_to_gsl_matrix(b, mxGetPr( prhs[1] ));
 
   /* structure description prhs[2] */
   if (mxIsStruct(prhs[2])) {
+    mxArray* field;
     /* in this case prhs[3] should have fields NUM_ROLES_STR and ARRAY_STR */
-    mxArray* field = mxGetField(prhs[2], 0, NUM_ROLES_STR);
-    if (field == NULL) {
-      sprintf(err_msg, "Error in the structure specification : field %s undefined.", NUM_ROLES_STR);
-      mexErrMsgTxt(err_msg);
+    if ((field = mxGetField(prhs[2], 0, NUM_ROLES_STR)) == NULL) {
+      mexErrMsgTxt("Error in the structure specification : field " NUM_ROLES_STR " undefined.");
     }
     s.k = (int) mxGetScalar(field);
-    field = mxGetField(prhs[2], 0, ARRAY_STR);
-    if (field == NULL) {
-      sprintf(err_msg, "Error in the structure specification : field %s undefined.", ARRAY_STR);
-      mexErrMsgTxt(err_msg);
+
+
+    if ((field = mxGetField(prhs[2], 0, RANK_REDUCTION_STR)) != NULL) {
+      d = (int) mxGetScalar(field);
+    } else {
+      if (!( has_ab|| has_x)) {
+        mexErrMsgTxt("Error in the structure specification : rank reduction (s.d) should specified if none of (a,b,x) is given.");
+      }
+    }
+
+    
+    if ((field = mxGetField(prhs[2], 0, ARRAY_STR)) == NULL) {
+      mexErrMsgTxt("Error in the structure specification : field " ARRAY_STR " undefined.");
     }
     if (mxGetN(field) != 3) {
-      sprintf(err_msg, "Error in the structure specification : size(s.%s,2) ~= 3.", ARRAY_STR);
-      mexErrMsgTxt(err_msg);
+      mexErrMsgTxt("Error in the structure specification : size(s." ARRAY_STR ",2) ~= 3.");
     }
     s_m = mxGetPr( field );
     s.q = mxGetM( field );
@@ -186,6 +194,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
     s.q = mxGetM( prhs[2] );
   }
 
+
+  n_plus_d = 0;
   /* creat s */
   for (l = 0; l < s.q; l++) {
     if (*(s_m+l) < 1 ||  *(s_m+l) > 4) {
@@ -195,29 +205,82 @@ void mexFunction( int nlhs, mxArray *plhs[],
       s.a[l].type = str_codes[(int)(*(s_m+l))]; 
     }
     s.a[l].ncol = *(s_m + s.q + l);
+    n_plus_d += s.a[l].ncol;
     s.a[l].nb   = *(s_m + 2*s.q + l);
   }
 
 
-  /* initial approximation prhs[3] */
-  if (nrhs >= 4 && !mxIsEmpty(prhs[3])) {
-    /* check dimensions of prhs[3] */
-    if ( mxGetN(prhs[0]) != mxGetM(prhs[3]) ) /* check n */
-      mexErrMsgTxt("Error: size(a,2) ~= size(x,1).");
-    if ( mxGetN(prhs[3]) != mxGetN(prhs[1]) ) /* check d */
-      mexErrMsgTxt("Error: size(a,2) ~= size(x,1).");
-    /* convert x in GSL format and store it in xh */
-    m_to_gsl_matrix(x, mxGetPr( prhs[3] ) );
+  if (!has_ab) { 
+    if (has_x){
+      n = mxGetM(prhs[3]);
+      d = mxGetN(prhs[3]);
+    } else {
+      n = n_plus_d - d;
+    }
+    
+   } else  {
+    m = mxGetM( prhs[0] );
+    n = mxGetN( prhs[0] );
+    d = mxGetN( prhs[1] );
 
-  } else {
-    /* compute default initial approximation */
-     l = tls(a, b, x);
-    if (l) {
-      sprintf(err_msg, "Initial approximation can not be computed: MB02MD failed with an error info = %d.\n", l);
-      mexErrMsgTxt(err_msg);
+    /* check dimensions of a and b */
+    if ( m != mxGetM(prhs[1]) )  { /* check m */
+      mexErrMsgTxt("Error: size(a,1) ~= size(b,1).");
     }
   }
+
+  if ( m < n ) { /* check if it is a least squares problem */
+    mexErrMsgTxt("Error: size(a,1) < size(a,2).");
+  }
   
+  x = gsl_matrix_alloc(n, d);
+    
+
+  if (has_ab) {
+    /* create GSL matrices with the Matlab arrays */
+    a = gsl_matrix_alloc(m, n);
+    b = gsl_matrix_alloc(m, d);
+
+    m_to_gsl_matrix(a, mxGetPr( prhs[0] ));
+    m_to_gsl_matrix(b, mxGetPr( prhs[1] ));
+  }
+
+
+  /* initial approximation prhs[3] */
+  if (has_x) {
+    /* check dimensions of prhs[3] */
+    if ( n != mxGetM(prhs[3]) ) {/* check n */
+      mexErrMsgTxt("Error: n ~= size(x,1).");
+    }
+    if ( d != mxGetN(prhs[3]) ) { /* check d */
+      mexErrMsgTxt("Error: d ~= size(x,1).");
+    }
+    
+    if (n+d != n_plus_d) {
+      mexErrMsgTxt("Error: n+d ~= total number of columns.");
+    }
+    
+    /* convert x in GSL format and store it in xh */
+    m_to_gsl_matrix(x, mxGetPr( prhs[3] ) );
+  } 
+  
+  
+  /* Parameter vector p */ 
+  if (has_p) {
+    if (mxGetN(prhs[5]) != 1 ) { /* check p */
+      mexErrMsgTxt("Error: size(p,2) ~= 1.");
+    }
+    p = NULL;
+    
+    np = mxGetM(prhs[5]);
+
+    p = gsl_vector_alloc(np);
+    vec_p = gsl_vector_view_array(mxGetPr(prhs[5]), np);
+    gsl_vector_memcpy(p, &vec_p.vector);
+  } else {
+    p = NULL;
+  }
+ 
   
 
   /*  PRINTF("X\n");
@@ -231,7 +294,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   opt.epsgrad = DEF_epsgrad;
   opt.disp    = DEF_disp;
   /* user supplied options */
-  if (nrhs == 5) {
+  if (nrhs >= 5) {
     if (! mxIsStruct(prhs[4]))
       mexWarnMsgTxt("Ignoring 'opt'. The optimization options should be passed in a structure.");
     else {
@@ -273,13 +336,18 @@ void mexFunction( int nlhs, mxArray *plhs[],
       }
     }
   }
+  
 
   /* --------------- */
   /* Call the solver */
   /* --------------- */
   
   v = gsl_matrix_alloc(n*d, n*d);
-  stls(a, b, &s, x, v, &opt);
+  
+/*  PRINTF("Hello!! size(a) = (%d,%d), size(b) = (%d,%d), size(x) = (%d,%d), size(v) = (%d,%d), has_p = %d\n", 
+      a->size1, a->size2, b->size1, b->size2, x->size1, x->size2, v->size1, v->size2, has_p);*/
+  stls(a, b, &s, x, v, &opt, p, has_x, (nlhs > 3) && has_p);
+/*  PRINTF("Hello again!!\n");*/
 
   /* ------------------ */
   /* Assign the outputs */
@@ -309,13 +377,27 @@ void mexFunction( int nlhs, mxArray *plhs[],
     plhs[2] = mxCreateDoubleMatrix(n*d, n*d, mxREAL);
     gsl_to_m_matrix(mxGetPr( plhs[2] ), v);
   }
+  
+
+  if (nlhs > 3 && has_p) {
+    plhs[3] = mxCreateDoubleMatrix(np, 1, mxREAL);
+    vec_p = gsl_vector_view_array(mxGetPr(plhs[3]), np);
+    gsl_vector_memcpy(&vec_p.vector, p);
+  }
+
 
   /* --------------------- */
   /* Free allocated memory */
   /* --------------------- */
 
-  gsl_matrix_free(a);
-  gsl_matrix_free(b);
+  if (has_p) {
+    gsl_vector_free(p);
+  }
+  
+  if (has_ab) {
+    gsl_matrix_free(a);
+    gsl_matrix_free(b);
+  }
   gsl_matrix_free(x);
   gsl_matrix_free(v);
 }
@@ -324,34 +406,4 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
-/* ************************************************ */
-/* m_to_gsl_matrix: convert the Matlab style column */
-/* major mxn matrix array to a GSL matrix           */
-/* ************************************************ */
 
-void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m) 
-{
-  int i, j;
-
-  for (i = 0; i < a_gsl->size1; i++) {
-    for (j = 0; j < a_gsl->size2; j++) {
-      gsl_matrix_set(a_gsl, i, j, a_m[i + j * a_gsl->size1]);
-    }
-  }
-}
-
-/* ************************************************ */
-/* gsl_to_m_matrix: convert the GSL mxn matrix to a */
-/* Matlab style column major matrix array           */
-/* ************************************************ */
-
-void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl) 
-{
-  int i, j;
-
-  for (i = 0; i < a_gsl->size1; i++) {
-    for (j = 0; j < a_gsl->size2; j++) {
-      a_m[i + j * a_gsl->size1] = gsl_matrix_get(a_gsl, i, j);
-    }
-  }
-}

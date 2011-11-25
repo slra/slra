@@ -7,7 +7,6 @@ opt.epsgrad = 1e-5;
 opt.disp    = 'disp';
 opt.maxiter = 400;
 
-
 addpath support
 addpath stln
 %addpath matlab_version
@@ -36,18 +35,15 @@ m = 100; n = 5; d = 1;
 a = rand(m,n);
 b = rand(m,d);
 
-
-
 % Find the LS estimate by Matlab's \
 tic, x_ls = a\b; t_ls = toc
 x_ls(1,1:d)
 
-
-
 % Define and solve the LS problem as a (very special) STLS problem
-s_ls = [4 n 1; 3 d 1];
-pause
-tic, [x_stls,i_stls] = stls(a,b,s_ls); t_stls = toc
+s_ls.a = [4 n 1; 3 d 1]; s_ls.m = m; s_ls.d = d; s_ls.k = 1;
+%pause
+%tic, [x_stls,i_stls] = stls(a,b,s_ls); t_stls = toc
+tic; [x_stls,i_stls] = stls([],[],s_ls, [], [], vec([a b])); t_stls = toc
 x_stls(1,1:d)
 
 % Press any key to continue 

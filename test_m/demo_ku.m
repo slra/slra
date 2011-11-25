@@ -22,27 +22,31 @@ x = V(:,Ls);
 x = -(x(1:(Ls-1))/x(Ls))
 
 s = [2 Ls 1];
-pause
+%pause
 
 
 h0(1:4,:)
 h(1:4,:)
 
-[xh, info, v] = stls(a, b, s, x0);
+[xh, info, v, fh] = stls(a, b, s, x0, [], f');
 [ dp, ch, ph ] = corr( xh, h, s);
 
 
-f_stls = (f'-dp)'
-plot([f0' f' f_stls']);
+f_stls = (f'-dp)';
+plot([f0' f' f_stls' fh]);
+git
+f0-f_stls'
 
-L= floor((N+1)/2)
-K = N-L+1
 
-hbig = hankel(f(1:K), f(K:N));
-[U,S,V] = svd(hbig);
-hrec = U(:, 1:rk) * S(1:rk,1:rk) * V(:, 1:rk)';
 
-size(hbig)
+%L= floor((N+1)/2)
+%K = N-L+1
+
+%hbig = hankel(f(1:K), f(K:N));
+%[U,S,V] = svd(hbig);
+%hrec = U(:, 1:rk) * S(1:rk,1:rk) * V(:, 1:rk)';
+
+%size(hbig)
 
 
 

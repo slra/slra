@@ -1,6 +1,6 @@
 PKG_LIBS=$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -lgsl -lgslcblas 
-PKG_FFLAGS+=-W -Wall -pedantic 
-PKG_CFLAGS+=-W -Wall -pedantic -DBUILD_R_PACKAGE
+PKG_FFLAGS+=-Wall 
+PKG_CFLAGS+=-Wall -DBUILD_R_PACKAGE
 
 .PHONY: all clean shlib-clean
 

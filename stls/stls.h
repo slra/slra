@@ -61,7 +61,16 @@ typedef struct {
     int ncol;	/* number of columns */
     int nb;     /* number of columns in a block of T/H blocks */
   } a[MAXQ];	/* q-element array describing C1,...,Cq; */
+  
 } data_struct;
+
+
+/* additional info about matrix structure */
+typedef struct {
+  int total_cols;
+  int np_scale, np_offset; /* Coefficients in the formula  np = np_scale * m + np_offset */
+} flex_struct_add_info;
+
 
 /* three dimensional array of covariances w */
 typedef struct {
@@ -77,11 +86,11 @@ typedef struct {
 
 #define COMMON_PARAMS  \
     gsl_matrix* a; \
-	  gsl_matrix* b; \
-	  double reggamma; \
-	  w_data w; \
-	  int k;  \
-	  int  n_plus_d, 		/* = col_dim(C) */ \
+    gsl_matrix* b; \
+    double reggamma; \
+    w_data w; \
+    int k;  \
+    int  n_plus_d, 		/* = col_dim(C) */ \
     n_times_d,			/* = number of elements in x */ \
     k_times_d,			/* = row_dim(gamma) */ \
     k_times_d_times_s,		/* = col_dim(gamma) */ \
@@ -181,8 +190,13 @@ typedef struct {
 /* Prototypes of functions */
 
 
-int stls(gsl_matrix*, gsl_matrix*, const data_struct*, 
-	 gsl_matrix*, gsl_matrix*, opt_and_info* );
+int stls(gsl_matrix*, gsl_matrix*, data_struct*, 
+	 gsl_matrix*, gsl_matrix*, opt_and_info*, gsl_vector *, int, int );
+	 
+
+int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi );
+int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p);
+int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const gsl_vector* x);
 
 
 
