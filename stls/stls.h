@@ -53,9 +53,6 @@ typedef struct {
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
 typedef struct {
-  /* Parameters given by the user */
-  int m;        /* number of rows */       
-        
   int k;	/* = rowdim(block in T/H blocks) */ 
   int q;	/* number of blocks in C = [C1 ... Cq] */
   struct {
@@ -66,6 +63,14 @@ typedef struct {
   } a[MAXQ];	/* q-element array describing C1,...,Cq; */
   
 } data_struct;
+
+
+/* additional info about matrix structure */
+typedef struct {
+  int total_cols;
+  int np_scale, np_offset; /* Coefficients in the formula  np = np_scale * m + np_offset */
+} flex_struct_add_info;
+
 
 /* three dimensional array of covariances w */
 typedef struct {
@@ -189,7 +194,7 @@ int stls(gsl_matrix*, gsl_matrix*, data_struct*,
 	 gsl_matrix*, gsl_matrix*, opt_and_info*, gsl_vector *, int, int );
 	 
 
-int check_and_adjust_parameters( data_struct *s, int *n_plus_d, int *np );
+int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi );
 int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p);
 int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const gsl_vector* x);
 

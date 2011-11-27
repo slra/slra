@@ -26,10 +26,11 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
   int status_dx, status_grad, k;
   double g_norm, x_norm;
   int m,n,d ;
-  int np, n_plus_d;
   time_t t_b;
   /*stls_opt_data_old params;*/
   stls_opt_data_reshaped params;
+  flex_struct_add_info si;
+  
 
 
   gsl_matrix *c;
@@ -39,38 +40,45 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
   t_b = clock();
   /* constants */
   
-  if (check_and_adjust_parameters(s, &n_plus_d, &np) != GSL_SUCCESS) {
-    PRINTF("Error in structure specification: incorrect number of columns/rows in a block.\n");   
+  if (check_and_adjust_parameters(s, &si) != GSL_SUCCESS) {
+    PRINTF("Error in structure specification: incorrect number of rows in a subblock.\n");   
     return GSL_EINVAL;
   }  
 
   
   n = x->size1;
   d = x->size2;
+
+  if (n+d != si.total_cols) {
+    PRINTF("Initial approximation doesn't conform to the structure specification.\n");   
+    return GSL_EINVAL;
+  }
   
   
   if (p != NULL) {
-    if (a != NULL && s->m != a->size1) {
-      PRINTF("Error in structure specification: m is not correct in s.\n");   
+    m = p->size - si.np_offset;
+    if (m <= 0) {
+      PRINTF("There is no matrix with the structure specification for length %d: vector too short.\n", p->size);
+      return GSL_EINVAL;
+    }
+    if (m % si.np_scale != 0) {
+      PRINTF("There is no matrix with the structure specification for length %d. scale = %d, offset = %d\n", 
+          p->size, si.np_scale, si.np_offset);
+      return GSL_EINVAL;
+    }
+    m /= si.np_scale;
+    
+    if (a != NULL && m != a->size1) {
+      PRINTF("Size of a or b doesn't conform to parameter vector length.\n");   
       return GSL_EINVAL;
     }
     
-    
-    if (n+d != n_plus_d) {
-      PRINTF("Error in structure specification: total number of columns.\n");   
-      return GSL_EINVAL;
-    }
 
     
-    if (np != p->size) {
-      PRINTF("Incorrect length of the parameter vector: np = %d, p->size = %d.\n", np, p->size);
-      return GSL_EINVAL;
-    }
-  
-    c = gsl_matrix_alloc(s->m, n_plus_d);
+    c = gsl_matrix_alloc(m, si.total_cols);
     stls_fill_matrix_from_p(c, s, p);
-    c_sub_a = gsl_matrix_submatrix(c, 0, 0, s->m, n);
-    c_sub_b = gsl_matrix_submatrix(c, 0, n, s->m, d);
+    c_sub_a = gsl_matrix_submatrix(c, 0, 0, m, n);
+    c_sub_b = gsl_matrix_submatrix(c, 0, n, m, d);
   } else {
     if (a == NULL) {
       PRINTF("Both a and p are NULL \n");
@@ -80,13 +88,9 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
 
 
   if (a == NULL) {
-    m = s->m;
     a = &c_sub_a.matrix;
     b = &c_sub_b.matrix;
   } else {
-    m = a->size1;
-
-    
     if (p != NULL) {
       gsl_matrix_sub(&c_sub_a.matrix, a);
       gsl_matrix_sub(&c_sub_b.matrix, b);
@@ -277,16 +281,18 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     default:
       break;
     }
-    if ( !status && (opt->disp == 2 || opt->disp == 3) ) /* no error and ( final or iter ) */
-      if (status_grad == GSL_CONTINUE)
+    if ( !status && (opt->disp == 2 || opt->disp == 3) ) { /* no error and ( final or iter ) */ 
+      if (status_grad == GSL_CONTINUE) {
 	PRINTF("Optimization terminated by reaching the convergence " 
 	       "tolerance for X.\n");
-      else if (status_dx == GSL_CONTINUE)
+      } else if (status_dx == GSL_CONTINUE) {
 	PRINTF("Optimization terminated by reaching the convergence " 
 	       "tolerance for the gradient.\n");
-      else
+      } else {
 	PRINTF("Optimization terminated by reaching the convergence " 
-	       "tolerance for both X and the gradient.\n");
+	       "tolerance for both X and the gradient.\n"); 
+      }
+    }
   }
 
   switch (method) {

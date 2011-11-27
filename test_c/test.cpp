@@ -58,7 +58,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   gsl_vector *p = NULL, * p2 = NULL;
   
   char str_codes[] = " THUE";
-  data_struct s = {9599, 1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
+  data_struct s = {1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
   opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0.01,  0, 0.0, 0.0};
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
   int x_given;
@@ -88,8 +88,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       fprintf(log, "Error opening file %s\n", fsname);
       throw 1;
     }
-    fscanf(file, "%d %d %d %d %d %d", &s.m, &n, &d, &s.k, &s.q, &np); 
-    m = s.m;
+    fscanf(file, "%d %d %d %d %d %d", &m, &n, &d, &s.k, &s.q, &np); 
     if ((s.k <= 0) || (m % s.k != 0)) {
       fprintf(log, "Bad k: %d \n", s.k);
     }

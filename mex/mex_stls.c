@@ -75,7 +75,6 @@ Author: Ivan Markovsky, Last modified: November 2004.
 /* field names for s */
 #define ARRAY_STR "a"
 #define NUM_ROLES_STR "k"
-#define NUM_ROWS_STR "m"
 #define RANK_REDUCTION_STR "d"
 
 /* field names for info */
@@ -168,13 +167,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
     s.k = (int) mxGetScalar(field);
 
-    if ((field = mxGetField(prhs[2], 0, NUM_ROWS_STR)) != NULL) {
-      s.m = (int) mxGetScalar(field);
-    } else {
-      if (!has_ab) {
-        mexErrMsgTxt("Error in the structure specification : number of rows (s.m) not specified.");
-      }
-    }
 
     if ((field = mxGetField(prhs[2], 0, RANK_REDUCTION_STR)) != NULL) {
       d = (int) mxGetScalar(field);
@@ -219,7 +211,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
   if (!has_ab) { 
-    m = s.m;
     if (has_x){
       n = mxGetM(prhs[3]);
       d = mxGetN(prhs[3]);
@@ -229,7 +220,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
     
    } else  {
     m = mxGetM( prhs[0] );
-    s.m = m;
     n = mxGetN( prhs[0] );
     d = mxGetN( prhs[1] );
 

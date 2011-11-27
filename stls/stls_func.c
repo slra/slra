@@ -742,39 +742,36 @@ int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f,
 }
 
 
-#define GET_M_DIV_K(s)   (s->m / s->k)
-#define GET_L(s,l)       (s->a[l].ncol / s->a[l].nb)
-#define GET_T(s,l)       (GET_L(s,l) + GET_M_DIV_K(s) - 1)
-#define GET_PLEN(s,l)    (GET_T(s,l) * s->k * s->a[l].nb)
 
 
 
-int check_and_adjust_parameters( data_struct *s, int *n_plus_d, int *np ) {
+int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
   int l;
-  int L, T, p_len;
-  int m_div_k = s->m / s->k;
-  *n_plus_d = 0;
-  *np = 0;
-  if ((s->m %  s->k)  != 0) {
-    PRINTF("Hello1");
-    return GSL_EINVAL;    
-  }
+  psi->total_cols = 0;
+  psi->np_scale = 0;
+  psi->np_offset = 0;
 
   for (l = 0; l < s->q; l++) {
     if (s->a[l].type == 'T' || s->a[l].type == 'H') {
-      if (s->a[l].ncol %  s->a[l].nb  != 0) {
-        PRINTF("Hello2");
+      if (s->a[l].ncol %  s->a[l].nb  != 0) { /* Check number of coolumns */
         return GSL_EINVAL;    
       }
     } else {
-      s->a[l].nb = s->a[l].ncol;
+      s->a[l].nb = s->a[l].ncol; /* Adjust the parameter */
     }
-    (*np) += GET_PLEN(s, l);
-    (*n_plus_d) += s->a[l].ncol;
+    
+    psi->np_offset += s->k * (s->a[l].ncol - s->a[l].nb);
+    psi->np_scale += s->a[l].nb;
+    psi->total_cols += s->a[l].ncol;
   }  
 
   return GSL_SUCCESS;
 }
+
+#define GET_L(s,l)      ( s->a[l].ncol / s->a[l].nb)
+#define GET_T(s,l,m)    (GET_L(s,l) + (m/s->k) - 1) 
+#define GET_PLEN(s,l,m) (GET_T(s,l,m) *(s->k) * s->a[l].nb)
+
 
 int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p) {
   int m = c->size1;
@@ -784,18 +781,20 @@ int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p) {
  
   for (l = 0; l < s->q; l++) {
     L = GET_L(s,l);
-    T = GET_T(s,l);
+    T = GET_T(s,l,m);
     p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T  * s->k, s->a[l].nb);
-    c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, s->m, s->a[l].ncol);
+    c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, m, s->a[l].ncol);
     for (j = 0; j < L; j++) {
-      p_matr_chunk_sub = gsl_matrix_submatrix(&p_matr_chunk.matrix, j * s->k, 0, s->m, s->a[l].nb);
+      p_matr_chunk_sub = gsl_matrix_submatrix(&p_matr_chunk.matrix, j * s->k, 0, m, s->a[l].nb);
       c_chunk_sub = gsl_matrix_submatrix(&c_chunk.matrix, 0, 
-          (s->a[l].type == 'T' ? (L- j -1) * s->a[l].nb : j * s->a[l].nb), s->m, s->a[l].nb);
+          (s->a[l].type == 'T' ? (L- j -1) * s->a[l].nb : j * s->a[l].nb), m, s->a[l].nb);
       gsl_matrix_memcpy(&c_chunk_sub.matrix, &p_matr_chunk_sub.matrix);
     }
-    sum_np += GET_PLEN(s, l);
+    sum_np += GET_PLEN(s, l,m);
     sum_nl += s->a[l].ncol;
   }
+  
+  
 
   return GSL_SUCCESS;
 }
@@ -816,7 +815,7 @@ int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
   
   tmp = gsl_blas_dnrm2(P->brg_f);
   
-  PRINTF("Obj: %11.7f\n", tmp*tmp);
+/*  PRINTF("Obj: %11.7f\n", tmp*tmp);*/
   compute_reshaped_c_minus_1_2_f(P->brg_f, 0, P);
   brgf_matr = gsl_matrix_view_vector(P->brg_f, P->m, P->d);
 
@@ -842,10 +841,12 @@ int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
     } else {
       b_xext = gsl_matrix_submatrix(P->bx_ext, sum_nl, 0, s->a[l].ncol, P->d); 
     }
+
     /* Calculate dimensions of current parameter chunk */
     L = GET_L(s,l);
-    T = GET_T(s,l);
-    p_len = GET_PLEN(s, l);
+    T = GET_T(s,l,P->m);
+    p_len = GET_PLEN(s,l,P->m);
+
 
 
     /* Adjust the result size */
