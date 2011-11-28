@@ -47,45 +47,34 @@ static SEXP getListElement(SEXP list, const char *str) {
  ******************************/
 
 
-SEXP rstls(SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SEXP COMPDP) {
+SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
   static const char *str_codes = " THUE";
   SEXP S_A = getListElement(S, "A");
   int *dimS_A = INTEGER(getAttrib(S_A, R_DimSymbol));
   int *s_m = INTEGER(S_A);
-  int *pm = INTEGER(M), *pn = INTEGER(N), *pd = INTEGER(D), *pcompdp = INTEGER(COMPDP);
-  int m = *pm, n = *pn, d = *pd, compdp = *pcompdp;
+  int *pn = INTEGER(N), *pd = INTEGER(D), *pcompdp = INTEGER(COMPDP);
+  int n = *pn, d = *pd, compdp = *pcompdp;
   int np;
   gsl_vector_view p_vec;
    
-
-/*  int *dimA = INTEGER(getAttrib(A, R_DimSymbol));
-  int *dimB = INTEGER(getAttrib(B, R_DimSymbol));*/
-
   /* Variables for input into stls */
-  gsl_matrix *a = NULL, *b = NULL, *x = NULL, *v;
+  gsl_matrix *x = NULL, *v;
   gsl_vector *p = NULL;
   data_struct s;
   opt_and_info opt;
 
-  if (TYPEOF(A) != NILSXP && TYPEOF(B) != NILSXP) {
-    m_to_gsl_matrix(a = gsl_matrix_alloc(m, n), REAL(A));
-    m_to_gsl_matrix(b = gsl_matrix_alloc(m, d), REAL(B));
-  }
-  
+  /* Check X */
   x = gsl_matrix_alloc(n, d);
   if (TYPEOF(X) != NILSXP) {
     m_to_gsl_matrix(x, REAL(X));
   }
   v = gsl_matrix_calloc(n * d, n * d);
 
-  if (TYPEOF(P) != NILSXP) {
-    np = length(P);
-    p_vec = gsl_vector_view_array(REAL(P), np);
-    p = gsl_vector_alloc(np);
-  
-    gsl_vector_memcpy(p, &p_vec.vector);
-  }
-
+  /* Copy P vector */
+  np = length(P);
+  p_vec = gsl_vector_view_array(REAL(P), np);
+  p = gsl_vector_alloc(np);
+  gsl_vector_memcpy(p, &p_vec.vector);
 
   /* Convert structure specification */
   getScalarListElement(s.k, S, "k", asInteger, 1);
@@ -102,6 +91,7 @@ SEXP rstls(SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SE
   getScalarListElement(opt.epsabs, OPTS, "epsabs", asReal, 0);
   getScalarListElement(opt.epsrel, OPTS, "epsrel", asReal, 1e-5);
   getScalarListElement(opt.epsgrad, OPTS, "epsgrad", asReal, 1e-5);
+  getScalarListElement(opt.reggamma, OPTS, "reggamma", asReal, 0.001);
 
   char *str_disp[] = { "", "notify", "final", "iter", "off" };
   SEXP str_disp_value_sexp;
@@ -119,8 +109,7 @@ SEXP rstls(SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SE
     }
   }
  
- 
-  stls(a, b, &s, x, v, &opt, p, TYPEOF(X) != NILSXP, compdp); 
+  slra(p, &s, x, v, &opt,TYPEOF(X) != NILSXP, compdp); 
 
   /* Form the result */
   SEXP XH, INFO, VXH, PH, res;
@@ -131,12 +120,10 @@ SEXP rstls(SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SE
   SET_TAG(CDDR(INFO), install("fmin"));
   PROTECT(XH = allocMatrix(REALSXP, n, d));
   PROTECT(VXH = allocMatrix(REALSXP, n*d, n*d));
-
   gsl_to_m_matrix(REAL(XH), x); 
   gsl_to_m_matrix(REAL(VXH), v); 
 
-
-  if (TYPEOF(P) == NILSXP) {
+  if (!compdp) {
     PROTECT(res = list3(XH, INFO, VXH));
     SET_TAG(res, install("xh"));
     SET_TAG(CDR(res), install("info"));
@@ -157,20 +144,8 @@ SEXP rstls(SEXP N, SEXP D, SEXP A, SEXP B, SEXP S, SEXP X, SEXP OPTS, SEXP P, SE
 
     UNPROTECT(5);
   }
-  
 
-  if (a != NULL) {
-    gsl_matrix_free(a);
-  }
-  
-  if (b != NULL) {
-    gsl_matrix_free(b);
-  }  
-
-  if (p != NULL) {
-    gsl_vector_free(p);
-  } 
-    
+  gsl_vector_free(p);
   gsl_matrix_free(x);
   gsl_matrix_free(v);
 
