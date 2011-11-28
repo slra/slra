@@ -26,8 +26,13 @@ mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 	cp -f stls.mex test_m
 	cp -f mex_stls.mex ../stls.mex
 
-mex : stls.a SLICOT.a $(MEX_SRC_FILES)
+mex-im-desktop : stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran # -static-libgfortran
+	rename -f 's/^mex_//' mex_stls.*
+	cp -f stls.mex* test_m/
+
+mex-im-laptop : stls.a SLICOT.a $(MEX_SRC_FILES)
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran # -static-libgfortran
 	rename -f 's/^mex_//' mex_stls.*
 	cp -f stls.mex* test_m/
 
