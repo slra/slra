@@ -32,11 +32,11 @@ echo on
 %
 % Define dimensions and generate random data
 m = 100; n = 5; d = 1;
-a = rand(m,n);
-b = rand(m,d);
+a = rand(m, n);
+b = rand(m, d);
 
 % Find the LS estimate by Matlab's \
-tic, x_ls = a\b; t_ls = toc
+tic, x_ls = a \ b; t_ls = toc
 % x_ls(1,1:d)
 
 % Define and solve the LS problem as a (very special) STLS problem
@@ -59,19 +59,19 @@ pause
 %
 % Solve the TLS problem via SVD
 
-a0 = rand(m,n); a = a0 + 0.2 * randn(m,n);
-x0 = rand(n,d);
-b0 = a0 * x0;  b = b0 + 0.2 * randn(m,d);
+a0 = rand(m, n); a = a0 + 0.2 * randn(m, n);
+x0 = rand(n, d);
+b0 = a0 * x0;  b = b0 + 0.2 * randn(m, d);
 
 tic, x_tls = tls(a,b); t_tls = toc
 x_tls(1,1:d)
 
 % Define and solve the TLS problem as an STLS problem
-s_tls = [3 n+d 1];
+s_tls = [3 n + d 1];
 %tic, 
-[x_stls,i_stls] = stls(a, b, s_tls); 
+[x_stls, i_stls] = stls(a, b, s_tls); 
 %t_stls = toc
-x_stls(1,1:d)
+x_stls(1, 1:d)
 
 % Press any key to continue
 pause
@@ -107,7 +107,7 @@ m = 200; % length(p_a0)
 n = 2;   % length(b0)
 
 % Generate true data: p_a0 and b0
-p_a0 = rand(n+m-1);
+p_a0 = rand(n + m - 1);
 a0   = toeplitz(p_a0(n:n+m-1),p_a0(n:-1:1));
 x0   = rand(n,1);
 b0   = a0*x0;
