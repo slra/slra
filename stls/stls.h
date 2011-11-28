@@ -188,10 +188,8 @@ typedef struct {
 
 
 /* Prototypes of functions */
-
-
-int stls(gsl_matrix*, gsl_matrix*, data_struct*, 
-	 gsl_matrix*, gsl_matrix*, opt_and_info*, gsl_vector *, int, int );
+int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
+         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph );
 	 
 
 int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi );

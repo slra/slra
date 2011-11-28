@@ -28,13 +28,23 @@ s = [2 Ls 1];
 h0(1:4,:)
 h(1:4,:)
 
-[xh, info, v, fh] = stls(a, b, s, x0, [], f');
+[xh, info, v, fh] = slra(f, s, rk, x);
 [ dp, ch, ph ] = corr( xh, h, s);
+
+
+opt.maxiter = 0;
+
+info.fmin
+xh
+[xh2, info2, v2, fh2] = slra(f, s, rk, xh, opt)
+
 
 
 f_stls = (f'-dp)';
 plot([f0' f' f_stls' fh]);
-norm(f_stls - fh)
+norm(f_stls - fh')
+
+norm(fh2 - fh)
 
 
 

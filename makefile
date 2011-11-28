@@ -22,18 +22,17 @@ OPT_FLAGS = -O -pg # gprof ./test gmon.out > gmon.txt
 # Building octave mex-file
 mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lgslcblas \
-	-llapack -lblas  -o stls.mex
-	cp -f stls.mex test_m
+	-llapack -lblas  -o slra.mex
+	cp -f slra.mex test_m
 
 mex-im-desktop : stls.a SLICOT.a $(MEX_SRC_FILES)
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran # -static-libgfortran
-	rename -f 's/^mex_//' mex_stls.*
-	cp -f stls.mex* test_m/
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a \
+	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra
+	cp -f slra.mex* test_m/
 
 mex-im-laptop : stls.a SLICOT.a $(MEX_SRC_FILES)
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran # -static-libgfortran
-	rename -f 's/^mex_//' mex_stls.*
-	cp -f stls.mex* test_m/
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o slra
+	cp -f slra.mex* test_m/
 
 R: 
 	cp $(STLS_INCLUDE_FILES) rstls/src/stls

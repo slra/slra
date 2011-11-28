@@ -19,23 +19,21 @@
 
 
 
-int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s, 
-         gsl_matrix* x, gsl_matrix* v, opt_and_info* opt, gsl_vector *p, int x_given, int compute_ph ) {
+int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
+         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph ) {
   int status;
   char method = 'l';
   int status_dx, status_grad, k;
   double g_norm, x_norm;
   int m,n,d ;
   time_t t_b;
-  /*stls_opt_data_old params;*/
-  stls_opt_data_reshaped params;
-  flex_struct_add_info si;
-  
-
-
   gsl_matrix *c;
   gsl_matrix_view c_sub_a, c_sub_b;
-  
+  gsl_matrix *a, *b;
+   /*stls_opt_data_old params;*/
+  stls_opt_data_reshaped params;
+  flex_struct_add_info si;
+ 
 
   t_b = clock();
   /* constants */
@@ -44,75 +42,51 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     PRINTF("Error in structure specification: incorrect number of rows in a subblock.\n");   
     return GSL_EINVAL;
   }  
-
   
   n = x->size1;
   d = x->size2;
 
-  if (n+d != si.total_cols) {
+  if (n + d != si.total_cols) {
     PRINTF("Initial approximation doesn't conform to the structure specification.\n");   
     return GSL_EINVAL;
   }
   
+  /* Calculate number of rows m */
+  m = p->size - si.np_offset;
+  if (m <= 0) {
+    PRINTF("There is no matrix with the structure specification for length %d: vector too short.\n", p->size);
+    return GSL_EINVAL;
+  }
+  if (m % si.np_scale != 0) {
+    PRINTF("There is no matrix with the structure specification for length %d. scale = %d, offset = %d\n", 
+        p->size, si.np_scale, si.np_offset);
+    return GSL_EINVAL;
+  }
+  m /= si.np_scale;
   
-  if (p != NULL) {
-    m = p->size - si.np_offset;
-    if (m <= 0) {
-      PRINTF("There is no matrix with the structure specification for length %d: vector too short.\n", p->size);
-      return GSL_EINVAL;
-    }
-    if (m % si.np_scale != 0) {
-      PRINTF("There is no matrix with the structure specification for length %d. scale = %d, offset = %d\n", 
-          p->size, si.np_scale, si.np_offset);
-      return GSL_EINVAL;
-    }
-    m /= si.np_scale;
-    
-    if (a != NULL && m != a->size1) {
-      PRINTF("Size of a or b doesn't conform to parameter vector length.\n");   
-      return GSL_EINVAL;
-    }
-    
-
-    
-    c = gsl_matrix_alloc(m, si.total_cols);
-    stls_fill_matrix_from_p(c, s, p);
-    c_sub_a = gsl_matrix_submatrix(c, 0, 0, m, n);
-    c_sub_b = gsl_matrix_submatrix(c, 0, n, m, d);
-  } else {
-    if (a == NULL) {
-      PRINTF("Both a and p are NULL \n");
-      return GSL_EINVAL;
-    }
-    m = a->size1;
+  if (m < n) {
+    PRINTF("Number of rows is less than the number of columns: m = %d, r = %d.\n", m, n);
+    return GSL_EINVAL;
   }
 
+  if (p->size < m * d) {
+    PRINTF("The inner minimization problem is overdetermined: m * (n-r) = %d, n_p = %d.\n", m * d, p->size);
+    return GSL_EINVAL;
+  }
 
-  if (a == NULL) {
-    a = &c_sub_a.matrix;
-    b = &c_sub_b.matrix;
-  } else {
-    if (p != NULL) {
-      gsl_matrix_sub(&c_sub_a.matrix, a);
-      gsl_matrix_sub(&c_sub_b.matrix, b);
-
-      double minc, maxc;
     
-      gsl_matrix_minmax(c, &minc,&maxc);
-      
-      if (minc != 0.0 || maxc != 0.0) {
-        PRINTF("a and b don't coincide with a and b computed from p\n");
-      } else {
-        PRINTF("a and b coincide with a and b computed from p\n");
-      }
+  c = gsl_matrix_alloc(m, si.total_cols);
+  stls_fill_matrix_from_p(c, s, p);
+  c_sub_a = gsl_matrix_submatrix(c, 0, 0, m, n);
+  c_sub_b = gsl_matrix_submatrix(c, 0, n, m, d);
+  a = &c_sub_a.matrix;
+  b = &c_sub_b.matrix;
+  
+  if (!x_given) {  /* compute default initial approximation */
+    if (opt->disp >= 3) {
+      PRINTF("X not given, computing TLS initial approximation..\n");
     }
     
-  } 
-  
-  if (!x_given) {
-    PRINTF("X not given, computing TLS initial approximation..\n");
-    
-    /* compute default initial approximation */
     status = tls(a, b, x);
     if (status) {
       PRINTF("Initial approximation can not be computed: MB02MD failed with an error info = %d.\n", status);
@@ -122,7 +96,6 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
       return GSL_EINVAL;
     }
   }
-
 
   /*allocate_and_prepare_data_old(a, b, s, opt,  &params);*/
   allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
@@ -186,8 +159,6 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
   status_dx = GSL_CONTINUE;
   status_grad = GSL_CONTINUE;  
   opt->iter = 0;
-  
- 
   
   while (status_dx == GSL_CONTINUE && status_grad == GSL_CONTINUE && opt->iter < opt->maxiter) {
     /* print_vec(solverlm->x); */
@@ -257,12 +228,10 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
   }
 
 
-  if (p != NULL) {
-    if (compute_ph) {
-      stls_correction_reshaped(p, s, &params, &(x_vec.vector));
-    }
-    gsl_matrix_free(c);
+  if (compute_ph) {
+    stls_correction_reshaped(p, s, &params, &(x_vec.vector));
   }
+  gsl_matrix_free(c);
   
   /* print exit information */  
   if (opt->disp != 4) { /* unless "off" */

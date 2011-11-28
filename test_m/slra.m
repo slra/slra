@@ -10,7 +10,7 @@
 %
 % Input arguments:
 %
-% P - parameter vector. Can be  n_p x 1 or 1 x n_p matrix
+% P - parameter vector.
 % S - structure specification, a matrix with q rows and 3 columns:
 %   S(i,1) - structure type [ 1 | 2 | 3 | 4 ] of the i-th block,
 %     1 - Toeplitz, 2 - Hankel, 3 - Unstructured, 4 - Exact (noise free),
