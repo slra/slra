@@ -84,6 +84,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
       PRINTF("Both a and p are NULL \n");
       return GSL_EINVAL;
     }
+    m = a->size1;
   }
 
 
@@ -122,7 +123,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
     }
   }
 
-  
+
   /*allocate_and_prepare_data_old(a, b, s, opt,  &params);*/
   allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
 
@@ -186,6 +187,7 @@ int stls(gsl_matrix* a, gsl_matrix* b, data_struct* s,
   status_grad = GSL_CONTINUE;  
   opt->iter = 0;
   
+ 
   
   while (status_dx == GSL_CONTINUE && status_grad == GSL_CONTINUE && opt->iter < opt->maxiter) {
     /* print_vec(solverlm->x); */

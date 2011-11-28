@@ -121,7 +121,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		  int nrhs, const mxArray *prhs[] )
 {
   gsl_matrix *a = NULL, *b = NULL, *x = NULL, *v;
-  gsl_vector *p;
+  gsl_vector *p = NULL;
   gsl_vector_view vec_p;
   data_struct s;
   opt_and_info opt;

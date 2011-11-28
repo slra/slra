@@ -114,10 +114,7 @@ void tmv_prod(gsl_matrix* t, int s, gsl_vector* v, int m,
   
 }
 
-
-
-
- /* find n_d = n+d = sum_{l=1}^q n_l and w->s */
+/* find n_d = n+d = sum_{l=1}^q n_l and w->s */
 int get_bandwidth_from_structure( const data_struct* s ) {
   int l, max_nl = 1;
 
@@ -129,9 +126,6 @@ int get_bandwidth_from_structure( const data_struct* s ) {
   
   return max_nl;
 }
-
-
-
 
 /* s2w: finds the covariance matrices w from the data structure */
 int s2w(const data_struct* s, w_data* w, int n_d, int blocked )
@@ -234,9 +228,6 @@ void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const dat
     brg_submat = gsl_matrix_submatrix(P->brg_b, P->m_div_k * l, 0, P->m_div_k, P->d);
     gsl_matrix_memcpy(&brg_submat.matrix, &src_submat.matrix);
   }
- 
-  
-  
 
   /* New CholGam */
   P->bx_ext =  gsl_matrix_alloc(P->n_plus_d, P->d);
@@ -324,10 +315,6 @@ static void compute_reshaped_f( gsl_vector* f, gsl_matrix_const_view x_mat, stls
      P->brg_a, &x_mat.matrix, -1.0, &f_mat.matrix);
 }
 
-
-
-
-
 static void compute_reshaped_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_data_reshaped * P ) {
   int info;
   int i;
@@ -357,9 +344,6 @@ static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data_reshaped 
       &info);
   
 }
-
-
-
 
 /*************************************
  * This function convert between  representations
@@ -402,9 +386,6 @@ static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data_reshaped 
 *  params - used for the dimensions n = rowdim(X), 
 *           d = coldim(X), k, and n_plus_d = n + d
 */
-
-
-
 void xmat2_block_of_xext( gsl_matrix_const_view x_mat, gsl_matrix *bx_ext )
 {
   gsl_vector_view diag;
@@ -412,25 +393,14 @@ void xmat2_block_of_xext( gsl_matrix_const_view x_mat, gsl_matrix *bx_ext )
   int n = x_mat.matrix.size1,
       d = x_mat.matrix.size2;
 
-
-
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
   submat = gsl_matrix_submatrix(bx_ext, 0, 0, n, d); /* select x in (1,1) */
   gsl_matrix_memcpy(&submat.matrix, &x_mat.matrix); /* assign x */
   submat = gsl_matrix_submatrix(bx_ext, n, 0, d, d); /* select -I in (1,1)*/
   gsl_matrix_set_all(&submat.matrix,0);
   diag   = gsl_matrix_diagonal(&submat.matrix);     /* assign -I */
-  
-  
   gsl_vector_set_all(&diag.vector, -1);
 }
-
-
-
-
-
-
-
 
 /* 
 *  CHOLGAM: Choleski factorization of the block of reshaped Gamma  matrix
@@ -450,16 +420,12 @@ void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* P )
   gsl_matrix_view submat;
   gsl_matrix_view  b_w_k; 
   gsl_matrix *bx_ext = P->bx_ext;
-
   const int zero = 0;
-  
-  
 
   /* compute brgamma_k = b_x_ext' * w_k(1:(n+d),1:(n+d)) * b_x_ext */
   for (k = 0; k < S; k++) {
     submat = gsl_matrix_submatrix(P->brg_gamma, 0, k*D, D, D);
     b_w_k = gsl_matrix_submatrix(P->w.a[k], 0, 0, P->n_plus_d, P->n_plus_d);
-          
           
     /* compute tmp = x_ext' * w_k */
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, bx_ext, &b_w_k.matrix, 0.0, P->brg_tmp);
@@ -482,13 +448,9 @@ void cholesky_of_block_of_reshaped_gamma( stls_opt_data_reshaped* P )
     &P->d_times_s, /* row_dim(rb) */
     P->brg_dwork, &P->brg_ldwork, &info); /**/
 
-
-
-
   /* check for errors of mb02gd */
   if (info == 1) {
   }
-  
   
   if (info) { 
     PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
@@ -509,44 +471,23 @@ void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
   const int zero = 0, one = 1;
   gsl_matrix_view submat, mat, source; 
   gsl_vector_view subvec, res_vec;
-
-    
-  
-  
-  
-
   gsl_vector_view tmp1_row, tmp1_col;
   gsl_vector_view w_k_row, w_k_col;
-
-
-  /* first term of the Jacobian Gamma^{-1/2} kron(a,I_d) */
-
-
-
   gsl_matrix_view submat1, submat2;
   int ibr, ik, i1, j1, kbr;
   double a_kj;
-  
-  
 
- /* gsl_matrix_set_zero(P->brg_j1b);*/
-  
-  
+  /* first term of the Jacobian Gamma^{-1/2} kron(a,I_d) */
   for (j = 0; j < N; j++) {
     for (ik = 0; ik < P->k; ik++) {
-
       /* Fill right-hand matrix */
-  
       for (ibr = 0; ibr < P->m_div_k; ibr++) {
         for (k = 0; k < D; k++) {
           gsl_matrix_set(P->brg_j1b, k + ibr*D, k, gsl_matrix_get(P->a, ik + ibr * P->k,j)) ;
         }
       }
-      
-
       gsl_matrix_vectorize(P->brg_j1b_vec, P->brg_j1b);
-      
-      
+
       dtbtrs_("U", "T", "N", 
         &P->d_times_m_div_k, 
         &P->d_times_s_minus_1, 
@@ -558,29 +499,18 @@ void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
         &info);
 
       submat1 = gsl_matrix_submatrix(deriv, 0 + ik * P->d_times_m_div_k, j*D, P->d_times_m_div_k, D); 
-
       gsl_matrix_vec_inv(&submat1.matrix, P->brg_j1b_vec);
     }
   }
-    
-
-/*  gsl_matrix_memcpy(deriv, P->st); */
-/*  PRINTF("jacobian_new: step1 max, min = %f, %f, \n", gsl_matrix_max(P->st), gsl_matrix_min(P->st));*/
 
   /* second term (naive implementation) */
   res_vec = gsl_vector_view_array(P->brg_jres2, P->m_times_d);
 
-
-
   gsl_matrix *bx_ext = P->bx_ext;
   for (i = 0; i < N; i++) {
     for (j = 0; j < D; j++) {
-
-      /* Alternative */
-
       /* form dgamma = d/d x_ij gamma */
       gsl_matrix_set_zero(P->brg_tdgamma);
-
 
       for (k = 0; k < S; k++) {
         gsl_matrix_view  b_w_k = gsl_matrix_submatrix(P->w.a[k], 0, 0, P->n_plus_d, P->n_plus_d);
@@ -606,25 +536,14 @@ void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
         gsl_matrix_transpose_memcpy(&submat.matrix, &source.matrix);
       }
        
-
-       
       /* compute st_ij = DGamma * yr */
       subvec = gsl_matrix_column(P->brg_st, i*D+j);
-
-
-        
       for (l = 0; l < P->k; l++) { 
         gsl_vector_view subvec_res = gsl_vector_subvector(&res_vec.vector, l * P->d_times_m_div_k, P->d_times_m_div_k);
         gsl_vector_view subvec_yr = gsl_vector_subvector(P->brg_yr, l * P->d_times_m_div_k, P->d_times_m_div_k);
-
-        
         tmv_prod_new(P->brg_tdgamma, S, &subvec_yr.vector, P->m_div_k, &subvec_res.vector);  
-        
       }
       
-/*      PRINTF("hello4\n");*/
-
-
       /* solve st_ij = Gamma^{-1/2}st_ij */
       dtbtrs_("U", "T", "N", 
           &P->d_times_m_div_k, 
@@ -641,13 +560,9 @@ void jacobian_reshaped( stls_opt_data_reshaped* P, gsl_matrix* deriv )
     }
   }
 
-
-
-
   /* deriv = deriv - 0.5 * st */
   gsl_matrix_scale(P->brg_st, 0.5);
   gsl_matrix_sub(deriv, P->brg_st);
-
 }
 
 
@@ -672,9 +587,6 @@ double stls_f_reshaped_ (const gsl_vector* x, void* params)
   return ftf;
 }
 
-
-
-
 int stls_f_reshaped (const gsl_vector* x, void* params, gsl_vector* f)
 {
   stls_opt_data_reshaped *P = params;
@@ -688,13 +600,6 @@ int stls_f_reshaped (const gsl_vector* x, void* params, gsl_vector* f)
 
   return GSL_SUCCESS;
 }
-
-
-
-
-
-
-
 
 int stls_df_reshaped (const gsl_vector* x, void* params, gsl_matrix* deriv)
 {
@@ -711,19 +616,11 @@ int stls_df_reshaped (const gsl_vector* x, void* params, gsl_matrix* deriv)
   return GSL_SUCCESS;
 }
 
-
-
-
-
-
 int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f, 
         gsl_matrix* deriv)
 {
   stls_opt_data_reshaped *P = params;
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
-
-
-/*  PRINTF("test");*/
 
   xmat2_block_of_xext( x_mat, P->bx_ext );
   cholesky_of_block_of_reshaped_gamma(P);
@@ -735,15 +632,10 @@ int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f,
 
   compute_reshaped_c_minus_1_2_f(P->brg_yr, 0, P);
   
-/*    PRINTF("test2"); */
   jacobian_reshaped(P, deriv);
 
   return GSL_SUCCESS;
 }
-
-
-
-
 
 int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
   int l;
@@ -772,7 +664,6 @@ int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
 #define GET_T(s,l,m)    (GET_L(s,l) + (m/s->k) - 1) 
 #define GET_PLEN(s,l,m) (GET_T(s,l,m) *(s->k) * s->a[l].nb)
 
-
 int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p) {
   int m = c->size1;
   int sum_np = 0, sum_nl = 0;
@@ -782,7 +673,7 @@ int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p) {
   for (l = 0; l < s->q; l++) {
     L = GET_L(s,l);
     T = GET_T(s,l,m);
-    p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T  * s->k, s->a[l].nb);
+    p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T* s->k, s->a[l].nb);
     c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, m, s->a[l].ncol);
     for (j = 0; j < L; j++) {
       p_matr_chunk_sub = gsl_matrix_submatrix(&p_matr_chunk.matrix, j * s->k, 0, m, s->a[l].nb);
@@ -793,8 +684,6 @@ int stls_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p) {
     sum_np += GET_PLEN(s, l,m);
     sum_nl += s->a[l].ncol;
   }
-  
-  
 
   return GSL_SUCCESS;
 }
@@ -812,24 +701,16 @@ int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
 
   /* Compute r(X) */
   stls_f_reshaped(x, params, P->brg_f);
-  
-  tmp = gsl_blas_dnrm2(P->brg_f);
-  
-/*  PRINTF("Obj: %11.7f\n", tmp*tmp);*/
   compute_reshaped_c_minus_1_2_f(P->brg_f, 0, P);
   brgf_matr = gsl_matrix_view_vector(P->brg_f, P->m, P->d);
-
-
-
     
-  /* Create reversed matrix for Toeplitz blocks */
+  /* Create reversed Xext matrix for Toeplitz blocks */
   xext_rev = gsl_matrix_alloc(P->n_plus_d, P->d); 
 
   for (i = 0; i < P->n_plus_d; i++) {
     b_xext_sub = gsl_matrix_row(P->bx_ext, P->n_plus_d-i-1);
     gsl_matrix_set_row(xext_rev, i,  &b_xext_sub.vector);
   }
-
 
   /* Allocate a vector for intermediate results */  
   res = gsl_vector_alloc(P->n_plus_d);
@@ -846,8 +727,6 @@ int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
     L = GET_L(s,l);
     T = GET_T(s,l,P->m);
     p_len = GET_PLEN(s,l,P->m);
-
-
 
     /* Adjust the result size */
     res_sub = gsl_vector_subvector(res, 0, s->a[l].ncol);
