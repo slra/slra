@@ -37,6 +37,31 @@ static SEXP getListElement(SEXP list, const char *str) {
   } while(0)
 
 
+#define getRSLRAOption(opt, list, field, coerce)         \
+  do {                                                  \
+    getScalarListElement(opt.field, list, #field, coerce, SLRA_DEF_##field);  \
+  } while(0)
+
+
+
+static int getRSLRADispOption( SEXP OPTS ) {
+  SEXP str_value_sexp;
+  char *str_disp[] = { "", "notify", "final", "iter", "off" };
+  char *str_value = "";
+  if (TYPEOF((str_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
+    str_value = CHAR(STRING_ELT(str_value_sexp, 0));
+
+    for (int i = 1; i < sizeof(str_disp) / sizeof(str_disp[0]); i++) {
+      if (strcmp(str_disp[i], str_value) != 0) {
+        return i;
+      }
+    }
+  }
+  
+  return SLRA_DEF_disp;
+}
+
+
 
 
 /********************************
@@ -87,27 +112,18 @@ SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
   }
 
   /* Convert options */
-  getScalarListElement(opt.maxiter, OPTS, "maxiter", asInteger, 100);
-  getScalarListElement(opt.epsabs, OPTS, "epsabs", asReal, 0);
-  getScalarListElement(opt.epsrel, OPTS, "epsrel", asReal, 1e-5);
-  getScalarListElement(opt.epsgrad, OPTS, "epsgrad", asReal, 1e-5);
-  getScalarListElement(opt.reggamma, OPTS, "reggamma", asReal, 0.001);
+  opt.disp = getRSLRADispOption(OPTS);
+  slraAssignDefOptValue(opt,method);
+  slraAssignDefOptValue(opt,submethod);
+  getRSLRAOption(opt, OPTS, maxiter, asInteger);
+  getRSLRAOption(opt, OPTS, epsabs, asReal);
+  getRSLRAOption(opt, OPTS, epsrel, asReal);
+  getRSLRAOption(opt, OPTS, epsgrad, asReal);
+  getRSLRAOption(opt, OPTS, epsx, asReal);
+  getRSLRAOption(opt, OPTS, step, asReal);
+  getRSLRAOption(opt, OPTS, tol, asReal);
+  getRSLRAOption(opt, OPTS, reggamma, asReal);
 
-  char *str_disp[] = { "", "notify", "final", "iter", "off" };
-  SEXP str_disp_value_sexp;
-  char *str_disp_value = "";
-  opt.disp = 3;
-
-  if (TYPEOF((str_disp_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
-    str_disp_value = CHAR(STRING_ELT(str_disp_value_sexp, 0));
-
-    for (int i = 1; i < sizeof(str_disp) / sizeof(str_disp[0]); i++) {
-      if (strcmp(str_disp[i], str_disp_value) != 0) {
-        opt.disp = i;
-        break;
-      }
-    }
-  }
  
   slra(p, &s, x, v, &opt,TYPEOF(X) != NILSXP, compdp); 
 

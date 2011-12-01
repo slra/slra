@@ -17,12 +17,72 @@
 /* on exit: zero success, otherwise error code: EITER, GSL_ETOLF, GSL_ETOLX, GSL_ETOLG */
 
 
+static void numer_grad( gsl_vector* x, stls_opt_data_reshaped *P, gsl_vector *grad ) {
+  gsl_vector *x2;
+  double f, f2, dx = 0.00001;
+  int i;
+
+  x2 = gsl_vector_alloc(x->size);
+  
+  f = stls_f_reshaped_(x, P);
+
+
+  for (i = 0; i < x->size; i++) {
+    gsl_vector_memcpy(x2, x);
+    gsl_vector_set(x2, i, gsl_vector_get(x2, i) + dx);
+    f2 = stls_f_reshaped_(x2, P);
+    
+    gsl_vector_set(grad, i, (f2 - f) /dx);
+  }
+  
+  gsl_vector_free(x2);
+}
+
+
+
+
+static void comp_meth( gsl_vector* x, stls_opt_data_reshaped *P ) {
+
+  
+  gsl_vector *grad1 = gsl_vector_alloc(P->n * P->d);
+  gsl_vector *grad2 = gsl_vector_alloc(P->n * P->d);
+  gsl_vector *grad3 = gsl_vector_alloc(P->n * P->d);
+  gsl_matrix *jac = gsl_matrix_alloc(P->m * P->d, P->n * P->d);
+  gsl_vector *f1 = gsl_vector_alloc(P->m * P->d);
+  double val1 = 0, val2 = 0, norm3;
+
+  
+  PRINTF("Compare two methods for derivative:\n");
+  stls_fdf_reshaped(x, P, f1, jac);
+  stls_fdf_reshaped_(x, P, &val2, grad2);
+  numer_grad(x, P, grad3);
+  gsl_blas_ddot(f1, f1, &val1);
+  gsl_blas_dgemv(CblasTrans, 2.0, jac, f1, 0.0, grad1);
+
+  PRINTF("Cost diff = %f, pseudo grad, grad_new, numer_grad\n", val1 - val2);
+
+
+  print_arr(grad1->data,  grad1->size);
+  print_arr(grad2->data,  grad2->size);
+  print_arr(grad3->data,  grad3->size);
+
+  gsl_vector_sub(grad1, grad2);
+  gsl_blas_ddot(grad1, grad1, &norm3);
+  PRINTF("Deriv diff norm = %f\n", sqrt(norm3));
+  
+  
+  gsl_vector_free(grad1);
+  gsl_vector_free(grad2);
+  gsl_vector_free(grad3);
+  gsl_vector_free(f1);
+  gsl_matrix_free(jac);
+}
+
 
 
 int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph ) {
   int status;
-  char method = 'l';
   int status_dx, status_grad, k;
   double g_norm, x_norm;
   int m,n,d ;
@@ -33,10 +93,34 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
    /*stls_opt_data_old params;*/
   stls_opt_data_reshaped params;
   flex_struct_add_info si;
+
+
+  const gsl_multifit_fdfsolver_type *Tlm[] = { gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder };
+
+  const gsl_multimin_fdfminimizer_type *Tqn[] = 
+             { gsl_multimin_fdfminimizer_vector_bfgs, gsl_multimin_fdfminimizer_vector_bfgs2,
+               gsl_multimin_fdfminimizer_conjugate_fr, gsl_multimin_fdfminimizer_conjugate_pr };
+               
+  const gsl_multimin_fminimizer_type *Tnm[] = 
+             { gsl_multimin_fminimizer_nmsimplex,gsl_multimin_fminimizer_nmsimplex2, 
+               gsl_multimin_fminimizer_nmsimplex2rand };
+               
+               
+  
+  int submethod_max[] = { sizeof(Tlm) / sizeof(Tlm[0]), sizeof(Tqn) / sizeof(Tqn[0]),
+          sizeof(Tnm) / sizeof(Tnm[0]) };  
+
  
 
   t_b = clock();
   /* constants */
+  
+  if (opt->method < 0 || opt->method > sizeof(submethod_max) /sizeof(submethod_max[0]) || 
+      opt->submethod < 0 || opt->submethod > submethod_max[opt->method]) {
+    PRINTF("Unknown optimization method.\n");   
+    return GSL_EINVAL;
+  }
+
   
   if (check_and_adjust_parameters(s, &si) != GSL_SUCCESS) {
     PRINTF("Error in structure specification: incorrect number of rows in a subblock.\n");   
@@ -101,59 +185,54 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
 
   /* LM */
-  const gsl_multifit_fdfsolver_type *Tlm
-    = gsl_multifit_fdfsolver_lmder;
   gsl_multifit_fdfsolver* solverlm;
 /*  gsl_multifit_function_fdf fdflm = { &stls_f, &stls_df, &stls_fdf, m * d, n * d, &params};*/
   gsl_multifit_function_fdf fdflm = { &stls_f_reshaped, &stls_df_reshaped, &stls_fdf_reshaped, m * d, n * d, &params};
   gsl_vector *g;
 
   /* QN */
-  double stepqn = 0.001; /* ??? */
-  const gsl_multimin_fdfminimizer_type *Tqn
-    = gsl_multimin_fdfminimizer_vector_bfgs;
+  double stepqn = opt->step; /* ??? */
+/*    gsl_multimin_fdfminimizer_vector_bfgs2;*/
   gsl_multimin_fdfminimizer* solverqn;
-  gsl_multimin_function_fdf fdfqn;
-/*  gsl_multimin_function_fdf fdfqn = { &stls_f_, &stls_df_, &stls_fdf_, P->n_times_d, P };*/
+  gsl_multimin_function_fdf fdfqn = { &stls_f_reshaped_, &stls_df_reshaped_, &stls_fdf_reshaped_, n * d, &params };
 
   /* NM */
   double size;
   gsl_vector *stepnm;
-  const gsl_multimin_fminimizer_type *Tnm
-    = gsl_multimin_fminimizer_nmsimplex;
   gsl_multimin_fminimizer* solvernm;
   gsl_multimin_function fnm = { &stls_f_reshaped_, n * d, &params };
 
   /* vectorize x row-wise */
   gsl_vector_view x_vec;
   x_vec = gsl_vector_view_array(x->data, n * d);
+  
+  
+  /* comp_meth(&x_vec.vector, &params); */
 
   /* initialize the optimization method */
-  switch (method) {
-  case 'l': /* LM */
-    solverlm = gsl_multifit_fdfsolver_alloc(Tlm, m * d, n * d);
+  switch (opt->method) {
+  case SLRA_OPT_METHOD_LM: /* LM */
+    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], m * d, n * d);
     gsl_multifit_fdfsolver_set(solverlm, &fdflm, &x_vec.vector);
     g = gsl_vector_alloc(n * d);
     break;
-  case 'q': /* QN * /
-
-    solverqn = gsl_multimin_fdfminimizer_alloc(Tqn, P->n_times_d);
-    gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, &x_vec.vector, stepqn, opt->epsabs);
-    status_dx = GSL_CONTINUE;  */
+  case SLRA_OPT_METHOD_QN: /* QN */
+    solverqn = gsl_multimin_fdfminimizer_alloc( Tqn[opt->submethod], n * d );
+    gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, &x_vec.vector, stepqn, opt->tol); /* opt->epsabs);*/
+    status_dx = GSL_CONTINUE;  
     break;
-  case 'n': /* NM */
-    solvernm = gsl_multimin_fminimizer_alloc( Tnm, n * d );
+  case SLRA_OPT_METHOD_NM: /* NM */
+    solvernm = gsl_multimin_fminimizer_alloc( Tnm[opt->submethod], n * d );
     stepnm = gsl_vector_alloc( n * d );
-    gsl_vector_set_all( stepnm, 0.001 ); /* ??? */
+    gsl_vector_set_all(stepnm, opt->step); 
     gsl_multimin_fminimizer_set( solvernm, &fnm, &x_vec.vector, stepnm );
     break;
-  default:
-    ; /* error */
   }
 
   /* optimization loop */
-  if (opt->disp == 2 || opt->disp == 3)
+  if (opt->disp == 2 || opt->disp == 3) {
     PRINTF("STLS optimization:\n");
+  }
     
     
   status_dx = GSL_CONTINUE;
@@ -163,8 +242,8 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   while (status_dx == GSL_CONTINUE && status_grad == GSL_CONTINUE && opt->iter < opt->maxiter) {
     /* print_vec(solverlm->x); */
     opt->iter++;
-    switch (method) {
-    case 'l': /* Levenberge-Marquardt */
+    switch (opt->method) {
+    case SLRA_OPT_METHOD_LM: /* Levenberge-Marquardt */
       status = gsl_multifit_fdfsolver_iterate( solverlm );
       /* check for convergence problems */
       if (status == GSL_ETOLF || status == GSL_ETOLX || status == GSL_ETOLG)
@@ -184,17 +263,17 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
-    case 'q':
+    case SLRA_OPT_METHOD_QN:
       status = gsl_multimin_fdfminimizer_iterate( solverqn );
       /* check the convergence criteria */
       status_grad = gsl_multimin_test_gradient(
 	   gsl_multimin_fdfminimizer_gradient( solverqn), opt->epsgrad );
       break;
-    case 'n':
+    case SLRA_OPT_METHOD_NM:
       status = gsl_multimin_fminimizer_iterate( solvernm );
       /* check the convergence criteria */
       size = gsl_multimin_fminimizer_size( solvernm );
-      gsl_multimin_test_size( size, opt->epsabs );
+      status_dx = gsl_multimin_test_size( size, opt->epsx );
       /* print information */
       if (opt->disp == 3) {
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
@@ -208,17 +287,20 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   }
   opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
-  switch (method) {
-  case  'l':
+  switch (opt->method) {
+  case  SLRA_OPT_METHOD_LM:
     /* return the results */
     gsl_vector_memcpy(&x_vec.vector, solverlm->x);
     gsl_multifit_covar(solverlm->J, opt->epsrel, v);
     /* assign the opt output fields */
     gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
     break;
-  case 'q':
+  case SLRA_OPT_METHOD_QN:
+    gsl_vector_memcpy(&x_vec.vector, solverqn->x);
+
+    opt->fmin = solverqn->f;
     break;
-  case 'n':
+  case SLRA_OPT_METHOD_NM:
     /* return the results */
     gsl_vector_memcpy(&x_vec.vector, solvernm->x);
     /* gsl_multifit_covar( J??, opt->epsrel, v); */
@@ -249,8 +331,6 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     case GSL_ETOLG:
       PRINTF("Lack of convergence: change in gradient < EPS.\n");
       break;
-    default:
-      break;
     }
     if ( !status && (opt->disp == 2 || opt->disp == 3) ) { /* no error and ( final or iter ) */ 
       if (status_grad == GSL_CONTINUE) {
@@ -266,15 +346,17 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     }
   }
 
-  switch (method) {
-  case 'l': /* LM */
+
+  /* Cleanup  */
+  switch (opt->method) {
+  case SLRA_OPT_METHOD_LM: /* LM */
     gsl_multifit_fdfsolver_free(solverlm);
     gsl_vector_free(g);
     break;
-  case 'q': /* QN */
+  case SLRA_OPT_METHOD_QN: /* QN */
     gsl_multimin_fdfminimizer_free(solverqn);
     break;
-  case 'n': /* NM */
+  case SLRA_OPT_METHOD_NM: /* NM */
     gsl_multimin_fminimizer_free(solvernm);
     gsl_vector_free(stepnm);
     break;

@@ -36,19 +36,80 @@
 extern "C" {
 #endif
 
+#define SLRA_OPT_METHOD_LM   0
+#define SLRA_OPT_METHOD_QN   1
+#define SLRA_OPT_METHOD_NM   2
+
+#define SLRA_OPT_SUBMETHOD_LM_LMDER         0
+#define SLRA_OPT_SUBMETHOD_LM_LMSDER        1
+
+
+#define SLRA_OPT_SUBMETHOD_QN_BFGS          0
+#define SLRA_OPT_SUBMETHOD_QN_BFGS2         1
+#define SLRA_OPT_SUBMETHOD_QN_CONJUGATE_PR  2
+#define SLRA_OPT_SUBMETHOD_QN_CONJUGATE_FR  3
+
+#define SLRA_OPT_SUBMETHOD_NM_SIMPLEX       0
+#define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2      1
+#define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2_RAND 2
+
 
 /* optimization options and output information structure */
 typedef struct {
-  /* input options */
-  int maxiter, disp; /* displayed information: 1 - notify, 2 - final, 3 - iter, 4 - off */
-  double epsrel, epsabs, epsgrad;
+  int disp; /* displayed information: 1 - notify, 2 - final, 3 - iter, 4 - off */
+  
+  /* method */
+  int method;
+  int submethod;
+  
+  /* stopping criterion */  
+  int maxiter;
+  double epsabs, epsrel, epsgrad;
+  double epsx;
+  
+  /* optimization parameters */
+  double step;
+  double tol;
   
   double reggamma; /* To be worked out */
+
   /* output information */
   int iter;
   double fmin;
   double time;
 } opt_and_info;
+
+
+#define SLRA_DEF_disp       3 
+#define SLRA_DEF_method     SLRA_OPT_METHOD_LM
+#define SLRA_DEF_submethod  0
+#define SLRA_DEF_maxiter  100 
+#define SLRA_DEF_epsabs   0
+#define SLRA_DEF_epsrel   1e-5
+#define SLRA_DEF_epsgrad  1e-5
+#define SLRA_DEF_epsx     1e-3
+#define SLRA_DEF_step     0.001
+#define SLRA_DEF_tol      0.01
+#define SLRA_DEF_reggamma 0.001
+
+#define slraAssignDefOptValue(opt,field) do { opt.field = SLRA_DEF_##field; } while(0)
+
+
+#define slraAssignDefOptValues(opt) do {  \
+            slraAssignDefOptValue(opt,disp); \
+            slraAssignDefOptValue(opt,method); \
+            slraAssignDefOptValue(opt,submethod);   \
+            slraAssignDefOptValue(opt,maxiter); \
+            slraAssignDefOptValue(opt,epsabs); \
+            slraAssignDefOptValue(opt,epsrel); \
+            slraAssignDefOptValue(opt,epsgrad); \
+            slraAssignDefOptValue(opt,epsx); \
+            slraAssignDefOptValue(opt,step); \
+            slraAssignDefOptValue(opt,tol); \
+            slraAssignDefOptValue(opt,reggamma); \
+          } while(0)
+
+
 
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
@@ -183,6 +244,12 @@ typedef struct {
   
   double *brg_j1b_vec;
   gsl_matrix *brg_j1b;
+  
+  
+  gsl_matrix *brg_grad_N_k;
+  gsl_matrix *brg_grad_Vx_k;
+  gsl_matrix *brg_grad_tmp1;
+  gsl_matrix *brg_grad_tmp2;
 } stls_opt_data_reshaped;
 
 
@@ -256,6 +323,12 @@ int stls_f (const gsl_vector*, void*, gsl_vector*);
 int stls_df (const gsl_vector*, void*, gsl_matrix*);
 int stls_fdf (const gsl_vector*, 
 	      void*, gsl_vector*, gsl_matrix*);
+
+
+void stls_df_reshaped_ (const gsl_vector* x, void* params,  gsl_vector* grad);
+void stls_fdf_reshaped_ (const gsl_vector* x, void* params, double *f, gsl_vector* grad);
+void grad_reshaped( stls_opt_data_reshaped* P, gsl_vector* grad );
+
 
 
 /* SLICOT and LAPACK functions */

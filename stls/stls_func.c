@@ -260,6 +260,12 @@ void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const dat
   P->brg_jres2  = malloc( P->m_times_d * sizeof(double));
 
 
+  P->brg_grad_N_k = gsl_matrix_alloc(P->d, P->d);
+  P->brg_grad_Vx_k = gsl_matrix_alloc(P->n, P->d);
+  P->brg_grad_tmp1 = gsl_matrix_alloc(P->n, P->d);
+  P->brg_grad_tmp2 = gsl_matrix_alloc(P->n, P->d);
+
+
 
 /*  PRINTF("%p %p %p", P->brg_rb, P->brg_dwork, P->brg_gamma_vec);*/
 }
@@ -292,6 +298,13 @@ void free_memory_reshaped( stls_opt_data_reshaped *P ) {
 
   free(P->brg_jres2);
   gsl_matrix_free(P->brg_st);
+  
+  
+  
+  gsl_matrix_free(P->brg_grad_N_k);
+  gsl_matrix_free(P->brg_grad_Vx_k);
+  gsl_matrix_free(P->brg_grad_tmp1);
+  gsl_matrix_free(P->brg_grad_tmp2);
 }
 
 #define M (P->m)
@@ -307,7 +320,7 @@ void free_memory_reshaped( stls_opt_data_reshaped *P ) {
 
 
 
-static void compute_reshaped_f( gsl_vector* f, gsl_matrix_const_view x_mat, stls_opt_data_reshaped * P ) {
+static void compute_reshaped_r( gsl_vector* f, gsl_matrix_const_view x_mat, stls_opt_data_reshaped * P ) {
   gsl_matrix_view f_mat = gsl_matrix_view_vector(f, M, D); 
  
   gsl_matrix_memcpy(&f_mat.matrix, P->brg_b);
@@ -315,7 +328,7 @@ static void compute_reshaped_f( gsl_vector* f, gsl_matrix_const_view x_mat, stls
      P->brg_a, &x_mat.matrix, -1.0, &f_mat.matrix);
 }
 
-static void compute_reshaped_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_data_reshaped * P ) {
+static void compute_reshaped_c_minus_1_2_r( gsl_vector* f, int trans, stls_opt_data_reshaped * P ) {
   int info;
   int i;
 
@@ -330,7 +343,7 @@ static void compute_reshaped_c_minus_1_2_f( gsl_vector* f, int trans, stls_opt_d
     &info);
 }
 
-static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data_reshaped * P ) {
+static void compute_reshaped_c_minus_1_r( gsl_vector* f, stls_opt_data_reshaped * P ) {
   int info;
   
     dpbtrs_("U", 
@@ -356,7 +369,7 @@ static void compute_reshaped_c_minus_1_f( gsl_vector* f, stls_opt_data_reshaped 
  * 
  * Reshaped vector can be multiplied by (smaller) block of reshaped gamma matrix
  *************************************/
-/*void reshape_f( gsl_vector *reshaped, gsl_vector * original, void* params, int forward ) {
+/*void reshape_r( gsl_vector *reshaped, gsl_vector * original, void* params, int forward ) {
   gsl_vector_view w_orig, w_resh;
    int j, i; 
     
@@ -595,8 +608,8 @@ int stls_f_reshaped (const gsl_vector* x, void* params, gsl_vector* f)
   xmat2_block_of_xext( x_mat, P->bx_ext );
   cholesky_of_block_of_reshaped_gamma(P);
   
-  compute_reshaped_f(f, x_mat, P);
-  compute_reshaped_c_minus_1_2_f(f, 1, P);
+  compute_reshaped_r(f, x_mat, P);
+  compute_reshaped_c_minus_1_2_r(f, 1, P);
 
   return GSL_SUCCESS;
 }
@@ -608,13 +621,14 @@ int stls_df_reshaped (const gsl_vector* x, void* params, gsl_matrix* deriv)
 
   xmat2_block_of_xext(x_mat, P->bx_ext);
   cholesky_of_block_of_reshaped_gamma(P);
-  compute_reshaped_f(P->brg_yr, x_mat, P);
-  compute_reshaped_c_minus_1_f(P->brg_yr, P);
+  compute_reshaped_r(P->brg_yr, x_mat, P);
+  compute_reshaped_c_minus_1_r(P->brg_yr, P);
 
   jacobian_reshaped(P, deriv);
 
   return GSL_SUCCESS;
 }
+
 
 int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f, 
         gsl_matrix* deriv)
@@ -625,17 +639,111 @@ int stls_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f,
   xmat2_block_of_xext( x_mat, P->bx_ext );
   cholesky_of_block_of_reshaped_gamma(P);
 
-  compute_reshaped_f(P->brg_yr, x_mat, P);
-  compute_reshaped_c_minus_1_2_f(P->brg_yr, 1, P);
+  compute_reshaped_r(P->brg_yr, x_mat, P);
+  compute_reshaped_c_minus_1_2_r(P->brg_yr, 1, P);
 
   gsl_vector_memcpy(f, P->brg_yr);
 
-  compute_reshaped_c_minus_1_2_f(P->brg_yr, 0, P);
+  compute_reshaped_c_minus_1_2_r(P->brg_yr, 0, P);
   
   jacobian_reshaped(P, deriv);
 
   return GSL_SUCCESS;
 }
+
+
+
+void stls_fdf_reshaped_ (const gsl_vector* x, void* params, double *f, gsl_vector* grad)
+{
+  stls_opt_data_reshaped *P = params;
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
+
+  xmat2_block_of_xext(x_mat, P->bx_ext);
+  cholesky_of_block_of_reshaped_gamma(P);
+  
+  compute_reshaped_r(P->brg_yr, x_mat, P);
+  if (f !=  NULL) {
+    gsl_vector_memcpy(P->brg_f, P->brg_yr);  
+  }
+  compute_reshaped_c_minus_1_r(P->brg_yr, P);
+  if (f !=  NULL) {
+    gsl_blas_ddot(P->brg_f, P->brg_yr, f);
+  }
+
+  grad_reshaped(P, grad);
+
+}
+
+
+void stls_df_reshaped_ (const gsl_vector* x, void* params,  gsl_vector* grad)
+{
+  stls_fdf_reshaped_(x, params, NULL,  grad);
+}
+
+
+
+void grad_reshaped( stls_opt_data_reshaped* P, gsl_vector* grad )
+{
+  int ik, k;
+  gsl_vector_view yr_sub, grad_sub;
+  gsl_matrix_view yr_sub_matr, yr_sub_matr_sub1, yr_sub_matr_sub2,  grad_matr;
+  gsl_matrix_view wk_sub_matr;
+
+  
+  gsl_matrix *N_k = P->brg_grad_N_k, *Vx_k = P->brg_grad_Vx_k, *tmp1 = P->brg_grad_tmp1, *tmp2 = P->brg_grad_tmp2;
+  
+  
+
+
+  yr_sub_matr = gsl_matrix_view_vector(P->brg_yr, P->m, P->d);
+  grad_matr = gsl_matrix_view_vector(grad, P->n, P->d);
+
+  /* Compute term 1 */
+  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, P->brg_a, &yr_sub_matr.matrix, 0.0, &grad_matr.matrix);
+  
+
+  /* Compute term 2 */  
+    
+    
+    /* Compute for W_0 */
+    for (k = 0; k < P->w.s; k++) {
+      wk_sub_matr = gsl_matrix_submatrix(P->w.a[k], 0, 0, P->n, P->n_plus_d);
+      gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, -2.0, &wk_sub_matr.matrix, P->bx_ext, 0.0, tmp1);
+
+      if (k > 0) {
+        wk_sub_matr = gsl_matrix_submatrix(P->w.a[k], 0, 0, P->n_plus_d, P->n);
+        gsl_blas_dgemm(CblasTrans, CblasNoTrans, -2.0, &wk_sub_matr.matrix, P->bx_ext, 0.0, tmp2);
+      }
+
+
+      for (ik = 0; ik < P->k; ik++) {
+        yr_sub = gsl_vector_subvector(P->brg_yr, ik * P->d_times_m_div_k, P->d_times_m_div_k);
+        yr_sub_matr = gsl_matrix_view_vector(&yr_sub.vector, P->m_div_k, P->d);
+        yr_sub_matr_sub1 = gsl_matrix_submatrix(&yr_sub_matr.matrix, 0, 0,  P->m_div_k - k, P->d);
+        yr_sub_matr_sub2 = gsl_matrix_submatrix(&yr_sub_matr.matrix, k, 0,  P->m_div_k - k, P->d);
+        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &yr_sub_matr_sub1.matrix, &yr_sub_matr_sub2.matrix, 0.0, N_k);
+
+        gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, tmp1, N_k, 1.0, &grad_matr.matrix);
+        
+        if (k > 0) {
+          gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, tmp2, N_k, 1.0, &grad_matr.matrix);
+        }
+      }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
   int l;
@@ -701,7 +809,7 @@ int stls_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
 
   /* Compute r(X) */
   stls_f_reshaped(x, params, P->brg_f);
-  compute_reshaped_c_minus_1_2_f(P->brg_f, 0, P);
+  compute_reshaped_c_minus_1_2_r(P->brg_f, 0, P);
   brgf_matr = gsl_matrix_view_vector(P->brg_f, P->m, P->d);
     
   /* Create reversed Xext matrix for Toeplitz blocks */

@@ -95,12 +95,14 @@ void gsl_to_m_matrix( double*, gsl_matrix* );
 
 
 
-#define DEF_disp 3 
-#define DEF_epsabs 0
-#define DEF_epsrel 1e-6
-#define DEF_epsgrad 1e-6
-#define DEF_maxiter 100
-#define DEF_reggamma 0.00001
+
+void tolowerstr( char * str ) {
+  char *c;
+  for (c = str; *c != '\0'; c++) {
+    *c = tolower(*c);
+  }
+}
+
 
 
 
@@ -108,7 +110,7 @@ void gsl_to_m_matrix( double*, gsl_matrix* );
           if (! strcmp(field_name, #name)) {  \
             opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); \
             if (opt.name < lvalue) { \
-              opt.name = DEF_##name; \
+              opt.name = SLRA_DEF_##name; \
               mexWarnMsgTxt("Ignoring optimization option '"#name"' because '"#name"' < "#lvalue"."); \
             } \
           }
@@ -117,7 +119,7 @@ void gsl_to_m_matrix( double*, gsl_matrix* );
           if (! strcmp(field_name, #name)) {  \
             opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); \
             if (opt.name < lvalue || opt.name > uvalue) { \
-              opt.name = DEF_##name; \
+              opt.name = SLRA_DEF_##name; \
               mexWarnMsgTxt("Ignoring optimization option '"#name"' because '"#name"' < "#lvalue" or '"#name"' > "#uvalue"."); \
             } \
           }
@@ -136,6 +138,17 @@ void mexFunction( int nlhs, mxArray *plhs[],
   char str_buf[STR_MAX_LEN];
   char str_codes[] = " THUE";
   char *str_disp[] = {"",  "notify", "final", "iter", "off" };
+  
+  char meth_codes[] = "lqn";
+  char submeth_codes_lm[] = "ls";
+  char submeth_codes_qn[] = "b2pf";
+  char submeth_codes_nm[] = "b2pf";
+  char *submeth_codes[] = { submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
+  int submeth_codes_max[] = { sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]), 
+          sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]), 
+          sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) };
+  
+  
   
   double *s_m;
   int l, i; 
@@ -214,7 +227,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   }
     
   /* Check initial approximation prhs[3] */
-  has_x = (nrhs >= 4);
+  has_x = (nrhs >= 4) & (mxGetM(prhs[3]) > 0);
   if (has_x) {
     /* check dimensions of prhs[3] */
     if ( n != mxGetM(prhs[3]) ) {/* check n */
@@ -244,11 +257,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
   /* optimization options prhs[4] */
   /* default options */
-  opt.maxiter = DEF_maxiter;
-  opt.epsrel  = DEF_epsrel;
-  opt.epsabs  = DEF_epsabs;
-  opt.epsgrad = DEF_epsgrad;
-  opt.disp    = DEF_disp;
+  slraAssignDefOptValues(opt);
+
   /* user supplied options */
   if (nrhs >= 5) {
     if (! mxIsStruct(prhs[4]))
@@ -260,21 +270,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
       for (l = 0; l < nfields; l++) {
 	field_name_ptr = mxGetFieldNameByNumber(prhs[4], l);
 	strcpy(field_name, field_name_ptr);
-	/* lowercase field_name */
-	for (c = field_name; *c != '\0'; c++)
-	  *c = tolower(*c);
+	tolowerstr(field_name);
+	
 	/* which option */
-	IfCheckAndStoreFieldBoundL(maxiter, 0) 
-        else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
-	else IfCheckAndStoreFieldBoundL(reggamma, 0) 
-        else if (! strcmp(field_name, DISP_STR)) {
+	if (! strcmp(field_name, DISP_STR)) {
  	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, STR_MAX_LEN); 
-	  /* lowercase str_buf */
-	  for (c = str_buf; *c != '\0'; c++) {
-	    *c = tolower(*c);
-	  }
+	  tolowerstr(str_buf);
 	    
 	  for (i = sizeof(str_disp)/sizeof(str_disp[0]) - 1; i > 0; i--)  {
 	    if (!strcmp(str_buf, str_disp[i])) {
@@ -282,10 +283,46 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	      break;
 	    }
 	  }
-	  if (i == 0) {
+	  if (i <= 0) {
 	    mexWarnMsgTxt("Ignoring optimization option 'disp'. Unrecognized value.");
 	  }
- 	} else { 
+ 	} else if (! strcmp(field_name, "method")) {
+ 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, STR_MAX_LEN); 
+	  tolowerstr(str_buf);
+	  
+	  for (i = sizeof(meth_codes)/sizeof(meth_codes) - 1; i >= 0; i--)  {
+	    if (str_buf[0] == meth_codes[i]) {
+	      opt.method = i;
+	      break;
+	    }
+	  } 
+	  
+	  if (i < 0)  {
+	    mexWarnMsgTxt("Ignoring optimization option 'method'. Unrecognized value.");
+	    slraAssignDefOptValue(opt, method);
+	    slraAssignDefOptValue(opt, submethod);
+	  }
+
+
+	  for (i = submeth_codes_max[opt.method] - 1; i >= 0; i--)  {
+	    if (str_buf[1] == submeth_codes[opt.method][i]) {
+	      opt.submethod = i;
+	      break;
+	    }
+	  } 
+	  if (i < 0)  {
+	    mexWarnMsgTxt("Unrecognized submethod.");
+	    slraAssignDefOptValue(opt, submethod);
+	  }
+ 	} else IfCheckAndStoreFieldBoundL(maxiter, 0)  
+        else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(epsx, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(step, 0, 1) 
+        else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
+	else IfCheckAndStoreFieldBoundL(reggamma, 0) 
+        else { 
  	  sprintf(err_msg, "Ignoring unrecognized optimization option '%s'.", field_name); 
 	  mexWarnMsgTxt(err_msg); 
  	} 

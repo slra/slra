@@ -92,6 +92,6 @@ void print_arr(double* a, int n)
 
   PRINTF("\n");
   for (i = 0; i < n; i++)
-    PRINTF("%f\n",*(a+i));
+    PRINTF("%f ",*(a+i));
   PRINTF("\n");
 }

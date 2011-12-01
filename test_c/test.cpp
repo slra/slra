@@ -12,11 +12,16 @@
 #include "stls.h"
 
 /* default constants for the exit condition */
-#define MAXITER 600
-#define EPSABS  0
-#define EPSREL  1e-5
-#define EPSGRAD 1e-5
-#define DISP    3     /* per iteration */
+#define MAXITER  500
+#define EPSABS   0
+#define EPSREL   1e-5
+#define EPSGRAD  1e-5
+#define EPSX     1e-3
+#define DISP     3     /* per iteration */
+#define STEP     0.001
+#define REGGAMMA 0.001
+
+
 
 #define TEST_NUM 7
 
@@ -53,13 +58,20 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
 
 
 
+
+
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
   char str_codes[] = " THUE";
   data_struct s = {1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
-  opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0.01,  0, 0.0, 0.0};
+  opt_and_info opt;
+  
+  slraAssignDefOptValues(opt);
+  opt.maxiter = 500;
+  
+  
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
   int x_given;
   char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
