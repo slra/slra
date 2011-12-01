@@ -68,8 +68,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   FILE *file;
 
   /* default file names */
-  sprintf(faname,"a%s.txt",testname);
-  sprintf(fbname,"b%s.txt",testname);
+/*  sprintf(faname,"a%s.txt",testname);
+  sprintf(fbname,"b%s.txt",testname);*/
   sprintf(fxname,"x%s.txt",testname);
   sprintf(fpname,"p%s.txt",testname);
   sprintf(fxtname,"xt%s.txt",testname);
@@ -105,12 +105,12 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     fclose(file);
 
     /* read the data a, b from a.txt and b.txt */
-    if (((a = gsl_matrix_alloc(m, n)) == NULL) || !read_mat(a, faname, log)) {
+/*    if (((a = gsl_matrix_alloc(m, n)) == NULL) || !read_mat(a, faname, log)) {
       throw 1;
     }
     if (((b = gsl_matrix_alloc(m, d)) == NULL) || !read_mat(b, fbname, log)) {
       throw 1;
-    }
+    }*/
 
 
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
@@ -120,7 +120,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     x_given = read_mat(x, fxname, log);
 
 
-    if (((p = gsl_vector_alloc(np)) == NULL)) { 
+    if (((p = gsl_vector_alloc(np)) == NULL) || !read_vec(p, fpname, log)) { 
       throw 1;
     }
 
@@ -129,16 +129,10 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
 
     
-    if (!read_vec(p, fpname, log)) {
-      gsl_vector_free(p);
-      p = NULL;
-    }
     
     gsl_vector_memcpy(p2,p);
 
     
-//    print_mat(x);
-
     if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
@@ -156,7 +150,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
 
     /* call stls */  
-    stls(a, b, &s, x, v, &opt, p, x_given, 1 /* Compute correction */);
+    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */);
 
     if (!silent) {
       print_mat(x);
@@ -244,7 +238,7 @@ int main(int argc, char *argv[])
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
-      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], true);
+      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);
 
   /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  
@@ -259,7 +253,7 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n");
     printf("------------------------------------------------------------------------\n");
-    printf("|  # |       Time | Iter |     Minimum |   Min(comp) |            Diff |\n");
+    printf("|  # |       Time | Iter |     Minimum |   Min(comp) |        Diff (X) |\n");
     printf("------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
       printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);

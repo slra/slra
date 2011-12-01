@@ -1,22 +1,21 @@
 \name{rstls}
-\alias{stls}
+\alias{slra}
 
-\title{Function for solving structured total least squares problem}
+\title{Function for solving structured low rank approximation problem}
 
 \description{R interface for the STLS package solver}
 
 \usage{
-stls <- function(A = NULL, B = NULL, S, X = NULL, opts = list(epsabs = 0, epsrel = 1e-6, epsgrad = 1e-6, maxiter = 100, disp = 'iter'),
-           P = NULL, compute.dp = !is.null(P))
+stls <- function(P, S, R, X = NULL, opts = list(epsabs = 0, epsrel = 1e-6, epsgrad = 1e-6, maxiter = 100, disp = 'iter'),
+           compute.dp = FALSE)
 }
 
 \arguments{
-  \item{A}{A matrix}
-  \item{B}{B matrix}
+  \item{P}{vector of parameters (e.g. time series for Hankel matrices) }
   \item{S}{structure specification}
+  \item{R}{rank (by default the number of columns - 1)}
   \item{X}{initial approximation}
   \item{opts}{Options for underlying local optimization algorithm}
-  \item{P}{vector of parameters (e.g. time series for Hankel matrices) }
   \item{compute.dp}{whether to compute the approximation obtained by STLS}
 }
 
@@ -41,25 +40,25 @@ stls <- function(A = NULL, B = NULL, S, X = NULL, opts = list(epsabs = 0, epsrel
   
   The structure specification should be currently a list with following elements:
   \describe{
-    \item{m}{-- total number of rows. Can be omitted if the structured matrix is given by (A,B)}
     \item{k}{-- the size of sub blocks in each 'T'/'H' block}
     \item{A}{-- A q\times 3 array (q <= 10), where each row describes a block
       A[i,1] = 1 for 'T', 2 for 'H', 3 for 'U', 4 for 'E'
       A[i,2] = Total number of columns in a block
       A[i,3] = Number of columns in subblocks (if block is 'T' or 'H')
     }
-    \item{d}{The rank reduction. Can be omitted if either (A,B) or X is given
   }
+  If k = 1, then the structure can be just a matrix (or a vector).
   
   Note: the STLS approximation is computed only if the structured matrix was given by vector P.
 }
 
 
-\example{
+\examples{
 # Computing STLS approximation of a Hankel matrix with default initial approximation
-
-f <- sin(1:100 * (2 * pi /10)) + norm(length(f0), 0, 0.1;
-res <- stls(P = f, S=list(m=(length(f)-r), k=1, d=1, A=c(2, r+1, 1)), X = xini);
+library('rstls');
+r <- 2;
+f <- sin(1:100 * (2 * pi /10)) + 0.03 * rnorm(100, 0, 0.1);
+res <- slra(f, c(2, r+1, 1), r, compute.dp = TRUE);
 print(res);
 
 }
