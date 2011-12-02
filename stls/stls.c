@@ -4,10 +4,38 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_permutation.h>
 
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
 #include "stls.h"
+
+
+/* Debug structure for Levenberg-Marquardt algorithm
+typedef struct
+  {
+    size_t iter;
+    double xnorm;
+    double fnorm;
+    double delta;
+    double par;
+    gsl_matrix *r;
+    gsl_vector *tau;
+    gsl_vector *diag;
+    gsl_vector *qtf;
+    gsl_vector *newton;
+    gsl_vector *gradient;
+    gsl_vector *x_trial;
+    gsl_vector *f_trial;
+    gsl_vector *df;
+    gsl_vector *sdiag;
+    gsl_vector *rptdx;
+    gsl_vector *w;
+    gsl_vector *work1;
+    gsl_permutation * perm;
+  }
+lmder_state_t; */
+
 
 
 
@@ -218,7 +246,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     break;
   case SLRA_OPT_METHOD_QN: /* QN */
     solverqn = gsl_multimin_fdfminimizer_alloc( Tqn[opt->submethod], n * d );
-    gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, &x_vec.vector, stepqn, opt->tol); /* opt->epsabs);*/
+    gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, &x_vec.vector, stepqn, opt->tol); 
     status_dx = GSL_CONTINUE;  
     break;
   case SLRA_OPT_METHOD_NM: /* NM */
@@ -234,23 +262,23 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     PRINTF("STLS optimization:\n");
   }
     
-    
+  status = GSL_SUCCESS;  
   status_dx = GSL_CONTINUE;
   status_grad = GSL_CONTINUE;  
   opt->iter = 0;
   
-  while (status_dx == GSL_CONTINUE && status_grad == GSL_CONTINUE && opt->iter < opt->maxiter) {
+  while (status_dx == GSL_CONTINUE && status_grad == GSL_CONTINUE && status == GSL_SUCCESS && opt->iter < opt->maxiter) {
     /* print_vec(solverlm->x); */
     opt->iter++;
     switch (opt->method) {
     case SLRA_OPT_METHOD_LM: /* Levenberge-Marquardt */
       status = gsl_multifit_fdfsolver_iterate( solverlm );
       /* check for convergence problems */
-      if (status == GSL_ETOLF || status == GSL_ETOLX || status == GSL_ETOLG)
+      if (status == GSL_ETOLF || status == GSL_ETOLX || status == GSL_ETOLG) {
 	break; /* <- THIS IS WRONG */
+      }
       /* check the convergence criteria */
-      status_dx = gsl_multifit_test_delta
-        (solverlm->dx, solverlm->x, opt->epsabs, opt->epsrel);
+      status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, opt->epsabs, opt->epsrel);
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
       status_grad = gsl_multifit_test_gradient(g, opt->epsgrad);
       /* print information */
@@ -259,15 +287,26 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	
 	x_norm = gsl_blas_dnrm2(solverlm->x);
 	g_norm = gsl_blas_dnrm2(g);
-	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %13.5f\n", 
-	       opt->iter, opt->fmin, g_norm, x_norm);
+/*	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %5.2f, e = %8.4f\n", opt->iter, opt->fmin, g_norm, x_norm, ((lmder_state_t *)solverlm->state)->delta);*/
+	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.6f\n", opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     case SLRA_OPT_METHOD_QN:
       status = gsl_multimin_fdfminimizer_iterate( solverqn );
+      if (status == GSL_ENOPROG) {
+	break; /* <- THIS IS WRONG */
+      }
+
       /* check the convergence criteria */
       status_grad = gsl_multimin_test_gradient(
 	   gsl_multimin_fdfminimizer_gradient( solverqn), opt->epsgrad );
+      if (opt->disp == 3) {
+	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
+	x_norm = gsl_blas_dnrm2(solverqn->x);
+	g_norm = gsl_blas_dnrm2(solverqn->gradient);
+	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %13.5f\n", 
+	       opt->iter, opt->fmin, g_norm, x_norm);
+      }
       break;
     case SLRA_OPT_METHOD_NM:
       status = gsl_multimin_fminimizer_iterate( solvernm );
@@ -277,7 +316,10 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
       /* print information */
       if (opt->disp == 3) {
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
-	PRINTF("%3u: f0 = %16.8f\n", opt->iter, opt->fmin);
+	x_norm = gsl_blas_dnrm2(solvernm->x);
+
+	PRINTF("%3u: f0 = %16.8f,  ||x|| = %13.5f\n", 
+	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     }
@@ -291,7 +333,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   case  SLRA_OPT_METHOD_LM:
     /* return the results */
     gsl_vector_memcpy(&x_vec.vector, solverlm->x);
-    gsl_multifit_covar(solverlm->J, opt->epsrel, v);
+    gsl_multifit_covar(solverlm->J, opt->epsrel, v); /* ??? Different eps */
     /* assign the opt output fields */
     gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
     break;
@@ -323,13 +365,16 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	     "of iterations.\nThe result could be far from optimal.\n");
       break;
     case GSL_ETOLF:
-      PRINTF("Lack of convergence: progress in function value < EPS.\n");
+      PRINTF("Lack of convergence: progress in function value < machine EPS.\n");
       break;
     case GSL_ETOLX:
-      PRINTF("Lack of convergence: change in parameters < EPS.\n");
+      PRINTF("Lack of convergence: change in parameters < machine EPS.\n");
       break;
     case GSL_ETOLG:
-      PRINTF("Lack of convergence: change in gradient < EPS.\n");
+      PRINTF("Lack of convergence: change in gradient < machine EPS.\n");
+      break;
+    case GSL_ENOPROG:
+      PRINTF("Possible lack of convergence: no progress.\n");
       break;
     }
     if ( !status && (opt->disp == 2 || opt->disp == 3) ) { /* no error and ( final or iter ) */ 

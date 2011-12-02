@@ -61,6 +61,57 @@ static int getRSLRADispOption( SEXP OPTS ) {
   return SLRA_DEF_disp;
 }
 
+static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
+  SEXP str_value_sexp;
+  char *str_buf;
+  int i;
+    
+  /* TODO: remove duplicate code */  
+  char meth_codes[] = "lqn";
+  char submeth_codes_lm[] = "ls";
+  char submeth_codes_qn[] = "b2pf";
+  char submeth_codes_nm[] = "b2pf";
+  char *submeth_codes[] = { submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
+  int submeth_codes_max[] = { sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) -1, 
+          sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) -1, 
+          sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) -1 };
+
+  if (TYPEOF((str_value_sexp = getListElement(OPTS, "method"))) == STRSXP) {
+    str_buf = CHAR(STRING_ELT(str_value_sexp, 0));
+
+
+         for (i = sizeof(meth_codes)/sizeof(meth_codes[0]) - 1; i >= 0; i--)  {
+	    if (str_buf[0] == meth_codes[i]) {
+	      (*popt).method = i;
+	      break;
+	    }
+	  } 
+	  
+	  if (i < 0)  {
+/*	    mexWarnMsgTxt("Ignoring optimization option 'method'. Unrecognized value.");*/
+	    slraAssignDefOptValue((*popt), method);
+	    slraAssignDefOptValue((*popt), submethod);
+	  }
+
+
+	  for (i = submeth_codes_max[(*popt).method] - 1; i >= 0; i--)  {
+	    if (str_buf[1] == submeth_codes[(*popt).method][i]) {
+	      (*popt).submethod = i;
+	      break;
+	    }
+	  } 
+	  if (i < 0)  {
+/*	    mexWarnMsgTxt("Unrecognized or unspecified submethod - using default.");*/
+	    slraAssignDefOptValue((*popt), submethod);
+	  }
+
+
+  }
+  
+}
+
+
+
 
 
 

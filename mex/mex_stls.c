@@ -59,7 +59,7 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "stls.h"
 
-#ifndef MEX_OCTAVE
+#ifndef BUILD_MEX_OCTAVE
 #include "matrix.h"
 #endif
 #include "mex.h"
@@ -144,9 +144,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
   char submeth_codes_qn[] = "b2pf";
   char submeth_codes_nm[] = "b2pf";
   char *submeth_codes[] = { submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
-  int submeth_codes_max[] = { sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]), 
-          sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]), 
-          sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) };
+  int submeth_codes_max[] = { sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) -1, 
+          sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) -1, 
+          sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) -1 };
   
   
   
@@ -290,7 +290,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
  	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, STR_MAX_LEN); 
 	  tolowerstr(str_buf);
 	  
-	  for (i = sizeof(meth_codes)/sizeof(meth_codes) - 1; i >= 0; i--)  {
+	  for (i = sizeof(meth_codes)/sizeof(meth_codes[0]) - 1; i >= 0; i--)  {
 	    if (str_buf[0] == meth_codes[i]) {
 	      opt.method = i;
 	      break;
@@ -311,9 +311,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	    }
 	  } 
 	  if (i < 0)  {
-	    mexWarnMsgTxt("Unrecognized submethod.");
+	    mexWarnMsgTxt("Unrecognized or unspecified submethod - using default.");
 	    slraAssignDefOptValue(opt, submethod);
 	  }
+
  	} else IfCheckAndStoreFieldBoundL(maxiter, 0)  
         else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
         else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 

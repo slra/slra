@@ -1,6 +1,6 @@
 
 # Stubs to call STLS
-slra <- function(P, S, R = (total_cols - 1), X = NULL, opts = list(epsabs = 0, epsrel = 1e-6, epsgrad = 1e-6, maxiter = 100, disp = 'iter'),
+slra <- function(P, S, R = (total_cols - 1), X = NULL, opts = list(epsabs = 0, epsrel = 1e-5, epsgrad = 1e-5, maxiter = 100, disp = 'iter'),
             compute.dp = FALSE) {
 
   ###### Parse structure

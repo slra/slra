@@ -11,17 +11,6 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "stls.h"
 
-/* default constants for the exit condition */
-#define MAXITER  500
-#define EPSABS   0
-#define EPSREL   1e-5
-#define EPSGRAD  1e-5
-#define EPSX     1e-3
-#define DISP     3     /* per iteration */
-#define STEP     0.001
-#define REGGAMMA 0.001
-
-
 
 #define TEST_NUM 7
 
@@ -70,6 +59,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   
   slraAssignDefOptValues(opt);
   opt.maxiter = 500;
+  opt.method = SLRA_OPT_METHOD_LM;
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;

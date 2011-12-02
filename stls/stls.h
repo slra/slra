@@ -11,7 +11,7 @@
 #include <R.h>
 #define PRINTF Rprintf
 
-#elif defined(MEX_OCTAVE) ||  defined(MEX_MATLAB)
+#elif defined(BUILD_MEX_OCTAVE) ||  defined(BUILD_MEX_MATLAB)
 
 #include "mex.h"
 #define PRINTF mexPrintf
@@ -64,8 +64,9 @@ typedef struct {
   
   /* stopping criterion */  
   int maxiter;
-  double epsabs, epsrel, epsgrad;
-  double epsx;
+  double epsabs, epsrel;  /* Eps for LM */
+  double epsgrad;           /* Eps for LM and QN */
+  double epsx;              /* Eps for NM */ 
   
   /* optimization parameters */
   double step;
@@ -87,9 +88,9 @@ typedef struct {
 #define SLRA_DEF_epsabs   0
 #define SLRA_DEF_epsrel   1e-5
 #define SLRA_DEF_epsgrad  1e-5
-#define SLRA_DEF_epsx     1e-3
+#define SLRA_DEF_epsx     1e-5
 #define SLRA_DEF_step     0.001
-#define SLRA_DEF_tol      0.01
+#define SLRA_DEF_tol      1e-6
 #define SLRA_DEF_reggamma 0.001
 
 #define slraAssignDefOptValue(opt,field) do { opt.field = SLRA_DEF_##field; } while(0)

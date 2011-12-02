@@ -23,7 +23,7 @@ amat <- h[,1:2]
 bmat <- h[,3]
 xmat <- matrix(x, 2, 1)
 
-res <- stls(amat, bmat, list(k=1, A=matrix(c(2, 3, 1), 1, 3)), xmat)
+res <- slra(f, matrix(c(2, 3, 1), 1, 3), 2, xmat, opt = list(method='l'))
 print('x0(exact), x(tls), x(stls)')
 print(x0)
 print(x)
@@ -53,9 +53,9 @@ system.time(x_ls <- qr.solve(a, b))
 print(x_ls)
 
 # Define and solve the LS problem as a (very special) STLS problem
-s_ls <- list(k=1, A=rbind(c(4, n, 1), c(3, d, 1)));
+s_ls <- rbind(c(4, n, 1), c(3, d, 1));
 pause();
-print(system.time(res <- stls(a,b,s_ls)))
+print(system.time(res <- slra(c(as.vector(t(a)),as.vector(t(b))), s_ls, n)))
 print(res$xh)
 
 # Press any key to continue 
@@ -75,7 +75,7 @@ pause();
 
 # Define and solve the TLS problem as an STLS problem
 s_tls <- list(k=1, A=matrix(c(3, n+d, 1), 1,3));
-print(system.time(res <- stls(a,b,s_tls)))
+print(system.time(res <- slra(as.vector(t(cbind(a,b))),s_tls,n)))
 print(res$xh)
 
 # Press any key to continue
@@ -110,7 +110,7 @@ print(system.time(xh_tls <- tls(a,b)));
 
 # Define the structure and solve the deconvolution problem via STLS
 s <- list(k=1, A=rbind(c(1, n, 1), c(3, 1, 1)));
-print(system.time(res <- stls(a,b,s))); 
+print(system.time(res <- slra(c(p_a,b), s, n))); 
 print(xh_stls <- res$xh)
 print(res$info$fmin) # value of the cost function at xh_stls
 
