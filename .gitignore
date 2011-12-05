@@ -5,11 +5,8 @@
 # Ignore mex files
 *.mex*
 # Ignore R files and libraries
-rstls.Rcheck
-rstls*.tar.gz
-# Ignore copied files
-rstls/src/stls/*
-rstls/src/SLICOT/*
+Rslra.Rcheck
+Rslra*.tar.gz
 # Ignore test results
 res_*.txt
 test_c/test

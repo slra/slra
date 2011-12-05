@@ -9,7 +9,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_multifit_nlin.h>
-#include "stls.h"
+#include "slra.h"
 
 
 #define TEST_NUM 7

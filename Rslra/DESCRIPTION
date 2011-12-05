@@ -1,0 +1,10 @@
+Package:Rslra
+Type: Package
+Title: Interface to SLRA
+Version: 0.1
+Date: 2011-09-14
+Author: Konstantin Usevich
+Maintainer: Konstantin Usevich <konstantin.usevich@statmod.ru>
+Description: This package provides R binding to SLRA
+License: file LICENSE
+URL: http://github.com/kdu/slra
