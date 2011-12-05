@@ -27,11 +27,6 @@ void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m,
 
   gsl_matrix_view submat, source;
 
-
-  /* form tt */
-
-
-/*  PRINTF("s = %d, m = %d, row_lim = %d", s, m, row_lim);*/
   /* construct p = T*v */
   gsl_vector_set_zero(p);
 
@@ -62,12 +57,6 @@ void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m,
   }
   
 }
-
-
-
-
-
-
 
 /*
 * tmv_prod: block-Toeplitz matrix T times vector v
@@ -114,13 +103,13 @@ void tmv_prod(gsl_matrix* t, int s, gsl_vector* v, int m,
   
 }
 
-/* find n_d = n+d = sum_{l=1}^q n_l and w->s */
+/* find  w->s */
 int get_bandwidth_from_structure( const data_struct* s ) {
   int l, max_nl = 1;
 
   for (l = 0; l < s->q; l++) {
-    if ((s->a[l].type == 'T' || s->a[l].type == 'H')) {
-      max_nl = mymax(s->a[l].ncol / s->a[l].nb, max_nl);
+    if ((!s->a[l].exact) && s->a[l].blocks_in_row > max_nl) {
+      max_nl = s->a[l].blocks_in_row;
     }
   }
   
@@ -128,7 +117,7 @@ int get_bandwidth_from_structure( const data_struct* s ) {
 }
 
 /* s2w: finds the covariance matrices w from the data structure */
-int s2w(const data_struct* s, w_data* w, int n_d, int blocked )
+int s2w(const data_struct* s, w_data* w, int n_plus_d, int blocked )
 {
   int k, l, i, offset, imax, sum_nl;
   gsl_matrix *zk;
@@ -136,60 +125,48 @@ int s2w(const data_struct* s, w_data* w, int n_d, int blocked )
   char err_msg[70];
   int rep;
   int size_wk;
-  
+  int ncol;
  
   w->s = get_bandwidth_from_structure(s);
   
   if (blocked) {
     rep = s->k;
-    size_wk = s->k * n_d;
+    size_wk = s->k * n_plus_d;
   } else {
     rep = 1;
-    size_wk = n_d;
+    size_wk = n_plus_d;
   }
 
   w->a = (gsl_matrix**) malloc(w->s * sizeof(gsl_matrix *));
-  zk   = gsl_matrix_alloc(n_d, n_d);
+  zk   = gsl_matrix_alloc(n_plus_d, n_plus_d);
   /* construct w */
   for (k = 0; k < w->s; k++) { 
     gsl_matrix_set_zero(zk);
-    for (l = sum_nl = 0; l < s->q; sum_nl += s->a[l++].ncol) { 
-      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, s->a[l].ncol, s->a[l].ncol); 
-      switch (s->a[l].type) {
-      case 'T': case 'H':
+    sum_nl = 0;
+    for (l = 0; l < s->q; l++) { 
+      ncol = s->a[l].blocks_in_row * s->a[l].nb;
+      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, ncol, ncol); 
+
+      if ((!s->a[l].exact)) {
 	offset = s->a[l].nb * k;
-	imax   = s->a[l].ncol  - offset;
+	imax   = ncol - offset;
 	for (i = 0; i < imax; i++) {
-	  if (s->a[l].type == 'H')
-	    gsl_matrix_set(&zkl.matrix, i+offset, i, 1);
-	  else
+	  if (s->a[l].toeplitz) {
 	    gsl_matrix_set(&zkl.matrix, i, i+offset, 1);
+          } else {
+	    gsl_matrix_set(&zkl.matrix, i+offset, i, 1);
+	  }
 	}
-	
-	break;
-      case 'U': 
-	if (k == 0) {
-	  gsl_matrix_set_identity(&zkl.matrix);
-	}
-	 
-	/* else zik is a zero matrix */
-	break;
-      case 'E': 
-	/* zik is a zero matrix */
-	break;
-      default:
-	sprintf(err_msg, "Unknown structure type %c.",
-		s->a[l].type);
-	GSL_ERROR(err_msg, GSL_EINVAL);
-	break;
-      }
+      } 
+      
+      sum_nl += ncol;
     }
     w->a[k] = gsl_matrix_calloc(size_wk, size_wk);
     /* w->a[k] = kron(Ik, zk) */
     for (i = 0; i < rep; i++) {
       /* select the i-th diagonal block in a matrix view */
-      wi = gsl_matrix_submatrix( w->a[k], i*n_d, 
-				 i*n_d, n_d, n_d );
+      wi = gsl_matrix_submatrix( w->a[k], i*n_plus_d, 
+				 i*n_plus_d, n_plus_d, n_plus_d );
       gsl_matrix_memcpy(&wi.matrix, zk);
     }
   }
@@ -732,19 +709,6 @@ void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad )
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
   int l;
   psi->total_cols = 0;
@@ -752,23 +716,15 @@ int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
   psi->np_offset = 0;
 
   for (l = 0; l < s->q; l++) {
-    if (s->a[l].type == 'T' || s->a[l].type == 'H') {
-      if (s->a[l].ncol %  s->a[l].nb  != 0) { /* Check number of coolumns */
-        return GSL_EINVAL;    
-      }
-    } else {
-      s->a[l].nb = s->a[l].ncol; /* Adjust the parameter */
-    }
-    
-    psi->np_offset += s->k * (s->a[l].ncol - s->a[l].nb);
+    psi->np_offset += s->k * (s->a[l].blocks_in_row - 1) * s->a[l].nb;
     psi->np_scale += s->a[l].nb;
-    psi->total_cols += s->a[l].ncol;
+    psi->total_cols += s->a[l].nb * s->a[l].blocks_in_row;
   }  
 
   return GSL_SUCCESS;
 }
 
-#define GET_L(s,l)      ( s->a[l].ncol / s->a[l].nb)
+#define GET_L(s,l)      (s->a[l].blocks_in_row)
 #define GET_T(s,l,m)    (GET_L(s,l) + (m/s->k) - 1) 
 #define GET_PLEN(s,l,m) (GET_T(s,l,m) *(s->k) * s->a[l].nb)
 
@@ -782,15 +738,15 @@ int slra_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p) {
     L = GET_L(s,l);
     T = GET_T(s,l,m);
     p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T* s->k, s->a[l].nb);
-    c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, m, s->a[l].ncol);
+    c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, m, s->a[l].nb * s->a[l].blocks_in_row);
     for (j = 0; j < L; j++) {
       p_matr_chunk_sub = gsl_matrix_submatrix(&p_matr_chunk.matrix, j * s->k, 0, m, s->a[l].nb);
       c_chunk_sub = gsl_matrix_submatrix(&c_chunk.matrix, 0, 
-          (s->a[l].type == 'T' ? (L- j -1) * s->a[l].nb : j * s->a[l].nb), m, s->a[l].nb);
+          (s->a[l].toeplitz ? (L- j -1) * s->a[l].nb : j * s->a[l].nb), m, s->a[l].nb);
       gsl_matrix_memcpy(&c_chunk_sub.matrix, &p_matr_chunk_sub.matrix);
     }
     sum_np += GET_PLEN(s, l,m);
-    sum_nl += s->a[l].ncol;
+    sum_nl += s->a[l].nb * s->a[l].blocks_in_row;
   }
 
   return GSL_SUCCESS;
@@ -824,11 +780,13 @@ int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
   res = gsl_vector_alloc(P->n_plus_d);
 
   for (l = 0; l < s->q; l++) {
+    int ncol = s->a[l].nb * s->a[l].blocks_in_row;
+  
     /* Select submatrix being used */
-    if (s->a[l].type == 'T') {
-      b_xext = gsl_matrix_submatrix(xext_rev, (P->n_plus_d - (sum_nl+s->a[l].ncol)), 0, s->a[l].ncol, P->d);
+    if (s->a[l].toeplitz) {
+      b_xext = gsl_matrix_submatrix(xext_rev, (P->n_plus_d - (sum_nl+ncol)), 0, ncol, P->d);
     } else {
-      b_xext = gsl_matrix_submatrix(P->bx_ext, sum_nl, 0, s->a[l].ncol, P->d); 
+      b_xext = gsl_matrix_submatrix(P->bx_ext, sum_nl, 0, ncol, P->d); 
     }
 
     /* Calculate dimensions of current parameter chunk */
@@ -837,10 +795,10 @@ int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
     p_len = GET_PLEN(s,l,P->m);
 
     /* Adjust the result size */
-    res_sub = gsl_vector_subvector(res, 0, s->a[l].ncol);
+    res_sub = gsl_vector_subvector(res, 0, ncol);
     res_sub_matr = gsl_matrix_view_vector(&res_sub.vector, L, s->a[l].nb);
     /* Subtract correction if needed */
-    if (s->a[l].type != 'E') {
+    if (!s->a[l].exact) {
       p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T , s->a[l].nb * P->k);
       for (j = 0; j < P->k; j++) {
         for (k = 0; k < P->m_div_k; k++) {
@@ -852,7 +810,7 @@ int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
       }
     }
     sum_np += p_len;
-    sum_nl += s->a[l].ncol;
+    sum_nl += ncol;
   }
   
   gsl_vector_free(res);

@@ -84,7 +84,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
   data_struct s;
   opt_and_info opt;
   char str_buf[STR_MAX_LEN];
-  char str_codes[] = " THUE";
   char *str_disp[] = {"",  "notify", "final", "iter", "off" };
   
   char meth_codes[] = "lqn";
@@ -98,7 +97,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
   
   
-  double *s_m;
+  double *s_matr;
+  int s_matr_cols;
   int l, i; 
   int n_plus_d, np;
 
@@ -145,24 +145,24 @@ void mexFunction( int nlhs, mxArray *plhs[],
     s.k = 1;
     strArray = prhs[1];
   }
-  if (mxGetN(strArray) != 3) {
-    mexErrMsgTxt("Error in the structure specification : size(s." ARRAY_STR ",2) ~= 3.");
+  if (mxGetN(strArray) < 1 || mxGetN(strArray) > 4) {
+    mexErrMsgTxt("Error in the structure specification : size(s." ARRAY_STR ",2) < 1 or > 4.");
   }
-  s_m = mxGetPr(strArray);
+  if (mxGetM(strArray) < 1 || mxGetM(strArray) > 10) {
+    mexErrMsgTxt("Error in the structure specification : size(s." ARRAY_STR ",1) < 1 or > 10.");
+  }
+  s_matr = mxGetPr(strArray);
   s.q = mxGetM(strArray);
+  s_matr_cols = mxGetN(strArray);
 
   /* Create s and check structure specification */
   n_plus_d = 0;
   for (l = 0; l < s.q; l++) {
-    if (*(s_m+l) < 1 ||  *(s_m+l) > 4) {
-      sprintf(err_msg, "Error: invalid structure specification '%d'.", (int) *(s_m+l));
-      mexErrMsgTxt(err_msg);
-    } else {
-      s.a[l].type = str_codes[(int)(*(s_m+l))]; 
-    }
-    s.a[l].ncol = *(s_m + s.q + l);
-    n_plus_d += s.a[l].ncol;
-    s.a[l].nb   = *(s_m + 2 * s.q + l);
+    s.a[l].blocks_in_row = *(s_matr + l);
+    s.a[l].nb = (s_matr_cols > 1) ? *(s_matr + s.q + l): 1;
+    s.a[l].exact = (s_matr_cols > 2) ? *(s_matr + 2 * s.q + l): 0;
+    s.a[l].toeplitz = (s_matr_cols > 3) ? *(s_matr + 3 * s.q + l): 0;
+    n_plus_d += s.a[l].blocks_in_row * s.a[l].nb;
   }
 
   /* Get r (rank) */

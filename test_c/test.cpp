@@ -11,7 +11,6 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
 
-
 #define TEST_NUM 7
 
 #define MAX_FN_LEN  60
@@ -30,7 +29,6 @@ int read_mat( gsl_matrix *a,  char * filename, FILE * log ) {
   return 1;
 }
 
-
 int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
   FILE * file;
   file = fopen(filename,"r");
@@ -45,16 +43,11 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
   return 1;
 }
 
-
-
-
-
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
-  char str_codes[] = " THUE";
-  data_struct s = {1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
+  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
   opt_and_info opt;
   
   slraAssignDefOptValues(opt);
@@ -101,8 +94,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     
     for (i = 0; i < s.q; i++)  {
-      fscanf(file, "%d %d %d", &tmp, &(s.a[i].ncol), &(s.a[i].nb)); 
-      s.a[i].type = str_codes[tmp]; 
+      fscanf(file, "%d %d %d %d", &(s.a[i].blocks_in_row), &(s.a[i].nb), &(s.a[i].exact), &(s.a[i].toeplitz)); 
     }
     fclose(file);
 
@@ -121,7 +113,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
     x_given = read_mat(x, fxname, log);
 
-
     if (((p = gsl_vector_alloc(np)) == NULL) || !read_vec(p, fpname, log)) { 
       throw 1;
     }
@@ -129,8 +120,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (((p2 = gsl_vector_alloc(np)) == NULL)) { 
       throw 1;
     }
-
-    
     
     gsl_vector_memcpy(p2,p);
 

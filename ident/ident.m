@@ -153,10 +153,13 @@ ne = length(exct);
 nn = nw - ne;
 noisy = 1:nw; noisy(exct) = []; % indices of noisy variables
 if ne == 0
-    struct = [2 nw * l1 nw]; par = vec(shiftdim(w, 1));
+    struct = [l1 nw]; par = vec(shiftdim(w, 1));
 else % Define a block of exact variables
-    struct = [4 ne * l1 ne; 2 nn * l1 nn]; 
-    par = [vec(blkhankel(w(:, exct, :), l1));
+%    struct = [1 l1*ne 1; l1 nn 0]; 
+%    par = [vec(blkhankel(w(:, exct, :), l1));
+%           vec(shiftdim(w(:, noisy, :), 1))];
+    struct = [l1 ne 1; l1 nn 0]; 
+    par = [vec(shiftdim(w(:, exct, :), 1));
            vec(shiftdim(w(:, noisy, :), 1))];
 end
 if N > 1
@@ -176,6 +179,9 @@ if nargout > 2
         w(:, noisy, :) = shiftdim(reshape(parh(end - nn * T * N + 1:end), nn, N, T), 2);
     end
 end
+
+
+
 
 %% Find an I/S/O representation of the model
 if m > 0 % treat separately I/O and output only cases

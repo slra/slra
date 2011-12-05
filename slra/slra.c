@@ -66,12 +66,7 @@ static void numer_grad( gsl_vector* x, slra_opt_data_reshaped *P, gsl_vector *gr
   gsl_vector_free(x2);
 }
 
-
-
-
 static void comp_meth( gsl_vector* x, slra_opt_data_reshaped *P ) {
-
-  
   gsl_vector *grad1 = gsl_vector_alloc(P->n * P->d);
   gsl_vector *grad2 = gsl_vector_alloc(P->n * P->d);
   gsl_vector *grad3 = gsl_vector_alloc(P->n * P->d);

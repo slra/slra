@@ -118,9 +118,14 @@ typedef struct {
   int k;	/* = rowdim(block in T/H blocks) */ 
   int q;	/* number of blocks in C = [C1 ... Cq] */
   struct {
+    int blocks_in_row;       /* Number of blocks in a row of Ci */
+    int nb;                  /* Number of columns in each small block */
+    int exact;               /* 1 - exact block, 0 - not exact */  
+    int toeplitz;            /* 1- Toeplitz marix, 0 - Hankel matrix */  
+/*    int nb;
     char type;	/* 'T'-Toeplitz, 'H'-Hankel, 
-                   'U'-unstructured, 'E'-exact */
-    int ncol;	/* number of columns */
+                   'U'-unstructured, 'E'-exact * /
+    int ncol;	/* number of columns * /
     int nb;     /* number of columns in a block of T/H blocks */
   } a[MAXQ];	/* q-element array describing C1,...,Cq; */
   
