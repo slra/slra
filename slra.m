@@ -11,13 +11,13 @@
 % Input arguments:
 %
 % P - parameter vector.
-% S - structure specification, a matrix with q rows and 3 columns:
-%   S(i,1) - structure type [ 1 | 2 | 3 | 4 ] of the i-th block,
-%     1 - Toeplitz, 2 - Hankel, 3 - Unstructured, 4 - Exact (noise free),
-%   S(i,2) - number of columns of the i-th block,
-%   S(i,3) - number of columns of the blocks in the i-th block.
-% For block-Toeplitz/Hankel strucutred problem with K x nu(i) size blocks, 
-% S is a structure with fiels K and A, where S.A is the q x 3 matrix described 
+% S - structure specification, a matrix with q rows and 1-4 columns:
+%   S(i,1) - number of subblocks in each block row of the i-th block (put 1 if you need unstructured matrix)
+%   S(i,2) - number of columns in each subblock (by default is 1)
+%   S(i,3) - = 1 if the block is exact,  = 0 otherwise (default)
+%   S(i,4) - = 1 if the block is Toeplitz,  = 0 if it is Hankel (default)
+% For block-Toeplitz/Hankel structured problem with K x nu(i) size blocks, 
+% S is a structure with fiels K and A, where S.A is the matrix described 
 % above and S.K = K.
 % R - rank of the approximation (size(A,2), by default it is equal to sum(S(:,2))) -1 
 % X0   - initial approximation (default TLS).

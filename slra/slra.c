@@ -112,8 +112,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   time_t t_b;
   gsl_matrix *c;
   gsl_matrix_view c_sub_a, c_sub_b;
-  gsl_matrix *a, *b;
-   /*slra_opt_data_old params;*/
+/*   slra_opt_data_old params;*/
   slra_opt_data_reshaped params;
   flex_struct_add_info si;
 
@@ -186,15 +185,13 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   slra_fill_matrix_from_p(c, s, p);
   c_sub_a = gsl_matrix_submatrix(c, 0, 0, m, n);
   c_sub_b = gsl_matrix_submatrix(c, 0, n, m, d);
-  a = &c_sub_a.matrix;
-  b = &c_sub_b.matrix;
   
   if (!x_given) {  /* compute default initial approximation */
     if (opt->disp >= 3) {
       PRINTF("X not given, computing TLS initial approximation..\n");
     }
     
-    status = tls(a, b, x);
+    status = tls(&c_sub_a.matrix, &c_sub_b.matrix, x);
     if (status) {
       PRINTF("Initial approximation can not be computed: MB02MD failed with an error info = %d.\n", status);
       if (c !=  NULL) {
@@ -204,8 +201,9 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     }
   }
 
-  /*allocate_and_prepare_data_old(a, b, s, opt,  &params);*/
-  allocate_and_prepare_data_reshaped(a, b, s, opt, &params);
+  /*allocate_and_prepare_data_old(c, n, s, opt,  &params);*/
+  allocate_and_prepare_data_reshaped(c, n, s, opt, &params);
+
 
   /* LM */
   gsl_multifit_fdfsolver* solverlm;
@@ -404,8 +402,8 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 
 
 
-  free_memory_reshaped(&params);
-/* free_memory_old(&params);*/
+ free_memory_reshaped(&params);
+ /*free_memory_old(&params);*/
 
   return GSL_SUCCESS; /* <- correct with status */
 }

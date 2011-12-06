@@ -8,8 +8,8 @@
 #include "slra.h"
 
 
-void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, slra_opt_data_old *P ) {
-  PREPARE_COMMON_PARAMS(a, b, s, opt, P,1); 
+void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, opt_and_info *opt, slra_opt_data_old *P ) {
+  PREPARE_COMMON_PARAMS(c, n, s, opt, P,1); 
   
   /* Preallocate memory for f and df */
   P->x_ext = gsl_matrix_calloc(P->w.a[0]->size1, P->k_times_d);
@@ -63,9 +63,9 @@ void free_memory_old( slra_opt_data_old *P ) {
 }
 
 
-#define M (P->a->size1)
-#define N (P->a->size2)
-#define D (P->b->size2)
+#define M (P->m)
+#define N (P->n)
+#define D (P->d)
 #define S (P->w.s)
 #define SIZE_W (P->w.a[0]->size1)
 
@@ -83,10 +83,13 @@ static void compute_f( gsl_vector* f, const gsl_vector* x, slra_opt_data_old *P 
 
   gsl_matrix_view f_mat = gsl_matrix_view_vector(f, M, D); 
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
- 
-  gsl_matrix_memcpy(&f_mat.matrix, P->b);
+  gsl_matrix_view bx_ext = gsl_matrix_submatrix(P->x_ext, 0, 0, N+D, D);
+
+   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
+     P->c, &bx_ext.matrix, 0.0, &f_mat.matrix);
+ /* gsl_matrix_memcpy(&f_mat.matrix, P->b);
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-     P->a, &x_mat.matrix, -1.0, &f_mat.matrix);
+     P->a, &x_mat.matrix, -1.0, &f_mat.matrix);*/
 }
 
 static void compute_c_minus_1_2_f( gsl_vector* f, int trans, slra_opt_data_old *P ) {
@@ -135,8 +138,8 @@ int slra_f (const gsl_vector* x, void* params, gsl_vector* f)
   slra_opt_data_old *P = params;
 
 
-  compute_f(f, x, P);
   compute_xext(x, P);
+  compute_f(f, x, P);
   cholgam(P);
   compute_c_minus_1_2_f(f, 1, P);
  
@@ -206,8 +209,8 @@ int slra_fdf (const gsl_vector* x, void* params, gsl_vector* f,
   slra_opt_data_old *P = params;
 
 
-  compute_f(f, x, P);
   compute_xext(x, P);
+  compute_f(f, x, P);
   cholgam(P);
   compute_c_minus_1_2_f(f, 1, P);
   gsl_vector_memcpy(P->yr, f);
@@ -308,7 +311,7 @@ void jacobian( slra_opt_data_old* P, gsl_matrix* deriv )
       submat = gsl_matrix_submatrix(deriv, i*D, j*D, D, D);
       /* assign a(i,j) on the diagonal of submat */
       for (l = 0; l < D; l++)
-        gsl_matrix_set(&submat.matrix, l, l, gsl_matrix_get(P->a, i, j));
+        gsl_matrix_set(&submat.matrix, l, l, gsl_matrix_get(P->c, i, j));
     }
   
   /* res1 = vec(deriv), FORTRAN column-major convention */
@@ -393,7 +396,7 @@ void xmat2xext( gsl_matrix_const_view x_mat, gsl_matrix *x_ext, int K )
 
 
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
-  xmat2bxext(x_mat, x_ext);
+  xmat2_block_of_xext(x_mat, x_ext);
 
   /* copy block (1,1) in (2,2),...,(k,k) */
   source = gsl_matrix_submatrix(x_ext, 0, 0, n+d, d);

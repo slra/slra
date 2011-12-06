@@ -152,8 +152,8 @@ typedef struct {
 
 
 #define COMMON_PARAMS  \
-    gsl_matrix* a; \
-    gsl_matrix* b; \
+    int m, n, d; \
+    gsl_matrix* c; \
     double reggamma; \
     w_data w; \
     int k;  \
@@ -168,23 +168,24 @@ typedef struct {
     int one; /* One for blas routines */ 
 
 
-#define PREPARE_COMMON_PARAMS(A, B, S, OPT, PP, isblock) \
+#define PREPARE_COMMON_PARAMS(C, Nn, S, OPT, PP, isblock) \
   do {\
-   int m = A->size1, n = A->size2, d = B->size2;		\
-  /* set other parameters */\
-  PP->a = A;\
-  PP->b = B;\
+  PP->m = C->size1; \
+  PP->n = Nn; \
+  PP->d = C->size2 - Nn;		\
+  /* set other parameters */ \
+  PP->c = C;\
   PP->reggamma = OPT->reggamma; \
   /* find Wk  */ \
-  s2w(S, &PP->w, n+d, isblock);\
+  s2w(S, &PP->w, PP->n+PP->d, isblock);\
   PP->k = S->k;  \
-  PP->n_plus_d = n + d;   \
-  PP->n_times_d = n * d;   \
-  PP->k_times_d = S->k * d; \
+  PP->n_plus_d = PP->n + PP->d;   \
+  PP->n_times_d = PP->n * PP->d;   \
+  PP->k_times_d = S->k * PP->d; \
   PP->k_times_d_times_s = PP->k_times_d * PP->w.s;\
   PP->k_times_d_times_s_minus_1 = PP->k_times_d_times_s - 1;\
-  PP->m_times_d = m * d;\
-  PP->m_div_k = (int) m / S->k;\
+  PP->m_times_d = PP->m * PP->d;\
+  PP->m_div_k = (int) PP->m / S->k;\
   PP->s_minus_1 = PP->w.s - 1;\
   PP->one = 1;\
   \
@@ -220,7 +221,6 @@ typedef struct {
 typedef struct {
   COMMON_PARAMS;
 
-  int m, n, d;
   /* Preallocated arrays for cholgam (new) */
   int  d_times_s;		/* = col_dim(new gamma) */
   int  d_times_s_minus_1;  /* = col_dim(new gamma) - 1 */
@@ -246,16 +246,18 @@ typedef struct {
   gsl_vector *brg_f;    /* Reshaped vector holding f */
   gsl_vector *brg_yr;    /* Reshaped vector holding y_r */
   
-  gsl_matrix *brg_a, *brg_b;
+  gsl_matrix *brg_c;
   
   double *brg_j1b_vec;
   gsl_matrix *brg_j1b;
   
-  
+  /* Helper functions for gradient */
   gsl_matrix *brg_grad_N_k;
   gsl_matrix *brg_grad_Vx_k;
   gsl_matrix *brg_grad_tmp1;
   gsl_matrix *brg_grad_tmp2;
+  
+  gsl_matrix *perm;  
 } slra_opt_data_reshaped;
 
 
@@ -297,7 +299,7 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *);
 
 
-void allocate_and_prepare_data_reshaped( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, slra_opt_data_reshaped *P );
+void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n, const data_struct* s, opt_and_info *opt, slra_opt_data_reshaped *P );
 void free_memory_reshaped( slra_opt_data_reshaped *P );
 
 double slra_f_reshaped_ (const gsl_vector*, void*);
@@ -314,7 +316,7 @@ void jacobian_reshaped( slra_opt_data_reshaped*,  gsl_matrix*);
 
 
 /* Old functions */
-void allocate_and_prepare_data_old( gsl_matrix* a, gsl_matrix* b, const data_struct* s, opt_and_info *opt, slra_opt_data_old *P );
+void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, opt_and_info *opt, slra_opt_data_old *P );
 void free_memory_old( slra_opt_data_old *P );
 
 
