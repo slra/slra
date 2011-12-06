@@ -8,172 +8,6 @@
 #include "slra.h"
 
 
-/*
-* tmv_prod: block-Toeplitz matrix T times vector v
-*
-* tt - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].
-* s - number of blocks in t, t = [t_0 ... t_s-1]
-* s_1 = s - 1;  m = (int) v->size1 / tt->size1
-* p - result
-*/ 
-void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m, 
-	      gsl_vector* p)
-{
-  int i, imax, temp, s_1 = s - 1;
-  int row_lim = GSL_MIN(s_1, m/2);
-  gsl_vector_view subv, subp; 	/* subvector of v and p */
-
-  int TM = tt->size1; 		/* = block size */
-
-  gsl_matrix_view submat, source;
-
-  /* construct p = T*v */
-  gsl_vector_set_zero(p);
-
-  /* beginning and end parts of the product p */
-  for (i = 0; i < row_lim; i++) {
-    temp = GSL_MIN(s+i, m)*TM;
-    /* beginning part */
-    subp = gsl_vector_subvector(p, i*TM, TM);
-    subv = gsl_vector_subvector(v, 0, temp);
-    submat = gsl_matrix_submatrix
-      (tt, 0, (s_1-i)*TM, TM, temp);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, &submat.matrix, 
-		   &subv.vector, 0.0, &subp.vector);
-    /* last part */
-    subp = gsl_vector_subvector(p, p->size - (i+1)*TM, TM);
-    subv = gsl_vector_subvector(v, v->size - temp, temp);
-    submat = gsl_matrix_submatrix(tt, 0, (s+i)*TM -temp, TM, temp);    
-    gsl_blas_dgemv(CblasNoTrans, 1.0, &submat.matrix, 
-		   &subv.vector, 0.0, &subp.vector);
-  }
-
-  /* middle part */
-  for (i = s_1, imax = m - s_1 ; i < imax; i++) {
-    subp = gsl_vector_subvector(p, i*TM, TM);
-    subv = gsl_vector_subvector(v, (i-s_1)*TM, tt->size2);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, tt, &subv.vector, 
-		   0.0, &subp.vector);
-  }
-  
-}
-
-/*
-* tmv_prod: block-Toeplitz matrix T times vector v
-*
-* t - nonzero part of the first block row of T
-* s - number of blocks in t, t = [t_0 ... t_s-1]
-* s_1 = s - 1;  m = (int) v->size1 / t->size1
-* p - result
-* 
-*/ 
-
-void tmv_prod(gsl_matrix* t, int s, gsl_vector* v, int m, 
-	      gsl_vector* p)
-{
-  gsl_matrix *tt;
-  int i, imax, temp, s_1 = s - 1;
-  gsl_vector_view subv, subp; 	/* subvector of v and p */
-
-  int TM = t->size1; 		/* = block size */
-  int TN = (t->size2);		/* = s(block size) */
-
-
-  /* tt - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1]. Should be t->size1* (2 * t->size2 - t->size1). */
-
-  gsl_matrix_view submat, source;
-  
-
-
-  /* form tt */
-  tt = gsl_matrix_alloc(TM, 2*TN - TM);
-
-  for (i = 0; i < s_1; i++) {
-    submat = gsl_matrix_submatrix(tt, 0, i*TM, TM, TM);
-    source = gsl_matrix_submatrix(t, 0, (s_1-i)*TM, TM, TM);
-    gsl_matrix_transpose_memcpy
-      (&submat.matrix, &source.matrix);
-  }
-  submat = gsl_matrix_submatrix(tt, 0, s_1*TM, TM, TN);
-  gsl_matrix_memcpy(&submat.matrix, t);
-
-  tmv_prod_new(tt, s,v, m, p);
-
-  free(tt);
-  
-}
-
-/* find  w->s */
-int get_bandwidth_from_structure( const data_struct* s ) {
-  int l, max_nl = 1;
-
-  for (l = 0; l < s->q; l++) {
-    if ((!s->a[l].exact) && s->a[l].blocks_in_row > max_nl) {
-      max_nl = s->a[l].blocks_in_row;
-    }
-  }
-  
-  return max_nl;
-}
-
-/* s2w: finds the covariance matrices w from the data structure */
-int s2w(const data_struct* s, w_data* w, int n_plus_d, int blocked )
-{
-  int k, l, i, offset, imax, sum_nl;
-  gsl_matrix *zk;
-  gsl_matrix_view wi, zkl;
-  char err_msg[70];
-  int rep;
-  int size_wk;
-  int ncol;
- 
-  w->s = get_bandwidth_from_structure(s);
-  
-  if (blocked) {
-    rep = s->k;
-    size_wk = s->k * n_plus_d;
-  } else {
-    rep = 1;
-    size_wk = n_plus_d;
-  }
-
-  w->a = (gsl_matrix**) malloc(w->s * sizeof(gsl_matrix *));
-  zk   = gsl_matrix_alloc(n_plus_d, n_plus_d);
-  /* construct w */
-  for (k = 0; k < w->s; k++) { 
-    gsl_matrix_set_zero(zk);
-    sum_nl = 0;
-    for (l = 0; l < s->q; l++) { 
-      ncol = s->a[l].blocks_in_row * s->a[l].nb;
-      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, ncol, ncol); 
-
-      if ((!s->a[l].exact)) {
-	offset = s->a[l].nb * k;
-	imax   = ncol - offset;
-	for (i = 0; i < imax; i++) {
-	  if (s->a[l].toeplitz) {
-	    gsl_matrix_set(&zkl.matrix, i, i+offset, 1);
-          } else {
-	    gsl_matrix_set(&zkl.matrix, i+offset, i, 1);
-	  }
-	}
-      } 
-      
-      sum_nl += ncol;
-    }
-    w->a[k] = gsl_matrix_calloc(size_wk, size_wk);
-    /* w->a[k] = kron(Ik, zk) */
-    for (i = 0; i < rep; i++) {
-      /* select the i-th diagonal block in a matrix view */
-      wi = gsl_matrix_submatrix( w->a[k], i*n_plus_d, 
-				 i*n_plus_d, n_plus_d, n_plus_d );
-      gsl_matrix_memcpy(&wi.matrix, zk);
-    }
-  }
-  gsl_matrix_free(zk);
-
-  return GSL_SUCCESS;
-}
 
 void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n, const data_struct* s, 
                                          opt_and_info *opt, slra_opt_data_reshaped *P ) {
@@ -690,6 +524,172 @@ void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad )
       }
     }
 }
+/*
+* tmv_prod: block-Toeplitz matrix T times vector v
+*
+* tt - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].
+* s - number of blocks in t, t = [t_0 ... t_s-1]
+* s_1 = s - 1;  m = (int) v->size1 / tt->size1
+* p - result
+*/ 
+void tmv_prod_new( gsl_matrix *tt, int s, gsl_vector* v, int m, 
+	      gsl_vector* p)
+{
+  int i, imax, temp, s_1 = s - 1;
+  int row_lim = GSL_MIN(s_1, m/2);
+  gsl_vector_view subv, subp; 	/* subvector of v and p */
+
+  int TM = tt->size1; 		/* = block size */
+
+  gsl_matrix_view submat, source;
+
+  /* construct p = T*v */
+  gsl_vector_set_zero(p);
+
+  /* beginning and end parts of the product p */
+  for (i = 0; i < row_lim; i++) {
+    temp = GSL_MIN(s+i, m)*TM;
+    /* beginning part */
+    subp = gsl_vector_subvector(p, i*TM, TM);
+    subv = gsl_vector_subvector(v, 0, temp);
+    submat = gsl_matrix_submatrix
+      (tt, 0, (s_1-i)*TM, TM, temp);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, &submat.matrix, 
+		   &subv.vector, 0.0, &subp.vector);
+    /* last part */
+    subp = gsl_vector_subvector(p, p->size - (i+1)*TM, TM);
+    subv = gsl_vector_subvector(v, v->size - temp, temp);
+    submat = gsl_matrix_submatrix(tt, 0, (s+i)*TM -temp, TM, temp);    
+    gsl_blas_dgemv(CblasNoTrans, 1.0, &submat.matrix, 
+		   &subv.vector, 0.0, &subp.vector);
+  }
+
+  /* middle part */
+  for (i = s_1, imax = m - s_1 ; i < imax; i++) {
+    subp = gsl_vector_subvector(p, i*TM, TM);
+    subv = gsl_vector_subvector(v, (i-s_1)*TM, tt->size2);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, tt, &subv.vector, 
+		   0.0, &subp.vector);
+  }
+  
+}
+
+/*
+* tmv_prod: block-Toeplitz matrix T times vector v
+*
+* t - nonzero part of the first block row of T
+* s - number of blocks in t, t = [t_0 ... t_s-1]
+* s_1 = s - 1;  m = (int) v->size1 / t->size1
+* p - result
+* 
+*/ 
+
+void tmv_prod(gsl_matrix* t, int s, gsl_vector* v, int m, 
+	      gsl_vector* p)
+{
+  gsl_matrix *tt;
+  int i, imax, temp, s_1 = s - 1;
+  gsl_vector_view subv, subp; 	/* subvector of v and p */
+
+  int TM = t->size1; 		/* = block size */
+  int TN = (t->size2);		/* = s(block size) */
+
+
+  /* tt - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1]. Should be t->size1* (2 * t->size2 - t->size1). */
+
+  gsl_matrix_view submat, source;
+  
+
+
+  /* form tt */
+  tt = gsl_matrix_alloc(TM, 2*TN - TM);
+
+  for (i = 0; i < s_1; i++) {
+    submat = gsl_matrix_submatrix(tt, 0, i*TM, TM, TM);
+    source = gsl_matrix_submatrix(t, 0, (s_1-i)*TM, TM, TM);
+    gsl_matrix_transpose_memcpy
+      (&submat.matrix, &source.matrix);
+  }
+  submat = gsl_matrix_submatrix(tt, 0, s_1*TM, TM, TN);
+  gsl_matrix_memcpy(&submat.matrix, t);
+
+  tmv_prod_new(tt, s,v, m, p);
+
+  free(tt);
+  
+}
+
+/* find  w->s */
+int get_bandwidth_from_structure( const data_struct* s ) {
+  int l, max_nl = 1;
+
+  for (l = 0; l < s->q; l++) {
+    if ((!s->a[l].exact) && s->a[l].blocks_in_row > max_nl) {
+      max_nl = s->a[l].blocks_in_row;
+    }
+  }
+  
+  return max_nl;
+}
+
+/* s2w: finds the covariance matrices w from the data structure */
+int s2w(const data_struct* s, w_data* w, int n_plus_d, int blocked )
+{
+  int k, l, i, offset, imax, sum_nl;
+  gsl_matrix *zk;
+  gsl_matrix_view wi, zkl;
+  char err_msg[70];
+  int rep;
+  int size_wk;
+  int ncol;
+ 
+  w->s = get_bandwidth_from_structure(s);
+  
+  if (blocked) {
+    rep = s->k;
+    size_wk = s->k * n_plus_d;
+  } else {
+    rep = 1;
+    size_wk = n_plus_d;
+  }
+
+  w->a = (gsl_matrix**) malloc(w->s * sizeof(gsl_matrix *));
+  zk   = gsl_matrix_alloc(n_plus_d, n_plus_d);
+  /* construct w */
+  for (k = 0; k < w->s; k++) { 
+    gsl_matrix_set_zero(zk);
+    sum_nl = 0;
+    for (l = 0; l < s->q; l++) { 
+      ncol = s->a[l].blocks_in_row * s->a[l].nb;
+      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, ncol, ncol); 
+
+      if ((!s->a[l].exact)) {
+	offset = s->a[l].nb * k;
+	imax   = ncol - offset;
+	for (i = 0; i < imax; i++) {
+	  if (s->a[l].toeplitz) {
+	    gsl_matrix_set(&zkl.matrix, i, i+offset, 1);
+          } else {
+	    gsl_matrix_set(&zkl.matrix, i+offset, i, 1);
+	  }
+	}
+      } 
+      
+      sum_nl += ncol;
+    }
+    w->a[k] = gsl_matrix_calloc(size_wk, size_wk);
+    /* w->a[k] = kron(Ik, zk) */
+    for (i = 0; i < rep; i++) {
+      /* select the i-th diagonal block in a matrix view */
+      wi = gsl_matrix_submatrix( w->a[k], i*n_plus_d, 
+				 i*n_plus_d, n_plus_d, n_plus_d );
+      gsl_matrix_memcpy(&wi.matrix, zk);
+    }
+  }
+  gsl_matrix_free(zk);
+
+  return GSL_SUCCESS;
+}
 
 int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi ) {
   int l;
@@ -798,4 +798,5 @@ int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const 
   gsl_vector_free(res);
   gsl_matrix_free(xext_rev);
 }
+
 
