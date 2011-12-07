@@ -79,7 +79,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		  int nrhs, const mxArray *prhs[] )
 {
   gsl_matrix *x = NULL, *v = NULL;
-  gsl_vector *p = NULL;
+  gsl_vector *p = NULL, *perm = NULL;
   gsl_vector_view vec_p;
   data_struct s;
   opt_and_info opt;
@@ -104,7 +104,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   size_t n,d;
   char err_msg[100];
-  int has_x;
+  int has_x, has_perm;
   int col_p_vector = 1;
   
   /* ---------- */
@@ -182,9 +182,23 @@ void mexFunction( int nlhs, mxArray *plhs[],
       mexErrMsgTxt("Error: n ~= size(x,1).");
     }
     if ( d != mxGetN(prhs[3]) ) { /* check d */
-      mexErrMsgTxt("Error: d ~= size(x,1).");
+      mexErrMsgTxt("Error: d ~= size(x,2).");
     }
   } 
+
+  /* Check permutation matrix prhs[5] */
+  has_perm = (nrhs >= 6) && (mxGetM(prhs[5]) > 0); 
+  if (has_perm) {
+    /* check dimensions of prhs[3] */
+    if ( n + d != mxGetM(prhs[5]) ) {/* check n */
+      mexErrMsgTxt("Error: n + d ~= size(perm,1).");
+    }
+    if ( n + d != mxGetN(prhs[5]) ) { /* check d */
+      mexErrMsgTxt("Error: n + d ~= size(perm,2).");
+    }
+  } 
+
+
 
   /* ---------------------- */
   /* Allocate and copy data */
@@ -195,6 +209,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
   if (has_x) {
     m_to_gsl_matrix(x, mxGetPr( prhs[3] ) );
   }
+
+  perm = gsl_matrix_alloc(n+d, n+d);
+  if (has_perm) {
+    m_to_gsl_matrix(perm, mxGetPr( prhs[5] ) );
+  }
+
   
   /* Allocate and copy parameters vector */
   p = gsl_vector_alloc(np);
@@ -283,7 +303,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* Call the solver */
   /* --------------- */
 
-  slra(p, &s, x, v, &opt, has_x, (nlhs > 3));
+  slra(p, &s, x, v, &opt, has_x, (nlhs > 3), perm, has_perm);
 
   /* ------------------ */
   /* Assign the outputs */
@@ -328,6 +348,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* --------------------- */
   /* Free allocated memory */
   /* --------------------- */
+  gsl_matrix_free(perm);
 
   gsl_vector_free(p);
   gsl_matrix_free(x);

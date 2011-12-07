@@ -104,7 +104,8 @@ static void comp_meth( gsl_vector* x, slra_opt_data_reshaped *P ) {
 
 
 int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
-         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph ) {
+         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
+         gsl_matrix *perm, int perm_given ) {
   int status;
   int status_dx, status_grad, k;
   double g_norm, x_norm;
@@ -112,6 +113,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   time_t t_b;
   gsl_matrix *c;
   gsl_matrix_view c_sub_a, c_sub_b;
+
 /*   slra_opt_data_old params;*/
   slra_opt_data_reshaped params;
   flex_struct_add_info si;
@@ -156,6 +158,12 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     PRINTF("Initial approximation doesn't conform to the structure specification.\n");   
     return GSL_EINVAL;
   }
+
+  if (n + d != perm->size1 || n + d != perm->size2) {
+    PRINTF("Incorrect permutation matrix.\n");   
+    return GSL_EINVAL;
+  }
+
   
   /* Calculate number of rows m */
   m = p->size - si.np_offset;
@@ -180,18 +188,31 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     return GSL_EINVAL;
   }
 
-    
+
+  if (!perm_given) {
+    gsl_matrix_set_identity(perm);
+  } else {
+    printf("Given permutation matix: \n");
+    print_mat(perm);
+  }
+
   c = gsl_matrix_alloc(m, si.total_cols);
   slra_fill_matrix_from_p(c, s, p);
-  c_sub_a = gsl_matrix_submatrix(c, 0, 0, m, n);
-  c_sub_b = gsl_matrix_submatrix(c, 0, n, m, d);
   
   if (!x_given) {  /* compute default initial approximation */
-    if (opt->disp >= 3) {
+    if (opt->disp == 3) {
       PRINTF("X not given, computing TLS initial approximation..\n");
     }
+    gsl_matrix * tempc = gsl_matrix_alloc(m, si.total_cols);
+    
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, c, perm, 0.0, tempc);
+    c_sub_a = gsl_matrix_submatrix(tempc, 0, 0, m, n);
+    c_sub_b = gsl_matrix_submatrix(tempc, 0, n, m, d);
     
     status = tls(&c_sub_a.matrix, &c_sub_b.matrix, x);
+    
+    gsl_matrix_free(tempc);
+
     if (status) {
       PRINTF("Initial approximation can not be computed: MB02MD failed with an error info = %d.\n", status);
       if (c !=  NULL) {
@@ -201,9 +222,15 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     }
   }
 
-  /*allocate_and_prepare_data_old(c, n, s, opt,  &params);*/
-  allocate_and_prepare_data_reshaped(c, n, s, opt, &params);
 
+  /* vectorize x row-wise */
+  gsl_vector_view x_vec;
+  x_vec = gsl_vector_view_array(x->data, n * d);
+  size_t max_ind, min_ind;
+  double max_val, min_val, abs_max_val = 0, abs_min_val;
+  
+  /*allocate_and_prepare_data_old(c, n, s, opt,  &params);*/
+  allocate_and_prepare_data_reshaped(c, n, s, opt, &params, perm);
 
   /* LM */
   gsl_multifit_fdfsolver* solverlm;
@@ -222,11 +249,6 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   gsl_vector *stepnm;
   gsl_multimin_fminimizer* solvernm;
   gsl_multimin_function fnm = { &slra_f_reshaped_, n * d, &params };
-
-  /* vectorize x row-wise */
-  gsl_vector_view x_vec;
-  x_vec = gsl_vector_view_array(x->data, n * d);
-  
   
   /* comp_meth(&x_vec.vector, &params); */
 
@@ -281,7 +303,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	x_norm = gsl_blas_dnrm2(solverlm->x);
 	g_norm = gsl_blas_dnrm2(g);
 /*	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %5.2f, e = %8.4f\n", opt->iter, opt->fmin, g_norm, x_norm, ((lmder_state_t *)solverlm->state)->delta);*/
-	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.6f\n", opt->iter, opt->fmin, g_norm, x_norm);
+	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     case SLRA_OPT_METHOD_QN:
@@ -297,7 +319,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
 	x_norm = gsl_blas_dnrm2(solverqn->x);
 	g_norm = gsl_blas_dnrm2(solverqn->gradient);
-	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %13.5f\n", 
+	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
 	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
@@ -311,7 +333,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
 	x_norm = gsl_blas_dnrm2(solvernm->x);
 
-	PRINTF("%3u: f0 = %16.8f,  ||x|| = %13.5f\n", 
+	PRINTF("%3u: f0 = %16.8f,  ||x|| = %10.8f\n", 
 	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
@@ -343,7 +365,6 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
     opt->fmin = solvernm->fval;
     break;
   }
-
 
   if (compute_ph) {
     slra_correction_reshaped(p, s, &params, &(x_vec.vector));

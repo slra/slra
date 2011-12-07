@@ -250,21 +250,27 @@ typedef struct {
   
   double *brg_j1b_vec;
   gsl_matrix *brg_j1b;
+
+
   
   /* Helper functions for gradient */
   gsl_matrix *brg_grad_N_k;
   gsl_matrix *brg_grad_Vx_k;
   gsl_matrix *brg_grad_tmp1;
   gsl_matrix *brg_grad_tmp2;
-  
+  gsl_matrix *brg_grad_tmp3;
+
   gsl_matrix *perm;  
+  
+  gsl_matrix *brg_perm_tmp;  
 } slra_opt_data_reshaped;
 
 
 
 /* Prototypes of functions */
 int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
-         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph );
+         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
+         gsl_matrix *perm, int perm_given );
 	 
 
 int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi );
@@ -296,10 +302,11 @@ int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
 
 
 
-void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *);
+void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *, gsl_matrix *, gsl_matrix *);
 
 
-void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n, const data_struct* s, opt_and_info *opt, slra_opt_data_reshaped *P );
+void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n, const data_struct* s, 
+         opt_and_info *opt, slra_opt_data_reshaped *P, gsl_matrix *perm );
 void free_memory_reshaped( slra_opt_data_reshaped *P );
 
 double slra_f_reshaped_ (const gsl_vector*, void*);
@@ -316,7 +323,8 @@ void jacobian_reshaped( slra_opt_data_reshaped*,  gsl_matrix*);
 
 
 /* Old functions */
-void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, opt_and_info *opt, slra_opt_data_old *P );
+void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, 
+         opt_and_info *opt, slra_opt_data_old *P );
 void free_memory_old( slra_opt_data_old *P );
 
 

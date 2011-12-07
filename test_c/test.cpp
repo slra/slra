@@ -44,7 +44,7 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
 }
 
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
-  gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
+  gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
   data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
@@ -110,6 +110,11 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
+
+    if (((perm = gsl_matrix_calloc(n+d, n+d)) == NULL)) {
+      throw 1;
+    }
+
     
     x_given = read_mat(x, fxname, log);
 
@@ -141,7 +146,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
 
     /* call stls */  
-    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */);
+    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */, perm, 0);
 
     if (!silent) {
       print_mat(x);
@@ -196,6 +201,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     if (x != NULL) {
       gsl_matrix_free(x);
+    }
+    if (perm != NULL) {
+      gsl_matrix_free(perm);
     }
     if (xt != NULL) {
       gsl_matrix_free(xt);

@@ -396,7 +396,7 @@ void xmat2xext( gsl_matrix_const_view x_mat, gsl_matrix *x_ext, int K )
 
 
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
-  xmat2_block_of_xext(x_mat, x_ext);
+  xmat2_block_of_xext(x_mat, x_ext, NULL, NULL);
 
   /* copy block (1,1) in (2,2),...,(k,k) */
   source = gsl_matrix_submatrix(x_ext, 0, 0, n+d, d);

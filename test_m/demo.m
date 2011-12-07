@@ -5,7 +5,7 @@ addpath '..';
 
 opts.disp = 'iter';
 opts.method = 'q';
-opts.tol = 1e-5;
+% opts.tol = 1e-7;
 
 %% Least squares problem
 
@@ -79,5 +79,12 @@ a = c(:, 1:n); b = c(:, n + 1);
 % Define the structure and solve the problem via SLRA 
 s  = [3];
 tic, [xh_slra, i_slra, cov, ph] = slra(p, s, n, [], opts); t_slra = toc
+error_data = norm(p - p0)
+error = norm(ph - p0)
+
+% Make the same with a permutation matrix
+opt.method = 'q'; % Works only with Quasi-Newton
+s  = [3];
+tic, [xh_slra, i_slra, cov, ph] = slra(p, s, n, [], opts, [1 0 0; 0 0 1; 1 1 0]); t_slra = toc
 error_data = norm(p - p0)
 error = norm(ph - p0)
