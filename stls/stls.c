@@ -84,7 +84,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   
   if (!x_given) {  /* compute default initial approximation */
     if (opt->disp >= 3) {
-      PRINTF("X not given, computing TLS initial approximation..\n");
+      PRINTF("X not given, computing TLS initial approximation.\n");
     }
     
     status = tls(a, b, x);

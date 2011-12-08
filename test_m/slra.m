@@ -25,7 +25,7 @@
 %   OPT.MAXITER - maximum number of iterations, 
 %   OPT.EPSREL, OPT.EPSABS, OPT.EPSGRAD - convergence tolerances, and 
 %   OPT.REGGAMMA - regularization parameter for gamma, absolute (to be changed)
-%   OPT.DISP - level of display ['notify','final','iter',off] (default 'notify').
+%   OPT.DISP - level of display ['notify','final','iter','off'] (default 'notify').
 % Exit condition: #iterations >= MAXITER, |xi(k+1)-xi(k)| < EPSABS + EPSREL*|xi(k+1)|
 % for all i, where x(k) is the approximation on the i-th step, or ||f'|| < EPSGRAD, 
 % where f' is the gradient of the cost function.

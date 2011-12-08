@@ -28,11 +28,11 @@ mexoct :   stls.a SLICOT.a $(MEX_SRC_FILES)
 mex-im-desktop : stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a \
 	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra
-#	cp -f slra.mex* test_m/
+	cp -f slra.mex* ~/mfiles/stls
 
 mex-im-laptop : stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o slra
-#	cp -f slra.mex* test_m/
+	cp -f slra.mexglx ~/mfiles/stls
 
 R: 
 	cp $(STLS_INCLUDE_FILES) rstls/src/stls

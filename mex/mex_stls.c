@@ -214,7 +214,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   }
     
   /* Check initial approximation prhs[3] */
-  has_x = (nrhs >= 4) & (mxGetM(prhs[3]) > 0);
+  has_x = (nrhs >= 4) && (mxGetM(prhs[3]) > 0);
   if (has_x) {
     /* check dimensions of prhs[3] */
     if ( n != mxGetM(prhs[3]) ) {/* check n */
