@@ -1,11 +1,4 @@
-/* MEX function for calling stls.c
-
-% Author: Ivan Markovsky, Last modified: November 2004.
-%
-% Reference: I. Markovsky and S. Van Huffel "High-performance numerical algorithms 
-% and software for structured total least squares", Journal of Computational and 
-% Applied Mathematics, 2005
-*/
+/* MEX function for calling stls.c */
 
 #include <stdio.h>
 #include <ctype.h>
@@ -57,29 +50,31 @@ void tolowerstr( char * str ) {
   }
 }
 
-#define IfCheckAndStoreFieldBoundL(name, lvalue)   \
-          if (! strcmp(field_name, #name)) {  \
-            opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); \
-            if (opt.name < lvalue) { \
-              opt.name = SLRA_DEF_##name; \
-              mexWarnMsgTxt("Ignoring optimization option '"#name"' because '"#name"' < "#lvalue"."); \
-            } \
-          }
+#define IfCheckAndStoreFieldBoundL(name, lvalue)		\
+  if (! strcmp(field_name, #name)) {				\
+    opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l));	\
+    if (opt.name < lvalue) {					\
+      opt.name = SLRA_DEF_##name;				\
+      mexWarnMsgTxt("Ignoring optimization option '"#name"' "	\
+		    "because '"#name"' < "#lvalue".");		\
+    }								\
+  }
                 
-#define IfCheckAndStoreFieldBoundLU(name, lvalue, uvalue)   \
-          if (! strcmp(field_name, #name)) {  \
-            opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l)); \
-            if (opt.name < lvalue || opt.name > uvalue) { \
-              opt.name = SLRA_DEF_##name; \
-              mexWarnMsgTxt("Ignoring optimization option '"#name"' because '"#name"' < "#lvalue" or '"#name"' > "#uvalue"."); \
-            } \
-          }
+#define IfCheckAndStoreFieldBoundLU(name, lvalue, uvalue)		\
+  if (! strcmp(field_name, #name)) {					\
+    opt.name = mxGetScalar(mxGetFieldByNumber(prhs[4], 0, l));		\
+    if (opt.name < lvalue || opt.name > uvalue) {			\
+      opt.name = SLRA_DEF_##name;					\
+      mexWarnMsgTxt("Ignoring optimization option '"#name"' "		\
+		    "because '"#name"' < "#lvalue" or '"#name"' > "#uvalue"."); \
+    }									\
+  }
 
 void mexFunction( int nlhs, mxArray *plhs[], 
 		  int nrhs, const mxArray *prhs[] )
 {
-  gsl_matrix *x = NULL, *v = NULL;
-  gsl_vector *p = NULL, *perm = NULL;
+  gsl_matrix *x = NULL, *v = NULL, *perm = NULL;
+  gsl_vector *p = NULL;
   gsl_vector_view vec_p;
   data_struct s;
   opt_and_info opt;
@@ -90,10 +85,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
   char submeth_codes_lm[] = "ls";
   char submeth_codes_qn[] = "b2pf";
   char submeth_codes_nm[] = "b2pf";
-  char *submeth_codes[] = { submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
-  int submeth_codes_max[] = { sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) -1, 
-          sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) -1, 
-          sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) -1 };
+  char *submeth_codes[] = { \
+    submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
+  int submeth_codes_max[] = { \
+    sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) -1, 
+    sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) -1, 
+    sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) -1 };
   
   
   
@@ -112,10 +109,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* ---------- */
 
   if (nrhs < 2) {
-    mexErrMsgTxt("Error: at least two parameters (p,s) are needed.");
+    mexErrMsgTxt("Error: at least two parameters (p, s) are needed.");
   }
   
-
   /* check p */
   if (mxGetN(prhs[0]) == 1) { 
     np = mxGetM(prhs[0]);
@@ -131,14 +127,17 @@ void mexFunction( int nlhs, mxArray *plhs[],
   const mxArray* strArray;
   if (mxIsStruct(prhs[1])) {
     mxArray* field;
-    /* in this case prhs[1] should have fields NUM_ROLES_STR and ARRAY_STR */
+    /* in this case prhs[1] should have fields 
+       NUM_ROLES_STR and ARRAY_STR */
     if ((field = mxGetField(prhs[1], 0, NUM_ROLES_STR)) == NULL) {
-      mexErrMsgTxt("Error in the structure specification : field " NUM_ROLES_STR " undefined.");
+      mexErrMsgTxt("Error in the structure specification : field " \
+		   NUM_ROLES_STR " undefined.");
     }
     s.k = (int) mxGetScalar(field);
 
     if ((strArray = mxGetField(prhs[1], 0, ARRAY_STR)) == NULL) {
-      mexErrMsgTxt("Error in the structure specification : field " ARRAY_STR " undefined.");
+      mexErrMsgTxt("Error in the structure specification : field " \
+		   ARRAY_STR " undefined.");
     }
   } else {
     /* in this case k = 1, and prhs[1] is the array */
@@ -146,10 +145,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
     strArray = prhs[1];
   }
   if (mxGetN(strArray) < 1 || mxGetN(strArray) > 4) {
-    mexErrMsgTxt("Error in the structure specification : size(s." ARRAY_STR ",2) < 1 or > 4.");
+    mexErrMsgTxt("Error in the structure specification : size(s." \
+		 ARRAY_STR ",2) < 1 or > 4.");
   }
   if (mxGetM(strArray) < 1 || mxGetM(strArray) > 10) {
-    mexErrMsgTxt("Error in the structure specification : size(s." ARRAY_STR ",1) < 1 or > 10.");
+    mexErrMsgTxt("Error in the structure specification : size(s." \
+		 ARRAY_STR ",1) < 1 or > 10.");
   }
   s_matr = mxGetPr(strArray);
   s.q = mxGetM(strArray);
@@ -198,8 +199,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
   } 
 
-
-
   /* ---------------------- */
   /* Allocate and copy data */
   /* ---------------------- */
@@ -207,14 +206,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* convert x in GSL format and store it in xh */
   x = gsl_matrix_alloc(n, d);
   if (has_x) {
-    m_to_gsl_matrix(x, mxGetPr( prhs[3] ) );
+    m_to_gsl_matrix(x, mxGetPr( prhs[3]));
   }
 
-  perm = gsl_matrix_alloc(n+d, n+d);
+  perm = gsl_matrix_alloc(n + d, n + d);
   if (has_perm) {
-    m_to_gsl_matrix(perm, mxGetPr( prhs[5] ) );
+    m_to_gsl_matrix(perm, mxGetPr(prhs[5]));
   }
-
   
   /* Allocate and copy parameters vector */
   p = gsl_vector_alloc(np);
@@ -230,7 +228,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* user supplied options */
   if (nrhs >= 5) {
     if (! mxIsStruct(prhs[4]))
-      mexWarnMsgTxt("Ignoring 'opt'. The optimization options should be passed in a structure.");
+      mexWarnMsgTxt("Ignoring 'opt'. The optimization options "\
+		    "should be passed in a structure.");
     else {
       int nfields = mxGetNumberOfFields(prhs[4]);
       const char *field_name_ptr;
@@ -242,23 +241,27 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	
 	/* which option */
 	if (! strcmp(field_name, DISP_STR)) {
- 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, STR_MAX_LEN); 
+ 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, \
+		      STR_MAX_LEN); 
 	  tolowerstr(str_buf);
 	    
-	  for (i = sizeof(str_disp)/sizeof(str_disp[0]) - 1; i > 0; i--)  {
+	  for (i = sizeof(str_disp)/sizeof(str_disp[0]) - 1; i > 0; i--) {
 	    if (!strcmp(str_buf, str_disp[i])) {
 	      opt.disp = i;
 	      break;
 	    }
 	  }
 	  if (i <= 0) {
-	    mexWarnMsgTxt("Ignoring optimization option 'disp'. Unrecognized value.");
+	    mexWarnMsgTxt("Ignoring optimization option 'disp'. " \
+			  "Unrecognized value.");
 	  }
  	} else if (! strcmp(field_name, "method")) {
- 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, STR_MAX_LEN); 
+ 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, \
+		      STR_MAX_LEN); 
 	  tolowerstr(str_buf);
 	  
-	  for (i = sizeof(meth_codes)/sizeof(meth_codes[0]) - 1; i >= 0; i--)  {
+	  for (i = sizeof(meth_codes) / sizeof(meth_codes[0]) - 1; \
+	       i >= 0; i--)  {
 	    if (str_buf[0] == meth_codes[i]) {
 	      opt.method = i;
 	      break;
@@ -266,11 +269,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	  } 
 	  
 	  if (i < 0)  {
-	    mexWarnMsgTxt("Ignoring optimization option 'method'. Unrecognized value.");
+	    mexWarnMsgTxt("Ignoring optimization option 'method'. " \
+			  "Unrecognized value.");
 	    slraAssignDefOptValue(opt, method);
 	    slraAssignDefOptValue(opt, submethod);
 	  }
-
 
 	  for (i = submeth_codes_max[opt.method] - 1; i >= 0; i--)  {
 	    if (str_buf[1] == submeth_codes[opt.method][i]) {
@@ -279,22 +282,23 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	    }
 	  } 
 	  if (i < 0)  {
-	    mexWarnMsgTxt("Unrecognized or unspecified submethod - using default.");
+	    mexWarnMsgTxt("Unrecognized or unspecified submethod " \
+			  "- using default.");
 	    slraAssignDefOptValue(opt, submethod);
 	  }
 
  	} else IfCheckAndStoreFieldBoundL(maxiter, 0)  
-        else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(epsx, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(step, 0, 1) 
-        else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
-	else IfCheckAndStoreFieldBoundL(reggamma, 0) 
-        else { 
- 	  sprintf(err_msg, "Ignoring unrecognized optimization option '%s'.", field_name); 
-	  mexWarnMsgTxt(err_msg); 
- 	} 
+	  else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
+	    else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
+	      else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
+		else IfCheckAndStoreFieldBoundLU(epsx, 0, 1) 
+		  else IfCheckAndStoreFieldBoundLU(step, 0, 1) 
+		    else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
+		      else IfCheckAndStoreFieldBoundL(reggamma, 0) 
+			else { 
+			  sprintf(err_msg, "Ignoring unrecognized optimization option '%s'.", field_name); 
+			  mexWarnMsgTxt(err_msg); 
+			} 
       }
     }
   }
@@ -344,12 +348,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
     gsl_vector_memcpy(&vec_p.vector, p);
   }
 
-
   /* --------------------- */
   /* Free allocated memory */
   /* --------------------- */
-  gsl_matrix_free(perm);
 
+  gsl_matrix_free(perm);
   gsl_vector_free(p);
   gsl_matrix_free(x);
   gsl_matrix_free(v);
