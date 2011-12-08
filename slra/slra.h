@@ -23,8 +23,6 @@
 
 #endif
 
-
-
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_multifit_nlin.h> /* Levenberge-Marquardt */
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
@@ -53,10 +51,10 @@ extern "C" {
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2      1
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2_RAND 2
 
-
 /* optimization options and output information structure */
 typedef struct {
-  int disp; /* displayed information: 1 - notify, 2 - final, 3 - iter, 4 - off */
+  int disp; /* displayed information: 
+	       1 - notify, 2 - final, 3 - iter, 4 - off */
   
   /* method */
   int method;
@@ -64,7 +62,7 @@ typedef struct {
   
   /* stopping criterion */  
   int maxiter;
-  double epsabs, epsrel;  /* Eps for LM */
+  double epsabs, epsrel;    /* Eps for LM */
   double epsgrad;           /* Eps for LM and QN */
   double epsx;              /* Eps for NM */ 
   
@@ -80,7 +78,6 @@ typedef struct {
   double time;
 } opt_and_info;
 
-
 #define SLRA_DEF_disp       3 
 #define SLRA_DEF_method     SLRA_OPT_METHOD_LM
 #define SLRA_DEF_submethod  0
@@ -93,24 +90,22 @@ typedef struct {
 #define SLRA_DEF_tol      1e-6
 #define SLRA_DEF_reggamma 0.001
 
-#define slraAssignDefOptValue(opt,field) do { opt.field = SLRA_DEF_##field; } while(0)
-
+#define slraAssignDefOptValue(opt, field) \
+  do { opt.field = SLRA_DEF_##field; } while(0)
 
 #define slraAssignDefOptValues(opt) do {  \
-            slraAssignDefOptValue(opt,disp); \
-            slraAssignDefOptValue(opt,method); \
-            slraAssignDefOptValue(opt,submethod);   \
-            slraAssignDefOptValue(opt,maxiter); \
-            slraAssignDefOptValue(opt,epsabs); \
-            slraAssignDefOptValue(opt,epsrel); \
-            slraAssignDefOptValue(opt,epsgrad); \
-            slraAssignDefOptValue(opt,epsx); \
-            slraAssignDefOptValue(opt,step); \
-            slraAssignDefOptValue(opt,tol); \
-            slraAssignDefOptValue(opt,reggamma); \
+            slraAssignDefOptValue(opt, disp); \
+            slraAssignDefOptValue(opt, method); \
+            slraAssignDefOptValue(opt, submethod);   \
+            slraAssignDefOptValue(opt, maxiter); \
+            slraAssignDefOptValue(opt, epsabs); \
+            slraAssignDefOptValue(opt, epsrel); \
+            slraAssignDefOptValue(opt, epsgrad); \
+            slraAssignDefOptValue(opt, epsx); \
+            slraAssignDefOptValue(opt, step); \
+            slraAssignDefOptValue(opt, tol); \
+            slraAssignDefOptValue(opt, reggamma); \
           } while(0)
-
-
 
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
@@ -131,13 +126,12 @@ typedef struct {
   
 } data_struct;
 
-
 /* additional info about matrix structure */
 typedef struct {
   int total_cols;
-  int np_scale, np_offset; /* Coefficients in the formula  np = np_scale * m + np_offset */
+  int np_scale, np_offset; /* Coefficients in the formula  
+			      np = np_scale * m + np_offset */
 } flex_struct_add_info;
-
 
 /* three dimensional array of covariances w */
 typedef struct {
@@ -145,11 +139,8 @@ typedef struct {
   gsl_matrix **a;
 } w_data;
 
-
-
-#define mymax(a,b) ((a) > (b) ? (a) : (b)) 
-#define mymin(a,b) ((a) < (b) ? (a) : (b))
-
+#define mymax(a, b) ((a) > (b) ? (a) : (b)) 
+#define mymin(a, b) ((a) < (b) ? (a) : (b))
 
 #define COMMON_PARAMS  \
     int m, n, d; \
@@ -166,7 +157,6 @@ typedef struct {
     m_div_k,  \
     s_minus_1;  \
     int one; /* One for blas routines */ 
-
 
 #define PREPARE_COMMON_PARAMS(C, Nn, S, OPT, PP, isblock) \
   do {\
@@ -188,12 +178,7 @@ typedef struct {
   PP->m_div_k = (int) PP->m / S->k;\
   PP->s_minus_1 = PP->w.s - 1;\
   PP->one = 1;\
-  \
   } while (0)
-
-
-
-
 
 typedef struct {
   COMMON_PARAMS;
@@ -204,7 +189,8 @@ typedef struct {
   
   /* Preallocated arrays for cholgam */
   double *rb;   /* Result of Cholesky factorization */
-  gsl_matrix *tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
+  gsl_matrix *tmp; /* Temp matrix for cholgam (x_ext' * w_k) 
+		      P->k_times_d x SIZE_W  */
   gsl_matrix *gamma;
   double *gamma_vec;
   int ldwork;       /* Size of Dwork for MB02GD  */
@@ -214,8 +200,6 @@ typedef struct {
   gsl_matrix *dgamma, *st;
   double *jres1, * jres2;
 } slra_opt_data_old;
-
-
 
 /* data needed for cost function and Jacobian evaluation */
 typedef struct {
@@ -232,7 +216,8 @@ typedef struct {
   gsl_matrix *bx_ext;  
 
   double *brg_rb;   /* Result of Cholesky factorization */
-  gsl_matrix *brg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) P->k_times_d x SIZE_W  */
+  gsl_matrix *brg_tmp; /* Temp matrix for cholgam (x_ext' * w_k) 
+			  P->k_times_d x SIZE_W  */
   gsl_matrix *brg_gamma;
   gsl_matrix *brg_dgamma;
   gsl_matrix *brg_tdgamma;
@@ -250,8 +235,6 @@ typedef struct {
   
   double *brg_j1b_vec;
   gsl_matrix *brg_j1b;
-
-
   
   /* Helper functions for gradient */
   gsl_matrix *brg_grad_N_k;
@@ -265,20 +248,15 @@ typedef struct {
   gsl_matrix *brg_perm_tmp;  
 } slra_opt_data_reshaped;
 
-
-
 /* Prototypes of functions */
 int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
          gsl_matrix *perm, int perm_given );
-	 
-
-int check_and_adjust_parameters( data_struct *s, flex_struct_add_info *psi );
-int slra_fill_matrix_from_p( gsl_matrix* c,  data_struct *s, gsl_vector* p);
-int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params, const gsl_vector* x);
-
-
-
+	
+int check_and_adjust_parameters(data_struct *s, flex_struct_add_info *psi);
+int slra_fill_matrix_from_p(gsl_matrix* c,  data_struct *s, gsl_vector* p);
+int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params,
+			     const gsl_vector* x);
 
 void print_state (int, gsl_multifit_fdfsolver*);
 
@@ -296,16 +274,15 @@ void tmv_prod_new(gsl_matrix*, int,
 	      gsl_vector*, int, gsl_vector*);
 
 int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
-
  
-/* TODO: replace with something that uses printf. #define print_vec(v)   gsl_vector_fprintf(stdout,v,"%16.14f") */
+/* TODO: replace with something that uses printf. 
+   #define print_vec(v) gsl_vector_fprintf(stdout,v,"%16.14f") */
 
+void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *,
+			  gsl_matrix *, gsl_matrix *);
 
-
-void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *, gsl_matrix *, gsl_matrix *);
-
-
-void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n, const data_struct* s, 
+void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n,
+					 const data_struct* s, 
          opt_and_info *opt, slra_opt_data_reshaped *P, gsl_matrix *perm );
 void free_memory_reshaped( slra_opt_data_reshaped *P );
 
@@ -316,22 +293,18 @@ int slra_df_reshaped (const gsl_vector*, void*, gsl_matrix*);
 int slra_fdf_reshaped (const gsl_vector*, 
 	      void*, gsl_vector*, gsl_matrix*);
 
-
 void cholesky_of_block_of_reshaped_gamma( slra_opt_data_reshaped* );
 void jacobian_reshaped( slra_opt_data_reshaped*,  gsl_matrix*);
 
-
-
 /* Old functions */
-void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, 
+void allocate_and_prepare_data_old( gsl_matrix* c, int n,
+				    const data_struct* s, 
          opt_and_info *opt, slra_opt_data_old *P );
 void free_memory_old( slra_opt_data_old *P );
-
 
 void cholgam( slra_opt_data_old* );
 void jacobian( slra_opt_data_old*,  gsl_matrix*);
 void xmat2xext( gsl_matrix_const_view, gsl_matrix *, int);
-
 
 double slra_f_ (const gsl_vector*, void*);
 
@@ -340,30 +313,30 @@ int slra_df (const gsl_vector*, void*, gsl_matrix*);
 int slra_fdf (const gsl_vector*, 
 	      void*, gsl_vector*, gsl_matrix*);
 
-
-void slra_df_reshaped_ (const gsl_vector* x, void* params,  gsl_vector* grad);
-void slra_fdf_reshaped_ (const gsl_vector* x, void* params, double *f, gsl_vector* grad);
+void slra_df_reshaped_ (const gsl_vector* x, void* params,
+			gsl_vector* grad);
+void slra_fdf_reshaped_ (const gsl_vector* x, void* params, double *f,
+			 gsl_vector* grad);
 void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );
-
-
 
 /* SLICOT and LAPACK functions */
 /*
-void mb02gd_(char*, char*, int*, int*, int*, const int*, int*, double*, int*, double*, int*, double*, const int*, int*);
-void mb02md_(char*, int*, int*, int*, const int*, double*, int*, double*, double*, int*, double*, int*, double*, int*, const int*, int*);
-void dtbtrs_(char*, char*, char*, int*, int*, const int*, double*, int*, double*, int*, int*);
-void dpbtrs_(char*, int*, int*, const int*, double*, int*, double*, int*, int*);
+void mb02gd_(char*, char*, int*, int*, int*, const int*, int*,
+double*, int*, double*, int*, double*, const int*, int*);
+void mb02md_(char*, int*, int*, int*, const int*, double*, int*,
+double*, double*, int*, double*, int*, double*, int*, const int*, int*);
+void dtbtrs_(char*, char*, char*, int*, int*, const int*, double*,
+int*, double*, int*, int*);
+void dpbtrs_(char*, int*, int*, const int*, double*, int*, double*,
+int*, int*);
 */
-
 
 void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
 void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
 
-
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* _SLRA_H_ */
 

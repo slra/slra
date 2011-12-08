@@ -6,7 +6,7 @@
 % constant. C depends affinely on a vector of parameters P, i.e., C = C(P). 
 % The STLS problem is: min_{Xh,Ph} (P-Ph)'*(P-Ph) s.t. C(Ph)*[Xh;-I] = 0.
 %
-% [ xh, info, vxh, fh ] = stls( p, s, r, x0, opt )
+% [xh, info, vxh, fh] = stls(p, s, r, x0, opt)
 %
 % Input arguments:
 %
@@ -40,9 +40,3 @@
 % VXH  - assymptotic covariance matrix of the estimate XH.
 %
 % Note: The program can not treat the case length(P) < size(A,1) * size(B,2).
-
-% Author: Ivan Markovsky, Last modified: November 2004.
-%
-% Reference: I. Markovsky and S. Van Huffel "High-performance numerical algorithms 
-% and software for structured total least squares", Journal of Computational and 
-% Applied Mathematics, 2005
