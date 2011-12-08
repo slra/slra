@@ -20,7 +20,6 @@ OPT_FLAGS = -O -pg # gprof ./test gmon.out > gmon.txt
 
 BUILD_MODE=BUILD_DEFAULT
 
-
 # Building octave mex-file
 mexoct:   SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a -lgsl -lgslcblas \
@@ -30,12 +29,10 @@ mexoct:   SLICOT.a $(MEX_SRC_FILES)
 mex-im-desktop : SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a \
 	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra
-	cp -f slra.mex* ~/mfiles/stls
 
 mex-im-laptop : BUILD_MODE=MEX_MATLAB
 mex-im-laptop : stls.a SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o slra
-	cp -f slra.mexglx ~/mfiles/stls
 
 R: BUILD_MODE=BUILD_R_PACKAGE
 R: 
@@ -65,7 +62,6 @@ testc : test.o slra.a SLICOT.a
 #testc : test.o stls.a SLICOT.a
 #	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
 #	 -lm   -latlas -lgfortran -lf77blas -llapack 	-lcblas -lgslcblas -lgsl
-
 
 test.o : test_c/test.cpp $(SLRA_INCLUDE_FILES) 
 	$(CCPP) -D$(BUILD_MODE) $(INC_FLAGS) $(OPT_FLAGS) -c test_c/test.cpp
