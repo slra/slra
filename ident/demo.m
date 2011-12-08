@@ -38,7 +38,7 @@ T = 100;  % length of the data sequence
 
 % Generate data
 n = l * p;             % order
-sys0 = drss_(n, p, m); % true system
+sys0 = drss(n, p, m); % true system
 u0 = randn(T, m);     % true input 
 y0 = lsim(sys0, u0, 1:T); % true output
 w0 = [u0 y0];        % true data  
@@ -272,7 +272,7 @@ m  = 2;  % # inputs
 p  = 2;  % # outputs
 
 % High order system
-sys = drss_(p*l, p, m);
+sys = drss(p*l, p, m);
 
 % Simulate impulse response
 h = impulse(sys); % determine automatically T

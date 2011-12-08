@@ -9,14 +9,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_multifit_nlin.h>
-#include "stls.h"
-
-/* default constants for the exit condition */
-#define MAXITER 600
-#define EPSABS  0
-#define EPSREL  1e-5
-#define EPSGRAD 1e-5
-#define DISP    3     /* per iteration */
+#include "slra.h"
 
 #define TEST_NUM 7
 
@@ -36,7 +29,6 @@ int read_mat( gsl_matrix *a,  char * filename, FILE * log ) {
   return 1;
 }
 
-
 int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
   FILE * file;
   file = fopen(filename,"r");
@@ -51,15 +43,18 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
   return 1;
 }
 
-
-
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
-  gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL;
+  gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
-  char str_codes[] = " THUE";
-  data_struct s = {1,1,{'H',16,8}}; /* {1,2,{'T',10,1,'U',1,1}}; */
-  opt_and_info opt = {MAXITER, DISP, EPSREL, EPSABS, EPSGRAD, 0.01,  0, 0.0, 0.0};
+  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
+  opt_and_info opt;
+  
+  slraAssignDefOptValues(opt);
+  opt.maxiter = 500;
+  opt.method = SLRA_OPT_METHOD_LM;
+  
+  
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
   int x_given;
   char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
@@ -99,8 +94,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     
     for (i = 0; i < s.q; i++)  {
-      fscanf(file, "%d %d %d", &tmp, &(s.a[i].ncol), &(s.a[i].nb)); 
-      s.a[i].type = str_codes[tmp]; 
+      fscanf(file, "%d %d %d %d", &(s.a[i].blocks_in_row), &(s.a[i].nb), &(s.a[i].exact), &(s.a[i].toeplitz)); 
     }
     fclose(file);
 
@@ -116,9 +110,13 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
+
+    if (((perm = gsl_matrix_calloc(n+d, n+d)) == NULL)) {
+      throw 1;
+    }
+
     
     x_given = read_mat(x, fxname, log);
-
 
     if (((p = gsl_vector_alloc(np)) == NULL) || !read_vec(p, fpname, log)) { 
       throw 1;
@@ -127,8 +125,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (((p2 = gsl_vector_alloc(np)) == NULL)) { 
       throw 1;
     }
-
-    
     
     gsl_vector_memcpy(p2,p);
 
@@ -150,7 +146,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
 
     /* call stls */  
-    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */);
+    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */, perm, 0);
 
     if (!silent) {
       print_mat(x);
@@ -205,6 +201,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     if (x != NULL) {
       gsl_matrix_free(x);
+    }
+    if (perm != NULL) {
+      gsl_matrix_free(perm);
     }
     if (xt != NULL) {
       gsl_matrix_free(xt);
