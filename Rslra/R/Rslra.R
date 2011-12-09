@@ -1,9 +1,7 @@
 
 # Stubs to call STLS
-slra <- function(P, S, R = (total_cols - 1), X = NULL, 
-            opts = list(epsabs = 0, epsrel = 1e-5, epsgrad = 1e-5, 
-                        maxiter = 100, disp = 'iter'),
-            compute.dp = FALSE) {
+slra <- function(P, S, R = (total_cols - 1), X0 = NULL, 
+            opt = list(), compute.dp = FALSE) {
 
   ###### Parse structure
   # convert stucture into list
@@ -11,7 +9,7 @@ slra <- function(P, S, R = (total_cols - 1), X = NULL,
     S <- list(1,S);
     names(S) <- c("k", "A");
   } 
-  storage.mode(S$k) <- 'integer'
+  storage.mode(S$k) <- 'integer';
   if (S$k <= 0) {
     stop ('Incorrect row dimension of the block');
   }
@@ -20,56 +18,37 @@ slra <- function(P, S, R = (total_cols - 1), X = NULL,
   }
 
   # Parse structure matrix A
-  storage.mode(S$A) <- 'integer'
+  storage.mode(S$A) <- 'double';
   if (nrow(S$A) > 10) {
     stop("There is more than 10 blocks");
   }
   if (ncol(S$A) > 4) {
      stop("Structure matrix has incorrect number of columns");
   }
-  if (!prod(S$A[,1] >= 0)) {
-     stop("Structure matrix contains negative numbers");
-  }
   if (ncol(S$A) < 2) {
     S$A <- cbind(S$A, matrix(1, nrow(S$A), 1));
   }
-  if (ncol(S$A) < 4) {
-    S$A <- cbind(S$A, matrix(0, nrow(S$A), 4 - ncol(S$A)));
-  }
-  
 
+  total_cols <- sum(S$A[,1] * S$A[,2]);
+  storage.mode(total_cols) <- 'integer';
 
-
-
-
-  if (!prod((S$A[,1] >= 1) & (S$A[,1] <= 4))) {
-    stop('Unrecognized block structure');
-  }
-
-  total_cols <- sum(S$A[,2]);
-
-  if (is.vector(X)) {
-    X <- matrix(X, length(X), 1);
+  if (is.vector(X0)) {
+    X0 <- matrix(X0, length(X0), 1);
   }
    
-  if (is.null(P)) {
-    stop("P should be given");
-  }
-
   storage.mode(R) <- 'integer';
   n <- R;
   d <- total_cols - n;   
 
-  if (!is.null(X)) {
-    storage.mode(X) <- 'double';
+  if (!is.null(X0)) {
+    storage.mode(X0) <- 'double';
   
-    if((nrow(X) != n || ncol(X) != d)) {
-      stop('nrow(X) != n || ncol(X) != d');
+    if((nrow(X0) != n || ncol(X0) != d)) {
+      stop('nrow(X0) != n || ncol(X0) != d');
     }
   }
 
-
-  .Call("rslra", n, d, P, S, X, opts, compute.dp);
+  .Call("rslra", n, d, P, S, X0, opt, compute.dp);
 }
 
 

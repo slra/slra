@@ -68,6 +68,9 @@ void allocate_and_prepare_data_reshaped(
   P->brg_j1b_vec = calloc(P->d_times_m_div_k * P->d, sizeof(double));
   P->brg_j1b = gsl_matrix_calloc(P->d_times_m_div_k, P->d);
   
+  P->brg_j1_cvec = gsl_vector_alloc(P->m);
+  P->brg_j2_pvec = gsl_vector_alloc(P->n_plus_d);
+  
   P->brg_st   = gsl_matrix_alloc(P->m_times_d, P->n_times_d);
   P->brg_jres2  = malloc( P->m_times_d * sizeof(double));
 
@@ -103,6 +106,9 @@ void free_memory_reshaped( slra_opt_data_reshaped *P ) {
   free(P->rb2);
   free(P->brg_j1b_vec);
   gsl_matrix_free(P->brg_j1b);
+
+  gsl_vector_free(P->brg_j1_cvec);
+  gsl_vector_free(P->brg_j2_pvec);
 
   free(P->brg_jres2);
   gsl_matrix_free(P->brg_st);
@@ -309,17 +315,24 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
   gsl_vector_view tmp1_row, tmp1_col;
   gsl_vector_view w_k_row, w_k_col;
   gsl_matrix_view submat1, submat2;
+  gsl_vector_view perm_col;
   int ibr, ik, i1, j1, kbr;
   double a_kj;
 
   /* first term of the Jacobian Gamma^{-1/2} kron(a,I_d) */
   for (j = 0; j < N; j++) {
+    perm_col = gsl_matrix_column(P->perm, j);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, P->brg_c, &perm_col.vector, 0.0, P->brg_j1_cvec);
+  
     for (ik = 0; ik < P->k; ik++) {
       /* Fill right-hand matrix */
       for (ibr = 0; ibr < P->m_div_k; ibr++) {
         for (k = 0; k < D; k++) {
+/*          gsl_matrix_set(P->brg_j1b, k + ibr*D, k, 
+		 gsl_matrix_get(P->brg_c, ik * P->m_div_k + ibr,j)); */
           gsl_matrix_set(P->brg_j1b, k + ibr*D, k, 
-			 gsl_matrix_get(P->brg_c, ik * P->m_div_k + ibr,j));
+                 gsl_vector_get(P->brg_j1_cvec, ik * P->m_div_k + ibr));
+
         }
       }
       gsl_matrix_vectorize(P->brg_j1b_vec, P->brg_j1b);
@@ -358,18 +371,28 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
 				      (S-1)*D + k*D, D, D);
 
         /* compute tmp1 = dx_ext' * w_k * x_ext * /
-	   /* Iterate over rows of dx_ext' * w_k */
+	/* Iterate over rows of dx_ext' * w_k */
         tmp1_row = gsl_matrix_row (&submat.matrix, j);
-        w_k_row = gsl_matrix_row (&b_w_k.matrix, i);
+/*        w_k_row = gsl_matrix_row (P->w.a[k], i);
         gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, &w_k_row.vector, 
-		       0.0, &tmp1_row.vector); 
-        
+		       0.0, &tmp1_row.vector); */
+        w_k_row = gsl_matrix_column (P->perm, i);
+        gsl_blas_dgemv(CblasTrans, 1.0, P->w.a[k], &w_k_row.vector,
+                       0.0, P->brg_j2_pvec); 
+        gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, P->brg_j2_pvec, 
+                       0.0, &tmp1_row.vector); 
+
+
         /* compute submat = submat  + x_ext' * tmp * dx_ext * /
-	   /* Iterate over rows of dx_ext' * w_k' */
+	/* Iterate over rows of dx_ext' * w_k' */
         tmp1_col = gsl_matrix_column (&submat.matrix, j);
-        w_k_col = gsl_matrix_column (&b_w_k.matrix, i);
+/*        w_k_col = gsl_matrix_column (P->w.a[k], i);
         gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, &w_k_col.vector, 
-		       1.0, &tmp1_col.vector); 
+		       1.0, &tmp1_col.vector); */
+        gsl_blas_dgemv(CblasNoTrans, 1.0, P->w.a[k], &w_k_row.vector,
+                       0.0, P->brg_j2_pvec); 
+        gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, P->brg_j2_pvec, 
+                        1.0, &tmp1_col.vector); 
       }
 
       for (l = 0; l < S - 1; l++) {
@@ -525,9 +548,11 @@ void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad )
   grad_matr = gsl_matrix_view_vector(grad, P->n, P->d);
 
   /* Compute term 1 */
-  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, P->brg_c, &yr_sub_matr.matrix, 0.0, P->brg_perm_tmp);
+  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, P->brg_c, 
+                 &yr_sub_matr.matrix, 0.0, P->brg_perm_tmp);
   perm_sub_matr = gsl_matrix_submatrix(P->perm, 0, 0, P->n_plus_d, P->n);
-  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, P->brg_perm_tmp, 0.0, &grad_matr.matrix);
+  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, 
+                 P->brg_perm_tmp, 0.0, &grad_matr.matrix);
   
   /* Compute term 2 */  
   for (k = 0; k < P->w.s; k++) {

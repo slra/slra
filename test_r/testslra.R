@@ -23,7 +23,7 @@ amat <- h[,1:2]
 bmat <- h[,3]
 xmat <- matrix(x, 2, 1)
 
-res <- slra(f, matrix(c(2, 3, 1), 1, 3), 2, xmat, opt = list(method='l'))
+res <- slra(f, 3, 2, xmat, opt = list(method='l'))
 print('x0(exact), x(tls), x(stls)')
 print(x0)
 print(x)
@@ -53,7 +53,7 @@ system.time(x_ls <- qr.solve(a, b))
 print(x_ls)
 
 # Define and solve the LS problem as a (very special) STLS problem
-s_ls <- rbind(c(4, n, 1), c(3, d, 1));
+s_ls <- rbind(c(1, n, 1), c(1, d, 0));
 pause();
 print(system.time(res <- slra(c(as.vector(t(a)),as.vector(t(b))), s_ls, n)))
 print(res$xh)
@@ -74,7 +74,7 @@ print(x_tls);
 pause();
 
 # Define and solve the TLS problem as an STLS problem
-s_tls <- list(k=1, A=matrix(c(3, n+d, 1), 1,3));
+s_tls <- c(1, n+d);
 print(system.time(res <- slra(as.vector(t(cbind(a,b))),s_tls,n)))
 print(res$xh)
 
@@ -99,7 +99,7 @@ x0   <- runif(n);
 b0   <- a0 %*% x0;
 
 # Add noise: p_a <- p_a0 + noise, b <- b0 + noise
-v_n  <- 0.25; # noise level
+v_n  <- 0.025; # noise level
 p_a  <- p_a0 + v_n * rnorm(n+m-1);
 a    <- outer(1:m, 1:n, function(x,y) p_a[x-y+n]);
 b    <- b0 + v_n * rnorm(m);
@@ -109,7 +109,7 @@ print(system.time(xh_ls <- qr.solve(a,b)));
 print(system.time(xh_tls <- tls(a,b)));
 
 # Define the structure and solve the deconvolution problem via STLS
-s <- list(k=1, A=rbind(c(1, n, 1), c(3, 1, 1)));
+s <- rbind(c(n,1,0,1), c(1,1,0,0));
 print(system.time(res <- slra(c(p_a,b), s, n))); 
 print(xh_stls <- res$xh)
 print(res$info$fmin) # value of the cost function at xh_stls

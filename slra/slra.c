@@ -187,15 +187,17 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   if (!perm_given) {
     gsl_matrix_set_identity(perm);
   } else {
-    printf("Given permutation matix: \n");
-    print_mat(perm);
+    if (opt->disp == SLRA_OPT_DISP_ITER) {
+      printf("Given permutation matix: \n");
+      print_mat(perm);
+    }
   }
 
   c = gsl_matrix_alloc(m, si.total_cols);
   slra_fill_matrix_from_p(c, s, p);
   
   if (!x_given) {  /* compute default initial approximation */
-    if (opt->disp == 3) {
+    if (opt->disp == SLRA_OPT_DISP_ITER) {
       PRINTF("X not given, computing TLS initial approximation.\n");
     }
     gsl_matrix * tempc = gsl_matrix_alloc(m, si.total_cols);
@@ -277,7 +279,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   }
 
   /* optimization loop */
-  if (opt->disp == 2 || opt->disp == 3) {
+  if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {
     PRINTF("STLS optimization:\n");
   }
     
@@ -309,7 +311,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
       status_grad = gsl_multifit_test_gradient(g, opt->epsgrad);
       /* print information */
-      if (opt->disp == 3) {
+      if (opt->disp == SLRA_OPT_DISP_ITER) {
 	gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
 	
 	x_norm = gsl_blas_dnrm2(solverlm->x);
@@ -329,7 +331,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
       status_grad = gsl_multimin_test_gradient(
 		    gsl_multimin_fdfminimizer_gradient(solverqn), 
 		    opt->epsgrad );
-      if (opt->disp == 3) {
+      if (opt->disp == SLRA_OPT_DISP_ITER) {
 	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
 	x_norm = gsl_blas_dnrm2(solverqn->x);
 	g_norm = gsl_blas_dnrm2(solverqn->gradient);
@@ -343,7 +345,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
       size = gsl_multimin_fminimizer_size( solvernm );
       status_dx = gsl_multimin_test_size( size, opt->epsx );
       /* print information */
-      if (opt->disp == 3) {
+      if (opt->disp == SLRA_OPT_DISP_ITER) {
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
 	x_norm = gsl_blas_dnrm2(solvernm->x);
 
@@ -386,7 +388,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   gsl_matrix_free(c);
   
   /* print exit information */  
-  if (opt->disp != 4) { /* unless "off" */
+  if (opt->disp != SLRA_OPT_DISP_OFF) { /* unless "off" */
     switch (status) {
     case EITER: 
       PRINTF("STLS optimization terminated by reaching the maximum number " 
@@ -405,7 +407,8 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
       PRINTF("Possible lack of convergence: no progress.\n");
       break;
     }
-    if (!status && (opt->disp == 2 || opt->disp == 3)) { /* no error and ( final or iter ) */ 
+    if (!status && (opt->disp == SLRA_OPT_DISP_FINAL || 
+                    opt->disp == SLRA_OPT_DISP_ITER)) { 
       if (status_grad == GSL_CONTINUE) {
 	PRINTF("Optimization terminated by reaching the convergence " 
 	       "tolerance for X.\n");
