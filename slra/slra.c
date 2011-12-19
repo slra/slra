@@ -118,7 +118,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
       gsl_multimin_fdfminimizer_conjugate_pr };
                
   const gsl_multimin_fminimizer_type *Tnm[] = 
-    { gsl_multimin_fminimizer_nmsimplex,gsl_multimin_fminimizer_nmsimplex2, 
+    { gsl_multimin_fminimizer_nmsimplex, gsl_multimin_fminimizer_nmsimplex2, 
       gsl_multimin_fminimizer_nmsimplex2rand };
   
   int submethod_max[] = { sizeof(Tlm) / sizeof(Tlm[0]),
@@ -441,8 +441,6 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 }
 
 /*#define P ((slra_opt_data*) params)*/
-
-/* #include "corr.c" TO BE ADDED */
 
 /* ********************************************************************* */
 /* Interface to the SLICOT function MB02MD. Solves a TLS problem AX = B. */

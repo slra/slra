@@ -31,8 +31,8 @@ mex-im-desktop : SLICOT.a $(MEX_SRC_FILES)
 	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra
 
 mex-im-laptop : BUILD_MODE=MEX_MATLAB
-mex-im-laptop : stls.a SLICOT.a $(MEX_SRC_FILES)
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) stls.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o slra
+mex-im-laptop : slra.a SLICOT.a $(MEX_SRC_FILES)
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) slra.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o slra
 
 R: BUILD_MODE=BUILD_R_PACKAGE
 R: 
@@ -59,8 +59,8 @@ testc : test.o slra.a SLICOT.a
 #	-lgfortran -lm -lgfortran 
 #	/home/kdu/src/gsl-1.15/cblas/.libs/libgslcblas.a \
 
-#testc : test.o stls.a SLICOT.a
-#	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o stls.a SLICOT.a \
+#testc : test.o slra.a SLICOT.a
+#	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a \
 #	 -lm   -latlas -lgfortran -lf77blas -llapack 	-lcblas -lgslcblas -lgsl
 
 test.o : test_c/test.cpp $(SLRA_INCLUDE_FILES) 

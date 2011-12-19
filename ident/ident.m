@@ -11,11 +11,11 @@ function [sysh, info, w, xini] = ident(w, m, l, opt)
 % M   - input dimension
 % L   - system lag
 % OPT - options for the optimization algorithm:
-%   OPT.EXCT - vector of indices for exact variables (default []);
+%   OPT.EXCT - vector of indices for exact variables (default [])
 %   OPT.SYS0 - initial approximation: an SS system with M inputs, 
-%              P := size(W, 2) - M outputs, and order N : =L * P;
-%   OPT.DISP    - level of display [off | iter | notify | final];
-%   OPT.MAXITER - maximum number of iterations (default 100);
+%              P := size(W, 2) - M outputs, and order N : = L * P
+%   OPT.DISP - level of display [off | iter | notify | final] (default notify)
+%   OPT.MAXITER - maximum number of iterations (default 100)
 %   OPT.EPSREL, OPT.EPSABS, and OPT.EPSGRAD (default 1e-4)
 %     - convergence tolerances (see the help of SLRA)
 %
@@ -129,24 +129,21 @@ if (T <= n)
 end
 
 %% Initial approximation
-if ~isempty(sys0)
-    if ~isa(sys0, 'ss')
+if isfield(opt, 'sys0') 
+    if ~isa(opt.sys0, 'ss')
         warning('OPT.SYS0 not an SS object. Ignored.')
-        sys0 = [];
     else
-        [pp, mm] = size(sys0); 
+        [pp, mm] = size(opt.sys0); 
         nn = size(sys0, 'order');
         if (mm ~= m) | (pp ~= p) | (nn ~= n)
             warning('OPT.SYS0 invalid. Ignored.')
-            sys0 = [];
+        else
+            sys0 = opt.sys0;
         end
     end
 end
-if isempty(sys0)
-    %[a, b, c, d] = subid(w(:, m + 1:end), w(:, 1:m), l + 1, n, [], [], 1); 
-    %sys0 = uy2ssbal(w(:, 1:m), w(:, m + 1:end), l, 5 * l); 
-    %sys0 = ss(a, b, c, d, 1);
-end
+% Uncomment and modify the next line to change the default initial approximation 
+%if isempty(sys0), sys0 = ??; end
 
 %% Structure specification
 ne = length(exct);
@@ -155,9 +152,6 @@ noisy = 1:nw; noisy(exct) = []; % indices of noisy variables
 if ne == 0
     struct = [l1 nw]; par = vec(shiftdim(w, 1));
 else % Define a block of exact variables
-%    struct = [1 l1*ne 1; l1 nn 0]; 
-%    par = [vec(blkhankel(w(:, exct, :), l1));
-%           vec(shiftdim(w(:, noisy, :), 1))];
     struct = [l1 ne 1; l1 nn 0]; 
     par = [vec(shiftdim(w(:, exct, :), 1));
            vec(shiftdim(w(:, noisy, :), 1))];
@@ -179,9 +173,6 @@ if nargout > 2
         w(:, noisy, :) = shiftdim(reshape(parh(end - nn * T * N + 1:end), nn, N, T), 2);
     end
 end
-
-
-
 
 %% Find an I/S/O representation of the model
 if m > 0 % treat separately I/O and output only cases
@@ -236,27 +227,6 @@ end
 function a = vec(A), a = A(:);
 
 
-%% BLKHANKEL - construct a block Hankel matrix
-function H = blkhankel(w, i)
-
-[T, nw, N]  = size(w); j = T - i + 1;
-if j <= 0
-  error('Not enough data.')
-end
-H = zeros(i * nw, j * N);
-if (N > 1) % multiple time series => block matrix
-  w = reshape(shiftdim(w, 1), nw, N * T);
-  for ii = 1:i
-    H((ii - 1) * nw + 1:ii * nw, :) = w(:, (ii - 1) * N + 1:(ii + j - 1) * N);
-  end
-else % simgle time series => block vector
-  w = w';
-  for ii = 1:i
-    H((ii - 1) * nw + 1:ii * nw, :) = w(:, ii:ii + j - 1);
-  end
-end
-
-
 %% SYS2X - Convert (A,B,C,D) to a parameter X for SLRA
 function x = sys2x(sys, exct, noisy)
 
@@ -269,6 +239,7 @@ end
 n      = size(sys,'order');
 l      = n / p;
 l1     = l + 1;
+
 
 %% Compute the observability matrix
 O = zeros(l1 * p, n);
@@ -301,6 +272,7 @@ x = -R(1:end - p, :) / R(end - p + 1:end, :);
 
 %% INISTATE - compute initial condition for a trajectory
 function xini = inistate(w, sys, T)
+
 
 %% Define constants
 [p, m] = size(sys.d);

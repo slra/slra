@@ -23,6 +23,6 @@ n      = size(sys, 'order');
 l      = n / p;
 
 %% Call ident with initial approximation sys and zero iterations
-opt.sys0 = sys; opt.maxiter = 0; 
+opt.sys0 = sys; opt.maxiter = 0; opt.disp = 'off';
 if nargin == 3, opt.exct = exct; end
 [sysh, info, wh, xini] = ident(w, m, l, opt); M = info.M;

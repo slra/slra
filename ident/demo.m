@@ -1,10 +1,8 @@
 % DEMO - Demo file for identification by structured total least squares.
 
-clear all
-close all
-echo off
+clear all, close all, echo off
 
-% --- Zero lag corresponds to linear static model ---
+%% Zero lag corresponds to linear static model
 
 l = 0;  % lag 
 m = 2;  % # inputs
@@ -13,15 +11,14 @@ T = 20; % length of the data sequence
 
 % Generate data
 n    = l * p;           % order
-sys0 = ss([], [], [], rand(p, m), 1);     % true system
+sys0 = ss([], [], [], rand(p, m), 1); % true system
 u0   = randn(T, m);    % true input 
 y0   = lsim(sys0, u0, 1:T); % true output
 w0   = [u0 y0];       % true data  
 w    = w0; % the given data is exact
 
 % Identify the system
-[sysh, info, wh, xini] = ident(w, m, l);
-info
+[sysh, info, wh, xini] = ident(w, m, l); info
 
 % Verify the results
 err_sys = norm(sys0 - sysh)
@@ -29,7 +26,7 @@ err_w   = norm(w0 - wh)
 
 pause
 
-% --- Exact system identification ---
+%% Exact system identification
 
 l = 2;    % lag
 m = 2;    % # inputs
@@ -45,8 +42,7 @@ w0 = [u0 y0];        % true data
 w  = w0;   % the given data is exact
 
 % Identify the system
-[sysh,info,wh,xini] = ident(w,m,l);
-info
+[sysh, info, wh, xini] = ident(w, m, l); info
 
 % Verify the results
 err_sys = norm(sys0 - sysh)
@@ -54,14 +50,13 @@ err_w   = norm(w0 - wh, 'fro')
 
 pause
 
-% --- Errors-in-variables identification --- 
+%% Errors-in-variables identification
 
 % Perturb the "true" data w0 with noise
 w = w0 + 0.5 * randn(T, m + p);
 
 % Identify the system
-[sysh, info, wh, xini] = ident(w, m, l);
-info
+[sysh, info, wh, xini] = ident(w, m, l); info
 
 % Verify the results
 err_data = norm(w0 - w , 'fro') / norm(w0, 'fro')
@@ -83,15 +78,14 @@ echo on
 
 pause
 
-% --- Output error identification ---
+%% Output error identification
 
 % Perturb the "true" output y0 with noise
 w    = w0 + 0.75 * [zeros(T, m) randn(T, p)];
 
 % Identify the system
 opt.exct = 1:m; % take into account that the input is exact
-[sysh, info, wh, xini] = ident(w, m, l, opt);
-info
+[sysh, info, wh, xini] = ident(w, m, l, opt); info
 
 % Verify the results
 error_data = norm(w0 - w , 'fro') / norm(w0, 'fro')
@@ -113,7 +107,7 @@ echo on
 
 pause
 
-% --- #inputs = 0 corrsponds to autonomous system identification ---
+%% #inputs = 0 corrsponds to autonomous system identification
 
 % Generate data
 T     = 20; % Length of the data sequence
@@ -124,8 +118,7 @@ w0    = y0;
 w     = w0 + 0.25 * randn(T, p); % data for the identification
 
 % Approximate the given data by a system with complexity (0, l)
-[sysh, info, wh, xinih] = ident(w, 0, l);
-info
+[sysh, info, wh, xinih] = ident(w, 0, l); info
 
 % Verify the results
 error_data = norm(w0 - w , 'fro') / norm(w0, 'fro')
@@ -167,8 +160,7 @@ wext = [zeros(l, m + p, m); w];
 
 % Identify the system from the extended I/0 data
 opt.exct = [1:m]; % take into account that the input is exact
-[sysh, info, whext, xini] = ident(wext, m, l, opt);
-info
+[sysh, info, whext, xini] = ident(wext, m, l, opt); info
 
 % Remove the trailing part, setting the initial conditions
 wh = whext(l + 1:end, :, :);
@@ -197,8 +189,8 @@ echo on
 
 pause
 
-% --- Identification from impulse response observations ---
-% ---       ( a.k.a. approximate realization )          ---
+%% Identification from impulse response observations
+%% ( a.k.a. approximate realization )
 
 % Generate data
 T  = 50; % length of the data sequence
@@ -219,8 +211,7 @@ wext = [zeros(l, m + p, m); w];
 
 % Identify the system from the extended I/0 data
 opt.exct = [1:m]; % take into account that the input is exact
-[sysh1, info1, whext, xini1] = ident(wext, m, l, opt);
-info1 = info1
+[sysh1, info1, whext, xini1] = ident(wext, m, l, opt); info1 = info1
 
 % Remove the trailing part, setting the initial conditions
 wh1 = whext(l + 1:end, :, :);
@@ -229,8 +220,7 @@ wh1 = whext(l + 1:end, :, :);
 
 % Identify an autonomous system
 [sysh2, info2, yh2, xini2] = ident(y(2:end, :, :), 0, l);
-yh2 = [y(1, :, :); yh2];
-info2 = info2
+yh2 = [y(1, :, :); yh2]; info2 = info2
 
 % Recover the I/O system
 sysh2 = ss(sysh2.a, xini2, sysh2.c, reshape(yh2(1, :, :), p, m), -1);
@@ -264,7 +254,7 @@ echo on
 
 pause
 
-% --- Finite-time l2 model reduction ---
+%% Finite-time l2 model reduction
 
 l  = 10; % lag of the original (high order) system
 lr = 1;  % lag of the reduced system
@@ -281,12 +271,11 @@ T = size(h, 1);    % time horizon T
 % Find reduced model
 [sysr, info, hr, xini] = ident(h(2:end, :, :), 0, lr);
 hr = [h(1, :, :); hr];
-sysr = ss(sysr.a, xini, sysr.c, reshape(hr(1, :, :), p, m), -1);
-info
+sysr = ss(sysr.a, xini, sysr.c, reshape(hr(1, :, :), p, m), -1); info
 
 % Relative Hinf and H2 norms of the error system
-h2_err  = norm(sys-sysr, 2) / norm(sys, 2)
-hi_err  = norm(sys-sysr, 'inf') / norm(sys, 'inf')
+h2_err  = norm(sys - sysr, 2) / norm(sys, 2)
+hi_err  = norm(sys - sysr, 'inf') / norm(sys, 'inf')
 
 % Plot the impulse responses of the original and appr. systems
 echo off
@@ -307,7 +296,7 @@ echo on
 
 pause
 
-% --- The misfit is generically independent of the input/output partitioning ---
+%% The misfit is generically independent of the input/output partitioning
 
 l = 1;  % lag 
 m = 2;  % # inputs
@@ -322,16 +311,12 @@ w0   = [u0 y0];
 
 % Identify the system from the original exact data
 w1   = w0;
-[sysh1, info1, wh1, xini1] = ident(w1, m, l);
-info1
+[sysh1, info1, wh1, xini1] = ident(w1, m, l); info1
 
 % Identify the system from exact data with randomly permuted variables
 perm = randperm(m + p)
 w2   = w1(:, perm);
-[sysh2, info2, wh2, xini2] = ident(w2, m, l);
-info2
+[sysh2, info2, wh2, xini2] = ident(w2, m, l); info2
 
 % Compare the results
 norm(wh1(:, perm) - wh2)
-
-% --- End of demo --- 

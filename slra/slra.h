@@ -116,14 +116,8 @@ typedef struct {
     int blocks_in_row;       /* Number of blocks in a row of Ci */
     int nb;                  /* Number of columns in each small block */
     int exact;               /* 1 - exact block, 0 - not exact */  
-    int toeplitz;            /* 1- Toeplitz marix, 0 - Hankel matrix */  
-/*    int nb;
-    char type;	/* 'T'-Toeplitz, 'H'-Hankel, 
-                   'U'-unstructured, 'E'-exact * /
-    int ncol;	/* number of columns * /
-    int nb;     /* number of columns in a block of T/H blocks */
-  } a[MAXQ];	/* q-element array describing C1,...,Cq; */
-  
+    int toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
+  } a[MAXQ];	/* q-element array describing C1,...,Cq; */  
 } data_struct;
 
 /* additional info about matrix structure */
@@ -251,7 +245,7 @@ typedef struct {
 /* Prototypes of functions */
 int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix *perm, int perm_given );
+         gsl_matrix* perm, int perm_given);
 	
 int check_and_adjust_parameters(data_struct *s, flex_struct_add_info *psi);
 int slra_fill_matrix_from_p(gsl_matrix* c,  data_struct *s, gsl_vector* p);
