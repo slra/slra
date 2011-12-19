@@ -33,66 +33,30 @@ static SEXP getListElement(SEXP list, const char *str) {
     trg = (__tmp != R_NilValue ? coerce(__tmp) : (def));          \
   } while(0)
 
-#define getRSLRAOption(opt, list, field, coerce)         \
-  do {                                                  \
-    getScalarListElement(opt.field, list, #field, coerce, SLRA_DEF_##field);  \
+#define getRSLRAOption(opt, list, field, coerce)          \
+  do {                                                    \
+    getScalarListElement(opt.field, list, #field, coerce, \
+        SLRA_DEF_##field);  \
   } while(0)
 
 static int getRSLRADispOption( SEXP OPTS ) {
   SEXP str_value_sexp;
-  char *str_disp[] = { "", "notify", "final", "iter", "off" };
-  char *str_value = "";
+  
   if (TYPEOF((str_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
-    str_value = CHAR(STRING_ELT(str_value_sexp, 0));
-
-    for (int i = 1; i < sizeof(str_disp) / sizeof(str_disp[0]); i++) {
-      if (strcmp(str_disp[i], str_value) != 0) {
-        return i;
-      }
-    }
+    return slraString2Disp(CHAR(STRING_ELT(str_value_sexp, 0)));    
   }
   
   return SLRA_DEF_disp;
 }
 
 static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
-  SEXP str_value_sexp;
-  char *str_buf;
-  int i;
-    
-  /* TODO: remove duplicate code */  
-  char meth_codes[] = "lqn";
-  char submeth_codes_lm[] = "ls";
-  char submeth_codes_qn[] = "b2pf";
-  char submeth_codes_nm[] = "b2pf";
-  char *submeth_codes[] = { submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
-  int submeth_codes_max[] = { sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) -1, 
-          sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) -1, 
-          sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) -1 };
+  SEXP str_val_sexp;
 
-  if (TYPEOF((str_value_sexp = getListElement(OPTS, "method"))) == STRSXP) {
-    str_buf = CHAR(STRING_ELT(str_value_sexp, 0));
-    for (i = sizeof(meth_codes)/sizeof(meth_codes[0]) - 1; i >= 0; i--)  {
-      if (str_buf[0] == meth_codes[i]) {
-        (*popt).method = i;
-        break;
-      }
-    } 
-	  
-    if (i < 0)  {
-      slraAssignDefOptValue((*popt), method);
-      slraAssignDefOptValue((*popt), submethod);
-    }
-
-    for (i = submeth_codes_max[(*popt).method] - 1; i >= 0; i--)  {
-      if (str_buf[1] == submeth_codes[(*popt).method][i]) {
-        (*popt).submethod = i;
-        break;
-      }
-    } 
-    if (i < 0)  {
-      slraAssignDefOptValue((*popt), submethod);
-    }
+  if (TYPEOF((str_val_sexp = getListElement(OPTS, "method"))) == STRSXP) {
+    slraString2Method(CHAR(STRING_ELT(str_val_sexp, 0)), popt);
+  } else {
+    slraAssignDefOptValue((*popt), method);
+    slraAssignDefOptValue((*popt), submethod);
   }
 }
 
@@ -102,12 +66,12 @@ static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
  * It is assumed that X exists.
  * Assumes that S is a list
  ******************************/
-SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
+SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP CDP) {
   static const char *str_codes = " THUE";
   SEXP S_A = getListElement(S, "A");
   int *dimS_A = INTEGER(getAttrib(S_A, R_DimSymbol));
-  int *s_m = INTEGER(S_A);
-  int *pn = INTEGER(N), *pd = INTEGER(D), *pcompdp = INTEGER(COMPDP);
+  double *s_m = REAL(S_A);
+  int *pn = INTEGER(N), *pd = INTEGER(D), *pcompdp = INTEGER(CDP);
   int n = *pn, d = *pd, compdp = *pcompdp;
   int np;
   gsl_vector_view p_vec;
@@ -115,6 +79,7 @@ SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
   /* Variables for input into stls */
   gsl_matrix *x = NULL, *v;
   gsl_vector *p = NULL;
+  gsl_matrix *perm = NULL;
   data_struct s;
   opt_and_info opt;
 
@@ -124,6 +89,7 @@ SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
     m_to_gsl_matrix(x, REAL(X));
   }
   v = gsl_matrix_calloc(n * d, n * d);
+  perm = gsl_matrix_alloc(n + d, n + d);
 
   /* Copy P vector */
   np = length(P);
@@ -133,13 +99,7 @@ SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
 
   /* Convert structure specification */
   getScalarListElement(s.k, S, "k", asInteger, 1);
-  s.q = dimS_A[0];
-
-  for (int l = 0; l < s.q; l++) {
-    s.a[l].type = str_codes[*(s_m+l)]; 
-    s.a[l].ncol = *(s_m + s.q + l);
-    s.a[l].nb   = *(s_m + 2*s.q + l);
-  }
+  slraMatrix2Struct(&s, s_m, dimS_A[0], dimS_A[1]);
 
   /* Convert options */
   opt.disp = getRSLRADispOption(OPTS);
@@ -153,14 +113,14 @@ SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
   getRSLRAOption(opt, OPTS, step, asReal);
   getRSLRAOption(opt, OPTS, tol, asReal);
   getRSLRAOption(opt, OPTS, reggamma, asReal);
-
  
-  slra(p, &s, x, v, &opt,TYPEOF(X) != NILSXP, compdp); 
+  slra(p, &s, x, v, &opt, TYPEOF(X) != NILSXP, compdp, perm, 0); 
 
   /* Form the result */
   SEXP XH, INFO, VXH, PH, res;
 
-  PROTECT(INFO = list3(ScalarInteger(opt.iter), ScalarReal(opt.time), ScalarReal(opt.fmin)));
+  PROTECT(INFO = list3(ScalarInteger(opt.iter), ScalarReal(opt.time), 
+                       ScalarReal(opt.fmin)));
   SET_TAG(INFO, install("iter"));
   SET_TAG(CDR(INFO), install("time"));
   SET_TAG(CDDR(INFO), install("fmin"));
@@ -194,6 +154,7 @@ SEXP rslra(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP COMPDP) {
   gsl_vector_free(p);
   gsl_matrix_free(x);
   gsl_matrix_free(v);
+  gsl_matrix_free(perm);
 
   return res;
 }

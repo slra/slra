@@ -40,8 +40,7 @@
 #define ITER_STR "iter"
 #define TIME_STR "time"
 
-void m_to_gsl_matrix( gsl_matrix*, double* );
-void gsl_to_m_matrix( double*, gsl_matrix* ); 
+
 
 void tolowerstr( char * str ) {
   char *c;
@@ -79,23 +78,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   data_struct s;
   opt_and_info opt;
   char str_buf[STR_MAX_LEN];
-  char *str_disp[] = {"",  "notify", "final", "iter", "off" };
   
-  char meth_codes[] = "lqn";
-  char submeth_codes_lm[] = "ls";
-  char submeth_codes_qn[] = "b2pf";
-  char submeth_codes_nm[] = "b2pf";
-  char *submeth_codes[] = { \
-    submeth_codes_lm, submeth_codes_qn, submeth_codes_nm };
-  int submeth_codes_max[] = { \
-    sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) -1, 
-    sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) -1, 
-    sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) -1 };
-  
-  
-  
-  double *s_matr;
-  int s_matr_cols;
   int l, i; 
   int n_plus_d, np;
 
@@ -152,19 +135,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mexErrMsgTxt("Error in the structure specification : size(s." \
 		 ARRAY_STR ",1) < 1 or > 10.");
   }
-  s_matr = mxGetPr(strArray);
-  s.q = mxGetM(strArray);
-  s_matr_cols = mxGetN(strArray);
 
   /* Create s and check structure specification */
-  n_plus_d = 0;
-  for (l = 0; l < s.q; l++) {
-    s.a[l].blocks_in_row = *(s_matr + l);
-    s.a[l].nb = (s_matr_cols > 1) ? *(s_matr + s.q + l): 1;
-    s.a[l].exact = (s_matr_cols > 2) ? *(s_matr + 2 * s.q + l): 0;
-    s.a[l].toeplitz = (s_matr_cols > 3) ? *(s_matr + 3 * s.q + l): 0;
-    n_plus_d += s.a[l].blocks_in_row * s.a[l].nb;
-  }
+  n_plus_d = slraMatrix2Struct(&s, mxGetPr(strArray),
+                 mxGetM(strArray), mxGetN(strArray));
 
   /* Get r (rank) */
   if (nrhs > 2) {
@@ -228,7 +202,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* user supplied options */
   if (nrhs >= 5) {
     if (! mxIsStruct(prhs[4]))
-      mexWarnMsgTxt("Ignoring 'opt'. The optimization options "\
+      mexWarnMsgTxt("Ignoring 'opt'. The optimization options "
 		    "should be passed in a structure.");
     else {
       int nfields = mxGetNumberOfFields(prhs[4]);
@@ -241,64 +215,30 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	
 	/* which option */
 	if (! strcmp(field_name, DISP_STR)) {
- 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, \
+ 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, 
 		      STR_MAX_LEN); 
 	  tolowerstr(str_buf);
-	    
-	  for (i = sizeof(str_disp)/sizeof(str_disp[0]) - 1; i > 0; i--) {
-	    if (!strcmp(str_buf, str_disp[i])) {
-	      opt.disp = i;
-	      break;
-	    }
-	  }
-	  if (i <= 0) {
-	    mexWarnMsgTxt("Ignoring optimization option 'disp'. " \
-			  "Unrecognized value.");
-	  }
+	  opt.disp = slraString2Disp(str_buf);  
  	} else if (! strcmp(field_name, "method")) {
- 	  mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, \
-		      STR_MAX_LEN); 
-	  tolowerstr(str_buf);
-	  
-	  for (i = sizeof(meth_codes) / sizeof(meth_codes[0]) - 1; \
-	       i >= 0; i--)  {
-	    if (str_buf[0] == meth_codes[i]) {
-	      opt.method = i;
-	      break;
-	    }
-	  } 
-	  
-	  if (i < 0)  {
-	    mexWarnMsgTxt("Ignoring optimization option 'method'. " \
-			  "Unrecognized value.");
-	    slraAssignDefOptValue(opt, method);
-	    slraAssignDefOptValue(opt, submethod);
-	  }
-
-	  for (i = submeth_codes_max[opt.method] - 1; i >= 0; i--)  {
-	    if (str_buf[1] == submeth_codes[opt.method][i]) {
-	      opt.submethod = i;
-	      break;
-	    }
-	  } 
-	  if (i < 0)  {
-	    mexWarnMsgTxt("Unrecognized or unspecified submethod " \
-			  "- using default.");
-	    slraAssignDefOptValue(opt, submethod);
-	  }
-
- 	} else IfCheckAndStoreFieldBoundL(maxiter, 0)  
-	  else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
-	    else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
-	      else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
-		else IfCheckAndStoreFieldBoundLU(epsx, 0, 1) 
-		  else IfCheckAndStoreFieldBoundLU(step, 0, 1) 
-		    else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
-		      else IfCheckAndStoreFieldBoundL(reggamma, 0) 
-			else { 
-			  sprintf(err_msg, "Ignoring unrecognized optimization option '%s'.", field_name); 
-			  mexWarnMsgTxt(err_msg); 
-			} 
+          mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, 
+               STR_MAX_LEN); 
+          tolowerstr(str_buf);
+          slraString2Method(str_buf, &opt);
+        } else {
+          IfCheckAndStoreFieldBoundL(maxiter, 0)  
+          else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
+            else IfCheckAndStoreFieldBoundLU(epsrel, 0, 1) 
+              else IfCheckAndStoreFieldBoundLU(epsgrad, 0, 1) 
+                else IfCheckAndStoreFieldBoundLU(epsx, 0, 1) 
+                  else IfCheckAndStoreFieldBoundLU(step, 0, 1) 
+                    else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
+                      else IfCheckAndStoreFieldBoundL(reggamma, 0) 
+                        else { 
+                          sprintf(err_msg, "Ignoring unrecognized"
+                             " optimization option '%s'.", field_name); 
+                          mexWarnMsgTxt(err_msg); 
+                        } 
+        }
       }
     }
   }

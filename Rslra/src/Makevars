@@ -5,7 +5,7 @@ PKG_CFLAGS+=-Wall -DBUILD_R_PACKAGE
 .PHONY: all clean shlib-clean
 
 SLICOT_OBJS=SLICOT/MA02FD.o  SLICOT/MB02CU.o  SLICOT/MB02CV.o  SLICOT/MB02GD.o SLICOT/MB02MD.o
-SLRA_OBJS=slra/slra.o slra/mgsl.o slra/slra_func.o # slra/slra_func_old.o
+SLRA_OBJS=slra/slra.o slra/slra_common.o slra/slra_func.o # slra/slra_func_old.o
 RSLRA_OBJS=Rslra.o
 
 OBJECTS=$(RSLRA_OBJS) $(SLRA_OBJS)  $(SLICOT_OBJS) 

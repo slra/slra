@@ -10,16 +10,19 @@
 
 #include <R.h>
 #define PRINTF Rprintf
+#define WARNING Rprintf
 
 #elif defined(BUILD_MEX_OCTAVE) ||  defined(BUILD_MEX_MATLAB)
 
 #include "mex.h"
 #define PRINTF mexPrintf
+#define WARNING mexWarnMsgTxt
 
 #else
 
 #include <stdio.h>
 #define PRINTF printf
+#define WARNING printf
 
 #endif
 
@@ -33,6 +36,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+#define SLRA_OPT_DISP_NOTIFY   0
+#define SLRA_OPT_DISP_FINAL    1
+#define SLRA_OPT_DISP_ITER     2
+#define SLRA_OPT_DISP_OFF      3
+
+
 
 #define SLRA_OPT_METHOD_LM   0
 #define SLRA_OPT_METHOD_QN   1
@@ -78,7 +89,7 @@ typedef struct {
   double time;
 } opt_and_info;
 
-#define SLRA_DEF_disp       3 
+#define SLRA_DEF_disp       SLRA_OPT_DISP_NOTIFY 
 #define SLRA_DEF_method     SLRA_OPT_METHOD_LM
 #define SLRA_DEF_submethod  0
 #define SLRA_DEF_maxiter  100 
@@ -106,6 +117,8 @@ typedef struct {
             slraAssignDefOptValue(opt, tol); \
             slraAssignDefOptValue(opt, reggamma); \
           } while(0)
+          
+          
 
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
@@ -229,6 +242,10 @@ typedef struct {
   
   double *brg_j1b_vec;
   gsl_matrix *brg_j1b;
+
+  gsl_vector *brg_j1_cvec;
+  gsl_vector *brg_j2_pvec;
+
   
   /* Helper functions for gradient */
   gsl_matrix *brg_grad_N_k;
@@ -313,6 +330,10 @@ void slra_fdf_reshaped_ (const gsl_vector* x, void* params, double *f,
 			 gsl_vector* grad);
 void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );
 
+
+
+
+
 /* SLICOT and LAPACK functions */
 /*
 void mb02gd_(char*, char*, int*, int*, int*, const int*, int*,
@@ -327,6 +348,13 @@ int*, int*);
 
 void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
 void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
+
+/* Convert double matrix to structure */
+int slraMatrix2Struct( data_struct *s, double *s_matr, 
+                       int q, int s_matr_cols );
+void slraString2Method( const char *str_buf, opt_and_info *popt );
+int slraString2Disp( const char *str_value );
+
 
 #ifdef __cplusplus
 }
