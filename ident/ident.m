@@ -4,10 +4,11 @@ function [sysh, info, w, xini] = ident(w, m, l, opt)
 % [sysh, info, wh, xini] = ident(w, m, l, opt)
 %
 % Inputs:
-% W   - given a set of time series, stored in an arry with dimensions
-%                 #samples x #variables x #time series            (*)
-%       in case of equal number of samples or a cell array with entries 
-%       of the type (*) in case of different number of samples
+% W   - set of trajectories, stored in an arry with dimensions
+%                 #samples x #variables x #time series        
+%       in case of equal number of samples or a cell array with  
+%       #time series entries of dimension #samples x #variables
+%       in case of different number of samples
 % M   - input dimension
 % L   - system lag
 % OPT - options for the optimization algorithm:
@@ -31,11 +32,18 @@ function [sysh, info, w, xini] = ident(w, m, l, opt)
 
 %% Constants
 if ~iscell(w)
-    T  = size(w, 1); % # of samples
-    nw = size(w, 2); % # of variables
-    N  = size(w, 3); % # of time series
+    [T, nw, N] = size(w); % # samples x # variables x # time series
 else
-    error('Cell array input is not implemented yet.')
+    [T{1}, nw] = size(w{1}); N = length(w);
+    for i = 2:N
+        T{i} = size(w{i}, 1);
+        if size(w{i}, 2) ~= nw 
+            error('All trajectories must have the same number of variables.')
+        end
+        if size(w{i}, 3) > 1
+            error('The cell array entries of W must be 2D arrays.')
+        end
+    end
 end
 p  = nw - m;     % # of outputs
 n  = p * l;      % order of the system
@@ -46,28 +54,33 @@ l1   = l + 1;
 if nargin < 3
     error('Not enough input arguments. (W, M, and L should be given.)')
 end
-if (~isreal(w))
-    error('Complex data not supported.')
+if ~iscell(w)
+    if (~isreal(w)), error('Complex data not supported.'), end
+else
+    for i = 1:N
+        if (~isreal(w{i})), error('Complex data not supported.'), end
+    end
 end
-if (~isreal(m) | m < 0 | m > nw | (ceil(m) - m ~=  0))
+if (~isreal(m) | m < 0 | m > nw | (ceil(m) - m ~= 0))
     error('Invalid number of inputs M. (0 < M < size(W, 2) and integer.)')
 end
-if (~isreal(l) | l < 0 | (ceil(l) - l ~=  0))
+if (~isreal(l) | l < 0 | (ceil(l) - l ~= 0))
     error('Invalid system lag L. (0 < L and integer.)')
 end
 
 %% Default options values
 disp    = 'notify';
+method  = 'l';
 epsrel  = 1e-4;
 epsabs  = 1e-4;
 epsgrad = 1e-4;
-maxiter = 10;
-sys0    = [];  % to be chosen
-exct    = [];  % no exact variables
+maxiter = 100;
+sys0    = []; 
+exct    = []; 
 
 %% User specified options
 OPTNAMES = {'disp', 'epsrel', 'epsabs', 'epsgrad', ...
-            'maxiter', 'sys0', 'exct'};
+            'maxiter', 'sys0', 'exct', 'method'};
 DISPNAMES = {'off', 'iter', 'notify', 'final'};
 if (nargin > 3)
     if isstruct(opt)
@@ -86,20 +99,25 @@ if (nargin > 3)
         warning('OPT should be a structure. Ignored.')
     end
 end
-opt = [];
-opt.epsrel  = epsrel;
-opt.epsabs  = epsabs;
-opt.epsgrad = epsgrad;
-opt.maxiter = maxiter;
-opt.disp    = disp;
+opt = []; opt.maxiter = maxiter; opt.sys0 = sys0; opt.disp = disp; 
+opt.epsrel = epsrel; opt.epsabs = epsabs; opt.epsgrad = epsgrad; 
+opt.method = method;
 
 %% Check for invalid option values
 exct = unique(exct);
 if any(1 > exct | nw < exct)
     error('An index for exact variable is out of range.')
 end
-if (length(exct) * T > m * T + n)
-    error('Too many exact variables. Generically there is no solution.')
+if ~iscell(w)
+    if (length(exct) * T > m * T + n)
+        error('Too many exact variables. Generically there is no solution.')
+    end
+else
+    for i = 1:N
+        if (length(exct) * T{i} > m * T{i} + n)
+            error('Too many exact variables. Generically there is no solution.')
+        end
+    end
 end
 
 %% Detect trivial cases
@@ -113,7 +131,7 @@ if (m == nw)
     end
     return
 end
-if (T <= n) 
+if (N == 1) && (T <= n) 
     warning('T < p * l => trivial solution.');
     a = diag(ones(n - 1, 1), -1);
     b = zeros(n, m);
@@ -129,20 +147,19 @@ if (T <= n)
 end
 
 %% Initial approximation
-if isfield(opt, 'sys0') 
-    if ~isa(opt.sys0, 'ss')
-        warning('OPT.SYS0 not an SS object. Ignored.')
-    else
-        [pp, mm] = size(opt.sys0); 
-        nn = size(sys0, 'order');
-        if (mm ~= m) | (pp ~= p) | (nn ~= n)
-            warning('OPT.SYS0 invalid. Ignored.')
-        else
-            sys0 = opt.sys0;
-        end
+if ~isa(opt.sys0, 'ss')
+    warning('OPT.SYS0 not an SS object. Ignored.')
+    sys.sys0 = [];
+end
+if ~isempty(opt.sys0)
+    [pp, mm] = size(opt.sys0); 
+    nn = size(opt.sys0, 'order');
+    if (mm ~= m) | (pp ~= p) | (nn ~= n)
+        warning('OPT.SYS0 invalid. Ignored.')
+        sys.sys0 = [];
     end
 end
-% Uncomment and modify the next line to change the default initial approximation 
+% Modify the next line to change the default initial approximation 
 %if isempty(sys0), sys0 = ??; end
 
 %% Structure specification
@@ -150,15 +167,31 @@ ne = length(exct);
 nn = nw - ne;
 noisy = 1:nw; noisy(exct) = []; % indices of noisy variables
 if ne == 0
-    struct = [l1 nw]; par = vec(shiftdim(w, 1));
+    struct = [l1 nw]; 
+    if ~iscell(w)
+        if N > 1, struct.a = struct; struct.k = N; end
+        par = vec(shiftdim(w, 1));
+    else
+        struct = kron(ones(N, 1), struct); par = [];
+        for i = 1:N
+            par = [par; 
+                   vec(shiftdim(w{i}, 1))];
+        end
+    end
 else % Define a block of exact variables
     struct = [l1 ne 1; l1 nn 0]; 
-    par = [vec(shiftdim(w(:, exct, :), 1));
-           vec(shiftdim(w(:, noisy, :), 1))];
-end
-if N > 1
-    struct.a = struct;
-    struct.k = N;
+    if ~iscell(w)
+        if N > 1, struct.a = struct; struct.k = N; end
+        par = [vec(shiftdim(w(:, exct, :), 1));
+               vec(shiftdim(w(:, noisy, :), 1))];
+    else    
+        struct = kron(ones(N, 1), struct); par = [];
+        for i = 1:N
+            par = [par;
+                   vec(shiftdim(w(:, exct, :), 1));
+                   vec(shiftdim(w(:, noisy, :), 1))];
+        end
+    end
 end
 
 %% Call the SLRA solver
@@ -167,10 +200,19 @@ x0 = sys2x(sys0, exct, noisy);
 info.M = sqrt(info.fmin); info = rmfield(info, 'fmin');
 
 if nargout > 2
-    if N == 1
-        w(:, noisy) = reshape(parh(end - nn * T + 1:end), nn, T)';
-    else % N > 1
-        w(:, noisy, :) = shiftdim(reshape(parh(end - nn * T * N + 1:end), nn, N, T), 2);
+    if ~iscell(w)
+        if N == 1
+            w(:, noisy) = reshape(parh(end - nn * T + 1:end), nn, T)';
+        else % N > 1
+            w(:, noisy, :) = shiftdim(reshape(parh(end - nn * T * N + 1:end), nn, N, T), 2);
+        end
+    else
+        ind2 = 0; 
+        for i = 1:N
+            ind1 = ind2 + ne * T{i} + 1; 
+            ind2 = ind2 + nw * T{i};
+            w{i}(:, noisy) = reshape(parh(ind1:ind2), nn, T{i})';
+        end
     end
 end
 
@@ -216,7 +258,7 @@ if nargout > 3
     else
         xini = zeros(n, N);
         for i = 1:N
-            tmp  = w(1:l1, :, i)'; 
+            tmp = w(1:l1, :, i)'; 
             xini(:, i) = O \ tmp(:);
         end
     end
@@ -273,20 +315,25 @@ x = -R(1:end - p, :) / R(end - p + 1:end, :);
 %% INISTATE - compute initial condition for a trajectory
 function xini = inistate(w, sys, T)
 
-
 %% Define constants
 [p, m] = size(sys.d);
 n      = size(sys.a); n = n(1);
-N      = size(w, 3);
-
 if nargin < 3
     T = max(ceil(n / p), 2);
 end
 
 %% Define inputs and outputs
-u  = w(1:T, 1:m, :);
-y  = w(1:T, m + 1:end, :);
-clear w
+if ~iscell(w)
+    N = size(w, 3);
+    u = w(1:T, 1:m, :);
+    y = w(1:T, m + 1:end, :);
+else
+    N = length(w);
+    for i = 1:N
+        u{i} = w{i}(1:T, 1:m, :);
+        y{i} = w{i}(1:T, m + 1:end, :);
+    end
+end
 
 %% Compute the extended observability matrix
 O = zeros(T * p, n);
@@ -296,14 +343,25 @@ for t = 2:T
 end
 
 %% Compute initial consitions
-xini = zeros(n, N);
-sys.Ts = -1;
-mo = (m > 0);
-for k = 1:N
-    if mo
-        y0 = (y(:, :, k) - lsim(sys, u(:, :, k), 1:T))';
-    else
-        y0 = y(:, :, k)';
+sys.Ts = -1; mo = (m > 0);
+if ~iscell(w)
+    xini = zeros(n, N); 
+    for k = 1:N
+        if mo
+            y0 = (y(:, :, k) - lsim(sys, u(:, :, k), 1:T))';
+        else
+            y0 = y(:, :, k)';
+        end
+        xini(:, k) = O \ y0(:);
     end
-    xini(:, k) = O \ y0(:);
+else
+    for k = 1:N
+        xini{k} = zeros(n, N);
+        if mo
+            y0 = (y{k} - lsim(sys, u{i}, 1:T))';
+        else
+            y0 = y';
+        end
+        xini{k} = O \ y0(:);
+    end
 end

@@ -78,10 +78,32 @@ echo on
 
 pause
 
+%% Multiple time series
+
+N = 2; clear w
+
+% Perturb the "true" data w0 with noise
+for i = 1:N
+    w{i} = w0 + 0.5 * randn(T, m + p);
+    w_(:, :, i) = w{i};
+end
+
+% Identify the system
+[sysh, info, wh, xini] = ident(w, m, l); info
+[sysh_, info_, wh_, xini_] = ident(w_, m, l); info_
+
+% Verify the results
+err_appr = 0; 
+for i = 1:N
+    err_appr  = err_appr norm(w0 - wh,  'fro') / norm(w0, 'fro')
+end
+err_appr_ = norm(kron(ones(N, 1), w0(:)) - wh_(:)) / norm(kron(ones(N, 1), w0(:)))
+pause
+
 %% Output error identification
 
 % Perturb the "true" output y0 with noise
-w    = w0 + 0.75 * [zeros(T, m) randn(T, p)];
+w = w0 + 0.75 * [zeros(T, m) randn(T, p)];
 
 % Identify the system
 opt.exct = 1:m; % take into account that the input is exact

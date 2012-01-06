@@ -9,7 +9,8 @@
 %
 % Input arguments:
 %
-% P - structure parameter vector
+% P - structure parameter vector 
+%   (explanation is needed of how block Hankel/Toeplitz matrix is parametrized)
 % S - structure specification: a matrix with q rows and 1-4 columns:
 %   S(i, 1) - number of subblocks in a block row of Si 
 %             (use S(i, 1) = 1 for unstructured block Si)
@@ -20,7 +21,7 @@
 % S is a structure with fields K and A, where S.A is the matrix described 
 % above and S.K = K (the same for all block-Toeplitz/Hankel blocks S1)
 %
-% R - rank (default is rank reduction by 1, i.e., R = sum(S(:,1).*S(:,2))-1) 
+% R - rank (default is rank reduction by 1, i.e., R = sum(S(:, 1) .* S(:, 2)) - 1)
 %
 % X0  - initial approximation (default unstructured low rank approximation)
 %       PHI * [X0; -I] is a basis for an approximate kernel of S(P) 
@@ -65,3 +66,4 @@
 % PH   - Ph vector (approximation)
 %
 % Note: it is required that length(P) > size(S(P), 1) * (size(S(P), 2) - R)
+

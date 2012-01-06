@@ -280,7 +280,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 
   /* optimization loop */
   if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {
-    PRINTF("STLS optimization:\n");
+    PRINTF("SLRA optimization %c %c method:\n", meth_codes[opt->method], submeth_codes[opt->method][opt->submethod]);
   }
     
   status = GSL_SUCCESS;  
@@ -350,7 +350,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
 	x_norm = gsl_blas_dnrm2(solvernm->x);
 
 	PRINTF("%3u: f0 = %16.8f,  ||x|| = %10.8f\n", 
-	       opt->iter, opt->fmin, g_norm, x_norm);
+	       opt->iter, opt->fmin, x_norm);
       }
       break;
     }
