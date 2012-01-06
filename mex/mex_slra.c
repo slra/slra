@@ -40,13 +40,19 @@
 #define ITER_STR "iter"
 #define TIME_STR "time"
 #define METHOD_STR "method"
+void SLRA_mex_error_handler(const char * reason, const char * file, int line, int gsl_errno) {
+  char err_msg[250];
+
+  sprintf(err_msg, "GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
+  mexErrMsgTxt(err_msg);
+}
 
 void tolowerstr( char * str ) {
   char *c;
   for (c = str; *c != '\0'; c++) {
     *c = tolower(*c);
   }
-}
+} 
 
 #define IfCheckAndStoreFieldBoundL(name, lvalue)		\
   if (! strcmp(field_name, #name)) {				\
@@ -77,6 +83,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
   data_struct s;
   opt_and_info opt;
   char str_buf[STR_MAX_LEN];
+  gsl_error_handler_t * old_gsl_error_handler = NULL;
+  gsl_error_handler_t * new_gsl_error_handler = SLRA_mex_error_handler;
+  
   
   int l, i; 
   int n_plus_d, np;
@@ -89,6 +98,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* ---------- */
   /* Input data */
   /* ---------- */
+
+
+  old_gsl_error_handler = gsl_set_error_handler(new_gsl_error_handler);
 
   if (nrhs < 2) {
     mexErrMsgTxt("Error: at least two parameters (p, s) are needed.");
@@ -296,6 +308,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   gsl_vector_free(p);
   gsl_matrix_free(x);
   gsl_matrix_free(v);
+  
+  gsl_set_error_handler(old_gsl_error_handler);
 }
 
 
