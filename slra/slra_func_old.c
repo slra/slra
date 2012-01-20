@@ -10,6 +10,7 @@
 
 void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, opt_and_info *opt, slra_opt_data_old *P ) {
   PREPARE_COMMON_PARAMS(c, n, s, opt, P,1); 
+
   
   /* Preallocate memory for f and df */
   P->x_ext = gsl_matrix_calloc(P->w.a[0]->size1, P->k_times_d);
@@ -41,6 +42,9 @@ void allocate_and_prepare_data_old( gsl_matrix* c, int n, const data_struct* s, 
 
 void free_memory_old( slra_opt_data_old *P ) {
   int k;
+
+  gsl_matrix_free(P->c);
+
   /* free the allocated memory for w */
   for (k = 0; k < P->w.s; k++) 
     gsl_matrix_free(P->w.a[k]);

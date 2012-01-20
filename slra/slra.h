@@ -171,7 +171,8 @@ typedef struct {
   PP->n = Nn; \
   PP->d = C->size2 - Nn;		\
   /* set other parameters */ \
-  PP->c = C;\
+  PP->c = gsl_matrix_alloc(C->size1, C->size2); \
+  gsl_matrix_memcpy(PP->c, C); \
   PP->reggamma = OPT->reggamma; \
   /* find Wk  */ \
   s2w(S, &PP->w, PP->n+PP->d, isblock);\
@@ -331,6 +332,10 @@ void slra_fdf_reshaped_ (const gsl_vector* x, void* params, double *f,
 void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );
 
 
+int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matrix* x,
+         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
+         gsl_matrix *perm, int perm_given  );
+int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );         
 
 
 

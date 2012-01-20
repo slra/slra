@@ -87,6 +87,8 @@ void allocate_and_prepare_data_reshaped(
 void free_memory_reshaped( slra_opt_data_reshaped *P ) {
   int k;
 
+  gsl_matrix_free(P->c);
+
   for (k = 0; k < P->w.s; k++) 
     gsl_matrix_free(P->w.a[k]);
   free(P->w.a);
@@ -403,7 +405,6 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
       }
        
       /* compute st_ij = DGamma * yr */
-      subvec = gsl_matrix_column(P->brg_st, i*D+j);
       for (l = 0; l < P->k; l++) { 
         gsl_vector_view subvec_res = gsl_vector_subvector(
 	    &res_vec.vector, l * P->d_times_m_div_k, P->d_times_m_div_k);
@@ -424,6 +425,7 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
 	      &P->d_times_m_div_k, 
 	      &info); 
 
+      subvec = gsl_matrix_column(P->brg_st, i*D+j);
       /* New (nonreshaped) */
       gsl_vector_memcpy(&subvec.vector, &res_vec.vector);
     }

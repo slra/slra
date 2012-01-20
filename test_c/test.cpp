@@ -43,7 +43,8 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
   return 1;
 }
 
-void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
+void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, 
+               char * method = "l", bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
@@ -52,7 +53,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   
   slraAssignDefOptValues(opt);
   opt.maxiter = 500;
-  opt.method = SLRA_OPT_METHOD_LM;
+  opt.disp = SLRA_OPT_DISP_ITER;
+  slraString2Method(method, &opt);
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
@@ -228,16 +230,19 @@ int main(int argc, char *argv[])
   double times[TEST_NUM+1], misfits[TEST_NUM+1], misfits2[TEST_NUM+1],  diffs[TEST_NUM+1];
   int iters[TEST_NUM+1];
   char num[10];
+  char * method = "l";
   int  i;
 
-  if (argc == 2) {
-    run_test(stdout, argv[1], times[0], misfits[0], misfits2[0], iters[0], diffs[0]);
-  } else { /* test all examples */
+
+  if (argc > 1) {
+    method = argv[1];
+  }
+
     printf("\n------------------ Testing all examples  ------------------\n\n");
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
-      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);
+      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
 
   /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  
@@ -255,13 +260,12 @@ int main(int argc, char *argv[])
     printf("|  # |       Time | Iter |     Minimum |   Min(comp) |        Diff (X) |\n");
     printf("------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
-      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);
+      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
     }
     printf("------------------------------------------------------------------------\n\n"); 
     
     
 
-  }
 
-  return(0);
+  return 0;
 }

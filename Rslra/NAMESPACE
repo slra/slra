@@ -1,3 +1,3 @@
 useDynLib(Rslra)
 
-export(slra,tls)
+export(slra,tls,compute_slra_correction,optimize_slra,return_slra_object,evaluate_slra_f,evaluate_slra_df)

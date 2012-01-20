@@ -27,7 +27,7 @@ mexoct:   SLICOT.a $(MEX_SRC_FILES)
 #	cp -f slra.mex test_m
 
 mex-im-desktop : SLICOT.a $(MEX_SRC_FILES)
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a \
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/atlas-base/libcblas.a \
 	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra
 
 mex-im-laptop : BUILD_MODE=MEX_MATLAB
