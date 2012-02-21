@@ -11,7 +11,7 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
 
-#define TEST_NUM 7
+
 
 #define MAX_FN_LEN  60
 
@@ -44,7 +44,7 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
 }
 
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, 
-               char * method = "l", bool silent = false ) {
+               char * method = "l", int use_slicot = 0, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
@@ -52,9 +52,11 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   opt_and_info opt;
   
   slraAssignDefOptValues(opt);
+//  opt.maxiter = 500;
   opt.maxiter = 500;
   opt.disp = SLRA_OPT_DISP_ITER;
   slraString2Method(method, &opt);
+  opt.use_slicot = use_slicot;
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
@@ -187,7 +189,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     time = opt.time;
     fmin = opt.fmin;
     iter = opt.iter;
-    fmin2 = dp_norm * dp_norm;
+    
+    fmin2 = opt.chol_time;
+//    fmin2 = dp_norm * dp_norm;
     
 
     
@@ -223,7 +227,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 }
 
 
-
+#define TEST_NUM 7
 
 int main(int argc, char *argv[])
 {
@@ -231,18 +235,40 @@ int main(int argc, char *argv[])
   int iters[TEST_NUM+1];
   char num[10];
   char * method = "l";
-  int  i;
+  int  i = -1;
+  int use_slicot = 1;
 
 
   if (argc > 1) {
     method = argv[1];
   }
 
+  if (argc > 3) {
+    i = atoi(argv[3]);
+  }
+
+  if (argc > 2) {
+    use_slicot = atoi(argv[2]);
+  }
+
+
+  if (i >= 1 && i <= TEST_NUM) {
+    printf("\n------------------ Testing example %d  ------------------\n\n", i);
+    sprintf(num, "%d", i);
+    run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot);
+
+    printf("\n------------ Results summary --------------------\n\n");
+    printf("------------------------------------------------------------------------\n");
+    printf("|  # |       Time | Iter |     Minimum | Cholesky     |        Diff (X) |\n");
+    printf("------------------------------------------------------------------------\n");
+    printf("| %2d | %10.6f | %4d | %11.7f | %12.10f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
+    printf("------------------------------------------------------------------------\n\n"); 
+  } else {
     printf("\n------------------ Testing all examples  ------------------\n\n");
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
-      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
+      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot);
 
   /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  
@@ -257,13 +283,13 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n");
     printf("------------------------------------------------------------------------\n");
-    printf("|  # |       Time | Iter |     Minimum |   Min(comp) |        Diff (X) |\n");
+    printf("|  # |       Time | Iter |     Minimum | Cholesky     |        Diff (X) |\n");
     printf("------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
-      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
+      printf("| %2d | %10.6f | %4d | %11.7f | %12.10f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
     }
     printf("------------------------------------------------------------------------\n\n"); 
-    
+  }   
     
 
 

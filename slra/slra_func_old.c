@@ -325,7 +325,7 @@ void jacobian( slra_opt_data_old* P, gsl_matrix* deriv )
   dtbtrs_("U", "T", "N", 
     &P->m_times_d, 
     &P->k_times_d_times_s_minus_1, 
-    &deriv->size2, 
+    &P->n_times_d, 
     P->rb, 
     &P->k_times_d_times_s, 
     P->jres1, 

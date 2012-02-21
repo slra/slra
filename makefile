@@ -1,7 +1,7 @@
 # makefile: SLRA makefile
 
-CC  = gcc  -g -fPIC -static
-CCPP  = g++  -g -fPIC 
+CC  = gcc  -g -fPIC -static -Wno-write-strings
+CCPP  = g++  -g -fPIC -Wno-write-strings
 F77 = gcc -g -fPIC -static 
 
 OCTAVE_MEX = mkoctfile --mex -v -DBUILD_MEX_OCTAVE #mex  -v -compatibleArrayDims
@@ -9,8 +9,8 @@ MEX = mex -v -compatibleArrayDims -DBUILD_MEX_MATLAB
 
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f SLICOT/MB02MD.f
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o MB02MD.o
-SLRA_SRC_FILES = slra/slra.c  slra/slra_common.c  slra/slra_func.c # slra/slra_func_old.c
-SLRA_OBJ_FILES = slra.o  slra_common.o slra_func.o  #slra_func_old.o
+SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.c  slra/slra_func.cpp slra/slra_func_old.c slra/slra_computation.cpp 
+SLRA_OBJ_FILES = slra.o  slra_common.o slra_func.o slra_computation.o #slra_func_old.o
 SLRA_INCLUDE_DIR = slra
 SLRA_INCLUDE_FILES = slra/slra.h
 MEX_SRC_FILES = mex/mex_slra.c
@@ -44,7 +44,7 @@ R:
 	R CMD INSTALL Rslra
 
 testc : test.o slra.a SLICOT.a
-	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a \
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a slra/liblevmar.a \
 	/home/kdu/local/lib/liblapack.a \
 	/home/kdu/local/lib/libgsl.a \
 	/home/kdu/local/lib/libcblas.a \

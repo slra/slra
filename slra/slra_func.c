@@ -1,9 +1,14 @@
+#include <memory.h>
+#include <time.h>
+
+extern "C" {
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
 
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
+}
 
 #include "slra.h"
 
@@ -19,7 +24,7 @@ void allocate_and_prepare_data_reshaped(
   PREPARE_COMMON_PARAMS(c, n, s, opt, P, 0); 
  
   P->d_times_s = P->d * P->w.s;
-  P->d_times_m_div_k = P->d* (int) P->m / s->k;
+  P->d_times_m_div_k = P->d * (int) P->m / s->k;
   P->d_times_s_minus_1 = P->d_times_s - 1;
 
   /* Form reshaped a and b matrices */
@@ -52,8 +57,9 @@ void allocate_and_prepare_data_reshaped(
     /* Space needed for MB02CV */
     mymax(P->s_minus_1 + 1, P->m_div_k - 1 - P->s_minus_1) * P->d * P->d;
 
-  P->brg_gamma_vec = (double*) malloc(P->d * P->d_times_s * sizeof(double));
-  P->brg_gamma = gsl_matrix_alloc(P->d, P->d_times_s);
+  /* Modified for comparison */
+  P->brg_gamma_vec = (double*) malloc(P->d * (P->d_times_s + P->d) * sizeof(double)); 
+  P->brg_gamma = gsl_matrix_alloc(P->d, P->d_times_s + P->d);
   P->brg_dgamma = gsl_matrix_alloc(P->d, P->d_times_s);
   P->brg_tdgamma = gsl_matrix_alloc(P->brg_dgamma->size1, 
 				    2 * P->brg_dgamma->size2 - 
@@ -65,14 +71,17 @@ void allocate_and_prepare_data_reshaped(
   P->brg_yr = gsl_vector_alloc(P->m_times_d);  
   P->brg_f = gsl_vector_alloc(P->m_times_d);  
  
-  P->brg_j1b_vec = calloc(P->d_times_m_div_k * P->d, sizeof(double));
+  P->brg_j1b_vec = (double*) calloc(P->d_times_m_div_k * P->d, sizeof(double));
   P->brg_j1b = gsl_matrix_calloc(P->d_times_m_div_k, P->d);
+
+  P->brg_j1b_2 = gsl_matrix_calloc(P->d, P->m * P->d);
+
   
   P->brg_j1_cvec = gsl_vector_alloc(P->m);
   P->brg_j2_pvec = gsl_vector_alloc(P->n_plus_d);
   
   P->brg_st   = gsl_matrix_alloc(P->m_times_d, P->n_times_d);
-  P->brg_jres2  = malloc( P->m_times_d * sizeof(double));
+  P->brg_jres2  = (double*) malloc( P->m_times_d * sizeof(double));
 
   P->brg_grad_N_k = gsl_matrix_alloc(P->d, P->d);
   P->brg_grad_Vx_k = gsl_matrix_alloc(P->n, P->d);
@@ -81,6 +90,8 @@ void allocate_and_prepare_data_reshaped(
 
   P->brg_perm_tmp = gsl_matrix_alloc(P->n_plus_d, P->d);
 
+
+  P->myGamma = new slraFlexGammaComputations(s, P->m, P->n, P->d, opt->use_slicot  );
   /*  PRINTF("%p %p %p", P->brg_rb, P->brg_dwork, P->brg_gamma_vec);*/
 }
 
@@ -108,6 +119,7 @@ void free_memory_reshaped( slra_opt_data_reshaped *P ) {
   free(P->rb2);
   free(P->brg_j1b_vec);
   gsl_matrix_free(P->brg_j1b);
+  gsl_matrix_free(P->brg_j1b_2);
 
   gsl_vector_free(P->brg_j1_cvec);
   gsl_vector_free(P->brg_j2_pvec);
@@ -121,6 +133,8 @@ void free_memory_reshaped( slra_opt_data_reshaped *P ) {
   gsl_matrix_free(P->brg_grad_tmp2);
 
   gsl_matrix_free(P->brg_perm_tmp);
+  
+  delete P->myGamma;
 }
 
 #define M (P->m)
@@ -151,37 +165,6 @@ static void compute_reshaped_r(gsl_vector* f, slra_opt_data_reshaped * P) {
 		 P->brg_c, P->bx_ext, 0.0, &f_mat.matrix);
 }
 
-static void compute_reshaped_c_minus_1_2_r(gsl_vector* f, 
-					   int trans, 
-					   slra_opt_data_reshaped * P ) {
-  int info;
-  int i;
-
-  dtbtrs_("U", (trans ? "T" : "N"), "N", 
-	  &P->d_times_m_div_k, 
-	  &P->d_times_s_minus_1, 
-	  &P->k, 
-	  P->brg_rb, 
-	  &P->d_times_s, 
-	  f->data, 
-	  &P->d_times_m_div_k, 
-	  &info);
-}
-
-static void compute_reshaped_c_minus_1_r(gsl_vector* f, 
-					 slra_opt_data_reshaped * P ) {
-  int info;
-  
-  dpbtrs_("U", 
-	  &P->d_times_m_div_k, 
-	  &P->d_times_s_minus_1, 
-	  &P->k, 
-	  P->brg_rb, 
-	  &P->d_times_s, 
-	  f->data, 
-	  &P->d_times_m_div_k, 
-	  &info);
-}
 
 /*************************************
  * This function convert between  representations
@@ -249,64 +232,6 @@ void xmat2_block_of_xext(gsl_matrix_const_view x_mat,
   }
 }
 
-/* 
- *  CHOLGAM: Choleski factorization of the block of reshaped Gamma  matrix
- *
- *  params - used for the dimensions n = rowdim(X), 
- *           d = coldim(X), k, and n_plus_d = n + d
- *
- *  params.x_ext  = kron( I_k, [ x; -I_d ] ),
- *
- *  Output:
- *    params.brg_rb     - Cholesky factor in a packed form
- */
-
-void cholesky_of_block_of_reshaped_gamma( slra_opt_data_reshaped* P )
-{
-  int k, info;
-  gsl_matrix_view submat;
-  gsl_matrix_view  b_w_k; 
-  gsl_matrix *bx_ext = P->bx_ext;
-  const int zero = 0;
-
-  /* compute brgamma_k = b_x_ext' * w_k(1:(n+d),1:(n+d)) * b_x_ext */
-  for (k = 0; k < S; k++) {
-    submat = gsl_matrix_submatrix(P->brg_gamma, 0, k*D, D, D);
-    b_w_k = gsl_matrix_submatrix(P->w.a[k], 0, 0, P->n_plus_d, P->n_plus_d);
-          
-    /* compute tmp = x_ext' * w_k */
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, bx_ext, 
-		   &b_w_k.matrix, 0.0, P->brg_tmp);
-    /* compute brgamma_k = tmp * x_ext */
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0,  
-		   P->brg_tmp, bx_ext, 0.0, &submat.matrix);
-  }
-
-  gsl_matrix_vectorize(P->brg_gamma_vec, P->brg_gamma);
-
-  /* Cholesky factorization of Gamma */
-  mb02gd_("R", "N",
-	  &P->d,   /* block size */
-	  &P->m_div_k,    /* block_dim(brGAMMA) */
-	  &P->s_minus_1,   /* non-zero block superdiagonals */
-	  &zero,     /* previous computations */
-	  &P->m_div_k,           /* to-be-computed */
-	  P->brg_gamma_vec, /* non-zero part of first block row of brGAMMA */
-	  &P->d,        /* row_dim(brg_gamma) */
-	  P->brg_rb,       /* packed Cholesky factor */
-	  &P->d_times_s, /* row_dim(rb) */
-	  P->brg_dwork, &P->brg_ldwork, &info); /**/
-
-  /* check for errors of mb02gd */
-  if (info == 1) {
-  }
-  
-  if (info) { 
-    PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
-  }
-}
-
-
 
 void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
 {
@@ -318,41 +243,27 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
   gsl_vector_view w_k_row, w_k_col;
   gsl_matrix_view submat1, submat2;
   gsl_vector_view perm_col;
-  int ibr, ik, i1, j1, kbr;
+  int i1, j1, kbr;
   double a_kj;
 
   /* first term of the Jacobian Gamma^{-1/2} kron(a,I_d) */
   for (j = 0; j < N; j++) {
     perm_col = gsl_matrix_column(P->perm, j);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, P->brg_c, &perm_col.vector, 0.0, P->brg_j1_cvec);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, P->brg_c, &perm_col.vector, 0.0, 
+        P->brg_j1_cvec);
   
-    for (ik = 0; ik < P->k; ik++) {
-      /* Fill right-hand matrix */
-      for (ibr = 0; ibr < P->m_div_k; ibr++) {
-        for (k = 0; k < D; k++) {
-/*          gsl_matrix_set(P->brg_j1b, k + ibr*D, k, 
-		 gsl_matrix_get(P->brg_c, ik * P->m_div_k + ibr,j)); */
-          gsl_matrix_set(P->brg_j1b, k + ibr*D, k, 
-                 gsl_vector_get(P->brg_j1_cvec, ik * P->m_div_k + ibr));
-
-        }
+    gsl_matrix_set_zero(P->brg_j1b_2);
+    
+    for (i = 0; i < M; i++) {
+      for (k = 0; k < D; k++) {
+        gsl_matrix_set(P->brg_j1b_2, k, k + i*D, 
+            gsl_vector_get(P->brg_j1_cvec, i));
       }
-      gsl_matrix_vectorize(P->brg_j1b_vec, P->brg_j1b);
-
-      dtbtrs_("U", "T", "N", 
-	      &P->d_times_m_div_k, 
-	      &P->d_times_s_minus_1, 
-	      &P->d, 
-	      P->brg_rb, 
-	      &P->d_times_s, 
-	      P->brg_j1b_vec, 
-	      &P->d_times_m_div_k, 
-	      &info);
-
-      submat1 = gsl_matrix_submatrix(deriv, 0 + ik * P->d_times_m_div_k, 
-				     j*D, P->d_times_m_div_k, D); 
-      gsl_matrix_vec_inv(&submat1.matrix, P->brg_j1b_vec);
     }
+    P->myGamma->multiplyInvCholesky(P->brg_j1b_2->data, 1, P->d);
+
+    submat1 = gsl_matrix_submatrix(deriv, 0, j*D, P->m_times_d, D); 
+    gsl_matrix_vec_inv(&submat1.matrix, P->brg_j1b_2->data);
   }
 
   /* second term (naive implementation) */
@@ -375,9 +286,6 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
         /* compute tmp1 = dx_ext' * w_k * x_ext * /
 	/* Iterate over rows of dx_ext' * w_k */
         tmp1_row = gsl_matrix_row (&submat.matrix, j);
-/*        w_k_row = gsl_matrix_row (P->w.a[k], i);
-        gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, &w_k_row.vector, 
-		       0.0, &tmp1_row.vector); */
         w_k_row = gsl_matrix_column (P->perm, i);
         gsl_blas_dgemv(CblasTrans, 1.0, P->w.a[k], &w_k_row.vector,
                        0.0, P->brg_j2_pvec); 
@@ -388,9 +296,6 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
         /* compute submat = submat  + x_ext' * tmp * dx_ext * /
 	/* Iterate over rows of dx_ext' * w_k' */
         tmp1_col = gsl_matrix_column (&submat.matrix, j);
-/*        w_k_col = gsl_matrix_column (P->w.a[k], i);
-        gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, &w_k_col.vector, 
-		       1.0, &tmp1_col.vector); */
         gsl_blas_dgemv(CblasNoTrans, 1.0, P->w.a[k], &w_k_row.vector,
                        0.0, P->brg_j2_pvec); 
         gsl_blas_dgemv(CblasTrans, 1.0, bx_ext, P->brg_j2_pvec, 
@@ -415,15 +320,7 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
       }
       
       /* solve st_ij = Gamma^{-1/2}st_ij */
-      dtbtrs_("U", "T", "N", 
-	      &P->d_times_m_div_k, 
-	      &P->d_times_s_minus_1, 
-	      &P->k, 
-	      P->brg_rb, 
-	      &P->d_times_s, 
-	      res_vec.vector.data,
-	      &P->d_times_m_div_k, 
-	      &info); 
+      P->myGamma->multiplyInvCholesky(&res_vec.vector, 1);
 
       subvec = gsl_matrix_column(P->brg_st, i*D+j);
       /* New (nonreshaped) */
@@ -445,7 +342,7 @@ void jacobian_reshaped( slra_opt_data_reshaped* P, gsl_matrix* deriv )
 
 double slra_f_reshaped_ (const gsl_vector* x, void* params)
 {
-  slra_opt_data_reshaped *P = params;
+  slra_opt_data_reshaped *P = (slra_opt_data_reshaped *) params;
   double ftf;
 
   /* Use yr as a temporary variable */
@@ -457,27 +354,24 @@ double slra_f_reshaped_ (const gsl_vector* x, void* params)
 
 int slra_f_reshaped (const gsl_vector* x, void* params, gsl_vector* f)
 {
-  slra_opt_data_reshaped *P = params;
+  slra_opt_data_reshaped *P = (slra_opt_data_reshaped *) params;
 
   compute_bxext(x, P);
-
-  cholesky_of_block_of_reshaped_gamma(P);
-  
+  P->myGamma->computeCholeskyOfGamma(P->bx_ext);
   compute_reshaped_r(f, P);
-  compute_reshaped_c_minus_1_2_r(f, 1, P);
+  P->myGamma->multiplyInvCholesky(f, 1);
 
   return GSL_SUCCESS;
 }
 
 int slra_df_reshaped (const gsl_vector* x, void* params, gsl_matrix* deriv)
 {
-  slra_opt_data_reshaped *P = params;
+  slra_opt_data_reshaped *P =  (slra_opt_data_reshaped *) params;
 
   compute_bxext(x, P);
-  cholesky_of_block_of_reshaped_gamma(P);
+  P->myGamma->computeCholeskyOfGamma(P->bx_ext);
   compute_reshaped_r(P->brg_yr, P);
-  compute_reshaped_c_minus_1_r(P->brg_yr, P);
-
+  P->myGamma->multiplyInvGamma(P->brg_yr);
   jacobian_reshaped(P, deriv);
 
   return GSL_SUCCESS;
@@ -487,17 +381,17 @@ int slra_df_reshaped (const gsl_vector* x, void* params, gsl_matrix* deriv)
 int slra_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f, 
 		       gsl_matrix* deriv)
 {
-  slra_opt_data_reshaped *P = params;
+  slra_opt_data_reshaped *P = (slra_opt_data_reshaped *) params;
 
   compute_bxext(x, P);
-  cholesky_of_block_of_reshaped_gamma(P);
-
+  P->myGamma->computeCholeskyOfGamma(P->bx_ext);
+  
   compute_reshaped_r(P->brg_yr, P);
-  compute_reshaped_c_minus_1_2_r(P->brg_yr, 1, P);
+  P->myGamma->multiplyInvCholesky(P->brg_yr, 1);
 
   gsl_vector_memcpy(f, P->brg_yr);
 
-  compute_reshaped_c_minus_1_2_r(P->brg_yr, 0, P);
+  P->myGamma->multiplyInvCholesky(P->brg_yr, 0);
   
   jacobian_reshaped(P, deriv);
 
@@ -509,17 +403,17 @@ int slra_fdf_reshaped (const gsl_vector* x, void* params, gsl_vector* f,
 void slra_fdf_reshaped_ (const gsl_vector* x, void* params, 
 			 double *f, gsl_vector* grad)
 {
-  slra_opt_data_reshaped *P = params;
+  slra_opt_data_reshaped *P = (slra_opt_data_reshaped *)params;
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector( x, N, D );
 
   compute_bxext(x, P);
-  cholesky_of_block_of_reshaped_gamma(P);
+  P->myGamma->computeCholeskyOfGamma(P->bx_ext);
   
   compute_reshaped_r(P->brg_yr, P);
   if (f !=  NULL) {
     gsl_vector_memcpy(P->brg_f, P->brg_yr);  
   }
-  compute_reshaped_c_minus_1_r(P->brg_yr, P);
+  P->myGamma->multiplyInvGamma(P->brg_yr);  
   if (f !=  NULL) {
     gsl_blas_ddot(P->brg_f, P->brg_yr, f);
   }
@@ -568,11 +462,6 @@ void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad )
 		     P->bx_ext, 0.0, P->brg_perm_tmp);
       gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, 
 		     P->brg_perm_tmp, 0.0, tmp2);
-
-      /* wk_sub_matr = gsl_matrix_submatrix(P->w.a[k], 0, 0, 
-	                                    P->n_plus_d, P->n);
-	 gsl_blas_dgemm(CblasTrans, CblasNoTrans, -2.0, 
-	                &wk_sub_matr.matrix, P->bx_ext, 0.0, tmp2);*/
     }
 
 
@@ -827,7 +716,8 @@ int slra_correction_reshaped(gsl_vector* p,
 
   /* Compute r(X) */
   slra_f_reshaped(x, params, P->brg_f);
-  compute_reshaped_c_minus_1_2_r(P->brg_f, 0, P);
+  
+  P->myGamma->multiplyInvCholesky(P->brg_yr, 0);
   brgf_matr = gsl_matrix_view_vector(P->brg_f, P->m, P->d);
     
   /* Create reversed Xext matrix for Toeplitz blocks */

@@ -8,7 +8,11 @@
 
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
+
+
 #include "slra.h"
+
+#include "levmar.h"
 
 /* Debug structure for Levenberg-Marquardt algorithm
    typedef struct
@@ -221,7 +225,7 @@ int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matr
   }
 
   /*allocate_and_prepare_data_old(c, n, s, opt,  &params);*/
-  allocate_and_prepare_data_reshaped(c, n, s, opt, pparams, perm);
+  allocate_and_prepare_data_reshaped(c, n, s, opt, (slra_opt_data_reshaped *)pparams, perm);
   gsl_matrix_free(c);
 }
 
@@ -327,12 +331,12 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
     x_norm = gsl_blas_dnrm2(solverlm->x);
     g_norm = gsl_blas_dnrm2(g);
-    PRINTF("0: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", opt->fmin, g_norm, x_norm);
+    PRINTF("  0: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", opt->fmin, g_norm, x_norm);
   }
   
   
   if (opt->submethod == SLRA_OPT_SUBMETHOD_QN_BFGS2 && opt->disp == SLRA_OPT_DISP_ITER) {
-     vector_bfgs2_state_t *st = solverqn->state;
+     vector_bfgs2_state_t *st = (vector_bfgs2_state_t *) solverqn->state;
       
      PRINTF("State info: pnorm = %16.8f,  g0norm = %16.8f, fp0 = %16.8f\n",
          st->pnorm, st->g0norm, st->fp0);
@@ -377,7 +381,7 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
       status = gsl_multimin_fdfminimizer_iterate( solverqn );
       if (status == GSL_ENOPROG) {
         if (opt->submethod == SLRA_OPT_SUBMETHOD_QN_BFGS2 && opt->disp == SLRA_OPT_DISP_ITER) {
-          vector_bfgs2_state_t *st = solverqn->state;
+          vector_bfgs2_state_t *st = (vector_bfgs2_state_t *)solverqn->state;
           
           PRINTF("No progress: pnorm = %16.8f,  g0norm = %16.8f, fp0 = %16.8f\n",
               st->pnorm, st->g0norm, st->fp0);
@@ -440,6 +444,10 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
     opt->fmin = solvernm->fval;
     break;
   }
+  
+  if (opt->disp == SLRA_OPT_DISP_ITER) {
+     opt->chol_time =  ((double)P->chol_time / CLOCKS_PER_SEC) / P->chol_count;
+  }
 
   
   /* print exit information */  
@@ -497,6 +505,8 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
 }
 
 
+
+
 int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
          gsl_matrix *perm, int perm_given ) {
@@ -513,6 +523,7 @@ int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
   x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
   
   int status = slra_gsl_optimize(&params, opt, &(x_vec.vector), v);
+ 
   opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
   if (compute_ph) {
@@ -547,14 +558,14 @@ int tls(gsl_matrix* a, gsl_matrix* b, gsl_matrix* x)
   }
   
   /* c = [a b] in FORTRAN format */
-  c = malloc( ldc * (n+l) * sizeof(double));
+  c = (double *)malloc( ldc * (n+l) * sizeof(double));
   gsl_matrix_vectorize(c, a);
   gsl_matrix_vectorize(c + m*n, b);
 
-  xa = malloc( n * l * sizeof(double));
-  s  = malloc( (n+l) * sizeof(double));
-  dwork = malloc( ldwork * sizeof(double));
-  iwork = malloc( l * sizeof(int));
+  xa = (double *)malloc( n * l * sizeof(double));
+  s  = (double *)malloc( (n+l) * sizeof(double));
+  dwork = (double *)malloc( ldwork * sizeof(double));
+  iwork = (int *)malloc( l * sizeof(int));
 
   /* Call MB02MD */
   mb02md_("B", &m, &n, &l, &r, c, &ldc, s, xa, &n, 
