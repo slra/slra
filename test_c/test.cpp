@@ -190,8 +190,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     fmin = opt.fmin;
     iter = opt.iter;
     
-    fmin2 = opt.chol_time;
-//    fmin2 = dp_norm * dp_norm;
+//    fmin2 = opt.chol_time;
+    fmin2 = dp_norm * dp_norm;
     
 
     
@@ -259,9 +259,9 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n");
     printf("------------------------------------------------------------------------\n");
-    printf("|  # |       Time | Iter |     Minimum | Cholesky     |        Diff (X) |\n");
+    printf("|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (X) |\n");
     printf("------------------------------------------------------------------------\n");
-    printf("| %2d | %10.6f | %4d | %11.7f | %12.10f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
+    printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
     printf("------------------------------------------------------------------------\n\n"); 
   } else {
     printf("\n------------------ Testing all examples  ------------------\n\n");
@@ -283,10 +283,10 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n");
     printf("------------------------------------------------------------------------\n");
-    printf("|  # |       Time | Iter |     Minimum | Cholesky     |        Diff (X) |\n");
+    printf("|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (X) |\n");
     printf("------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
-      printf("| %2d | %10.6f | %4d | %11.7f | %12.10f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
+      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
     }
     printf("------------------------------------------------------------------------\n\n"); 
   }   

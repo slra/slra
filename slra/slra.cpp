@@ -12,7 +12,6 @@
 
 #include "slra.h"
 
-#include "levmar.h"
 
 /* Debug structure for Levenberg-Marquardt algorithm
    typedef struct
@@ -190,15 +189,12 @@ int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matr
 
   if (!perm_given) {
     gsl_matrix_set_identity(perm);
-  } else {
-    if (opt->disp == SLRA_OPT_DISP_ITER) {
-      printf("Given permutation matix: \n");
-      print_mat(perm);
-    }
   }
 
   c = gsl_matrix_alloc(m, si.total_cols);
-  slra_fill_matrix_from_p(c, s, p);
+  ((slra_opt_data_reshaped *)pparams)->brg_c = c;
+  ((slra_opt_data_reshaped *)pparams)->myStruct = new slraFlexStructure(s, p->size);
+  ((slra_opt_data_reshaped *)pparams)->myStruct->fillMatrixFromP(c, p);
   
   if (!x_given) {  /* compute default initial approximation */
     if (opt->disp == SLRA_OPT_DISP_ITER) {
@@ -226,7 +222,7 @@ int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matr
 
   /*allocate_and_prepare_data_old(c, n, s, opt,  &params);*/
   allocate_and_prepare_data_reshaped(c, n, s, opt, (slra_opt_data_reshaped *)pparams, perm);
-  gsl_matrix_free(c);
+//  gsl_matrix_free(c);
 }
 
 int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v ) {

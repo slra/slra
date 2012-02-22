@@ -44,7 +44,7 @@ R:
 	R CMD INSTALL Rslra
 
 testc : test.o slra.a SLICOT.a
-	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a slra/liblevmar.a \
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a  \
 	/home/kdu/local/lib/liblapack.a \
 	/home/kdu/local/lib/libgsl.a \
 	/home/kdu/local/lib/libcblas.a \

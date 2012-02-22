@@ -126,15 +126,18 @@ typedef struct {
 
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
+
 typedef struct {
-  int k;	/* = rowdim(block in T/H blocks) */ 
-  int q;	/* number of blocks in C = [C1 ... Cq] */
-  struct {
-    int blocks_in_row;       /* Number of blocks in a row of Ci */
-    int nb;                  /* Number of columns in each small block */
-    int exact;               /* 1 - exact block, 0 - not exact */  
-    int toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
-  } a[MAXQ];	/* q-element array describing C1,...,Cq; */  
+  int blocks_in_row;       /* Number of blocks in a row of Ci */
+  int nb;                  /* Number of columns in each small block */
+  int exact;               /* 1 - exact block, 0 - not exact */  
+  int toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
+} slraFlexBlock;
+
+typedef struct {
+  int k;	          /* = rowdim(block in T/H blocks) */ 
+  int q;	          /* number of blocks in C = [C1 ... Cq] */
+  slraFlexBlock a[MAXQ];  /* q-element array describing C1,...,Cq; */  
 } data_struct;
 
 /* additional info about matrix structure */
@@ -224,21 +227,114 @@ typedef struct {
 }
 
 
-class slraGammaComputations {
-public:  
-  virtual const double *getPackedCholesky() = 0;
-  virtual void computeCholeskyOfGamma( gsl_matrix *R ) = 0;
-  virtual void multiplyInvCholesky( double * yr, int trans, int rep = 1 ) = 0;  /*  yr - I/O */
- 
-  virtual void multiplyInvCholesky( gsl_vector * yr, int trans ) = 0;
-  virtual void multiplyInvGamma( double * yr ) = 0;  /* yr - I/O */
+class slraException {
+  static const int MSG_MAX = 200;
 
-  virtual void multiplyInvGamma( gsl_vector * yr )  = 0;
+  char myMsg[MSG_MAX];
+public:
+  slraException( const char *msg, ... );
+  const char *getMessage()  { return myMsg; }
 };
 
-class slraFlexGammaComputations : public slraGammaComputations {
-  int use_slicot;
-  int myM, myN, myD;
+
+
+
+class slraFlexStructure {
+  int myK;                      /* = rowdim(block in T/H blocks) */ 
+  int myQ;	                /* number of blocks in C = [C1 ... Cq] */
+  
+  int myNp;
+  
+  int myNplusD;
+  int myNpScale, myNpOffset;
+  int myMaxLag;
+  
+  void computeStats();
+  
+
+  slraFlexBlock mySA[MAXQ];	/* q-element array describing C1,...,Cq; */  
+public:
+  slraFlexStructure( const data_struct *s, int np = -1 ); /* "Copy" constructor */
+  slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np = -1 );
+  virtual ~slraFlexStructure() {}
+
+  void setNp( int np );
+  int getQ() const { return myQ; }
+  int getK() const { return myK; }
+  int getNp() const { return myNp; }
+  int getNplusD() const { return myNplusD; }
+  int getM() const { return (myNp - myNpOffset) / myNpScale; }
+  int getMaxLag() const { return myMaxLag; }
+  
+//  const slraFlexBlock & getFlexBlock( int i ) const { return mySA[i]; }
+  
+  int getFlexBlockLag( int l ) const { return mySA[l].blocks_in_row; }
+  int getFlexBlockNCol( int l ) const { return mySA[l].blocks_in_row * mySA[l].nb; }
+  int getFlexBlockNb( int l ) const { return mySA[l].nb; }
+  bool isFlexBlockExact( int l ) const { return mySA[l].exact; }
+  bool isFlexBlockToeplitz( int l ) const { return mySA[l].toeplitz; }
+  
+  int getFlexBlockT( int l ) const { return getFlexBlockLag(l) + (getM() / getK()) - 1; }
+  int getFlexBlockNp( int l ) const { return getFlexBlockT(l) * getK() * getFlexBlockNb(l); }
+  
+  void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const ; 
+};
+
+
+class slraGammaComputations {
+public:  
+  virtual  ~slraGammaComputations() {}
+  virtual const double *getPackedCholesky() = 0;
+  virtual void computeCholeskyOfGamma( gsl_matrix *R ) = 0;
+  virtual void multiplyInvCholeskyArray( double * yr, int trans, int rep = 1 ) = 0;  /*  yr - I/O */
+ 
+  virtual void multiplyInvGammaArray( double * yr ) = 0;  /* yr - I/O */
+
+  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
+    multiplyInvCholeskyArray(yr->data, trans, 1);
+  }
+  virtual void multiplyInvGammaVector( gsl_vector * yr ){
+    multiplyInvGammaArray(yr->data);
+  }
+  
+  virtual void correctVector( gsl_vector* p, slraFlexStructure *s, 
+                                               gsl_matrix *R, gsl_vector *f ) = 0;
+};
+
+
+class slraFlexComputationsParams {
+  int myS;	/* length of the array (w.s = s+1 from the paper) */
+  gsl_matrix **myA;
+
+public:
+  slraFlexComputationsParams( const slraFlexStructure *s ); 
+  virtual ~slraFlexComputationsParams(); 
+  
+  const int getS() { return myS; }
+  const gsl_matrix *getWk( int k ) { return myA[k]; }
+};
+
+
+
+class slraDerivativeComputations {
+public:  
+  virtual ~slraDerivativeComputations() {}
+  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
+                                   gsl_matrix *perm, gsl_vector *yr ) = 0;
+
+  virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+                   gsl_matrix *perm, int i, int j, gsl_vector *yr ) = 0;
+
+};
+
+
+
+class slraFlexGammaComputations : virtual public slraGammaComputations {
+protected:
+  int my_use_slicot;
+  
+  slraFlexComputationsParams *myW;
+  int myM, myN, myD, myK;
   
   int m_div_k;
   int s_minus_1;
@@ -248,29 +344,54 @@ class slraFlexGammaComputations : public slraGammaComputations {
   
   int myCholeskyWorkSize;
  
-  w_data myW;
-  data_struct myS;
   double *myGammaVec;
   gsl_matrix *myGamma;
   gsl_matrix *myWkTmp;
   double *myPackedCholesky;
   double *myCholeskyWork;
+  
 public:
-  slraFlexGammaComputations( const data_struct *s, int m, int n, int d, int use_slicot  );
-  ~slraFlexGammaComputations();
+  slraFlexGammaComputations( int k, int m, int n, int d, 
+     int use_slicot, slraFlexComputationsParams *w  );
+  virtual ~slraFlexGammaComputations();
 
   virtual const double *getPackedCholesky() { return myPackedCholesky; }
   virtual void computeCholeskyOfGamma( gsl_matrix *R );
-  virtual void multiplyInvCholesky( double * yr, int trans, int rep = 1 );
-  virtual void multiplyInvCholesky( gsl_vector * yr, int trans )  {
-    multiplyInvCholesky(yr->data, trans, 1);
-  }
-  
-  virtual void multiplyInvGamma ( double * yr );
-  virtual void multiplyInvGamma ( gsl_vector * yr ) {
-    multiplyInvGamma(yr->data);
-  }
+  virtual void multiplyInvCholeskyArray( double * yr, int trans, int rep = 1 );
+  virtual void multiplyInvGammaArray( double * yr );
+  virtual void correctVector( gsl_vector* p, slraFlexStructure *s, 
+                                               gsl_matrix *R, gsl_vector *f );
 };
+
+
+class slraFlexDerivativeComputations : virtual public 
+                                       slraDerivativeComputations {
+  slraFlexComputationsParams *myW;
+  int myM, myN, myD, myK;
+  
+  int d_times_m_div_k;
+  int m_div_k;
+  
+  gsl_vector *myTempWkColRow;
+  gsl_matrix *myDGamma;
+  
+  gsl_matrix *mySubPhiT_Wk_R;
+  gsl_matrix *mySubPhiT_WkT_R;
+  gsl_matrix *mySubPhiTmp;
+  gsl_matrix *myN_k;
+
+public:
+  slraFlexDerivativeComputations( int k, int m, int n, int d, 
+      slraFlexComputationsParams *w  );
+  virtual ~slraFlexDerivativeComputations();
+  
+  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
+                                   gsl_matrix *perm, gsl_vector *yr );
+  virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+                   gsl_matrix *perm, int i, int j, gsl_vector *yr );
+
+};
+
 
 
 /* data needed for cost function and Jacobian evaluation */
@@ -324,7 +445,10 @@ typedef struct {
   
   gsl_matrix *brg_perm_tmp;  
   
-  slraFlexGammaComputations *myGamma;
+  slraFlexComputationsParams *myW;
+  slraGammaComputations *myGamma;
+  slraDerivativeComputations *myDerivative;
+  slraFlexStructure *myStruct;
 } slra_opt_data_reshaped;
 
 
@@ -339,7 +463,7 @@ void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *,
 
 void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n,
 					 const data_struct* s, 
-         opt_and_info *opt, slra_opt_data_reshaped *P, gsl_matrix *perm );
+         opt_and_info *opt, slra_opt_data_reshaped *P, gsl_matrix *perm);
 void free_memory_reshaped( slra_opt_data_reshaped *P );
 
 double slra_f_reshaped_ (const gsl_vector*, void*);
