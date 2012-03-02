@@ -546,95 +546,31 @@ public:
   }
 };
 
-
-
-extern "C" {
-
-/* TODO: replace with something that uses printf. 
-   #define print_vec(v) gsl_vector_fprintf(stdout,v,"%16.14f") */
-
-/*void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *,
-			  gsl_matrix *, gsl_matrix *);
-
-void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n,
-         opt_and_info *opt, slra_opt_data_reshaped *P, gsl_matrix *perm);
-void free_memory_reshaped( slra_opt_data_reshaped *P );
-
-double slra_f_reshaped_ (const gsl_vector*, void*);
-
-int slra_f_reshaped (const gsl_vector*, void*, gsl_vector*);
-int slra_df_reshaped (const gsl_vector*, void*, gsl_matrix*);
-int slra_fdf_reshaped (const gsl_vector*, 
-	      void*, gsl_vector*, gsl_matrix*);
-
-void cholesky_of_block_of_reshaped_gamma( slra_opt_data_reshaped* );
-void jacobian_reshaped( slra_opt_data_reshaped*,  gsl_matrix*);
-
-int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matrix* x,
-         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix *perm, int perm_given  );
-int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );  
-
-void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );*/
-
-#endif
-
+int slra_gsl_optimize( slraFlexCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );
 
 /* Prototypes of functions */
 int slra(gsl_vector* p, data_struct* s, int rank, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
          gsl_matrix* perm);
 	
-int check_and_adjust_parameters(data_struct *s, flex_struct_add_info *psi);
-int slra_fill_matrix_from_p(gsl_matrix* c,  data_struct *s, gsl_vector* p);
-int slra_correction_reshaped(gsl_vector* p, data_struct *s, void* params,
-			     const gsl_vector* x);
 
-void print_state (int, gsl_multifit_fdfsolver*);
-
-int get_bandwidth_from_structure(const data_struct*);
-
-int s2w(const data_struct*, w_data*, int,  int);
-void print_mat(const gsl_matrix*);
-void print_mat_tr(const gsl_matrix*);
-void print_arr(double*, int);
-void gsl_matrix_vectorize(double*, gsl_matrix*);
-void gsl_matrix_vec_inv(gsl_matrix*, double*);
-void tmv_prod(gsl_matrix*, int, 
-	      gsl_vector*, int, gsl_vector*);
 void tmv_prod_new(gsl_matrix*, int, 
 	      gsl_vector*, int, gsl_vector*);
 
 int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
  
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Old functions */
-void allocate_and_prepare_data_old( gsl_matrix* c, int n,
-				    const data_struct* s, 
-         opt_and_info *opt, slra_opt_data_old *P );
-void free_memory_old( slra_opt_data_old *P );
+void print_mat(const gsl_matrix*);
+void print_mat_tr(const gsl_matrix*);
+void print_arr(double*, int);
 
-void cholgam( slra_opt_data_old* );
-void jacobian( slra_opt_data_old*,  gsl_matrix*);
-void xmat2xext( gsl_matrix_const_view, gsl_matrix *, int);
-
-double slra_f_ (const gsl_vector*, void*);
-
-int slra_f (const gsl_vector*, void*, gsl_vector*);
-int slra_df (const gsl_vector*, void*, gsl_matrix*);
-int slra_fdf (const gsl_vector*, 
-	      void*, gsl_vector*, gsl_matrix*);
-
-void slra_df_reshaped_ (const gsl_vector* x, void* params,
-			gsl_vector* grad);
-void slra_fdf_reshaped_ (const gsl_vector* x, void* params, double *f,
-			 gsl_vector* grad);
-
-
-
-       
-
+void gsl_matrix_vectorize(double*, gsl_matrix*);
+void gsl_matrix_vec_inv(gsl_matrix*, double*);
 
 
 /* SLICOT and LAPACK functions */
@@ -658,14 +594,10 @@ int slraMatrix2Struct( data_struct *s, double *s_matr,
                        int q, int s_matr_cols );
 void slraString2Method( const char *str_buf, opt_and_info *popt );
 int slraString2Disp( const char *str_value );
-
-
 #ifdef __cplusplus
 }
-
-
-
 #endif
+
 
 #endif /* _SLRA_H_ */
 
