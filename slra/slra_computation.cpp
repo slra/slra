@@ -14,58 +14,12 @@ extern "C" {
 
 #include "slra.h"
 
-slraFlexComputationsParams::slraFlexComputationsParams( const slraFlexStructure *s ) {
-  int k, l, i, offset, imax, sum_nl;
-  gsl_matrix *zk;
-  gsl_matrix_view wi, zkl;
-  char err_msg[70];
-  int rep;
-  int ncol;
-  
-  slraFlexComputationsParams *w = this;
-
-  myS = s->getMaxLag();
-  myA = (gsl_matrix**) malloc(myS * sizeof(gsl_matrix *));
-  
-  /* construct w */
-  for (k = 0; k < myS; k++) { 
-    zk   = gsl_matrix_alloc(s->getNplusD(), s->getNplusD());
-    gsl_matrix_set_zero(zk);
-    sum_nl = 0;
-    for (l = 0; l < s->getQ(); l++) { 
-      ncol = s->getFlexBlockNCol(l);
-      zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, ncol, ncol); 
-
-      if ((!s->isFlexBlockExact(l))) {
-	offset = s->getFlexBlockNb(l) * k;
-	imax   = ncol - offset;
-	for (i = 0; i < imax; i++) {
-	  if (s->isFlexBlockToeplitz(l)) {
-	    gsl_matrix_set(&zkl.matrix, i, i + offset, 1);
-          } else {
-	    gsl_matrix_set(&zkl.matrix, i + offset, i, 1);
-	  }
-	}
-      } 
-      sum_nl += ncol;
-    }
-    myA[k] = zk;
-  }
-}
-
-slraFlexComputationsParams::~slraFlexComputationsParams() {
-  for (int k = 0; k < myS; k++) {
-    gsl_matrix_free(myA[k]);
-  }
-  free(myA);
-}
-
 
 slraFlexCostFunction::slraFlexCostFunction( slraFlexStructure s, 
-    int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) :
-    myStructure(s), myRank(r), myW(&myStructure), 
-    myGamma(&myStructure, r, opt->use_slicot, opt->reggamma, &myW),
-    myDerivative(&myStructure, r, &myW) {
+    int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r) {
+  myStruct = s.clone();     
+  myGam = myStruct->createGammaComputations(r, opt->reggamma);
+  myDeriv = myStruct->createDerivativeComputations(r);
       
   myMatr = gsl_matrix_alloc(getM(), getNplusD());
   myMatrMulPerm = gsl_matrix_alloc(getM(), getNplusD());
@@ -86,9 +40,9 @@ slraFlexCostFunction::slraFlexCostFunction( slraFlexStructure s,
     throw slraException("Number of rows %d is less than the number of columns %d: ",
               getM(), getNplusD());
   }
-  if (myStructure.getNp() < getM() * getD()) {
+  if (myStruct->getNp() < getM() * getD()) {
     throw slraException("The inner minimization problem is overdetermined: " 
-                        "m * (n-r) = %d, n_p = %d.\n", getM() * getD(), myStructure.getNp());
+                        "m * (n-r) = %d, n_p = %d.\n", getM() * getD(), myStruct->getNp());
   }
     
   if (perm == NULL) {
@@ -103,11 +57,16 @@ slraFlexCostFunction::slraFlexCostFunction( slraFlexStructure s,
   
   
   
-  myStructure.fillMatrixFromP(myMatr, p);
+  myStruct->fillMatrixFromP(myMatr, p);
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myMatr, myPerm, 0.0, myMatrMulPerm);
 }
   
 slraFlexCostFunction::~slraFlexCostFunction() {
+
+  delete myStruct;     
+  delete myGam;
+  delete myDeriv;
+
   gsl_matrix_free(myMatr);
   gsl_matrix_free(myMatrMulPerm);
   gsl_matrix_free(myPerm);
@@ -160,14 +119,14 @@ void slraFlexCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, 
   computeRGammaSr(x, myTmpR, myTmpYr);
 
   if (f != NULL) {
-    myGamma.multiplyInvCholeskyVector(myTmpYr, 1);
+    myGam->multiplyInvCholeskyVector(myTmpYr, 1);
     gsl_blas_ddot(myTmpYr, myTmpYr, f);
   }
   if (grad != NULL) {
     if (f != NULL) {
-      myGamma.multiplyInvCholeskyVector(myTmpYr, 0);
+      myGam->multiplyInvCholeskyVector(myTmpYr, 0);
     } else {
-      myGamma.multiplyInvGammaVector(myTmpYr);
+      myGam->multiplyInvGammaVector(myTmpYr);
     }
     computeGradFromYr(myTmpYr, myTmpR, grad);
   }
@@ -178,14 +137,14 @@ void slraFlexCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, 
 void slraFlexCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
   computeRGammaSr(x, myTmpR, myTmpYr);
   if (res != NULL) {
-    myGamma.multiplyInvCholeskyVector(myTmpYr, 1);
+    myGam->multiplyInvCholeskyVector(myTmpYr, 1);
     gsl_vector_memcpy(res, myTmpYr);
   }
   if (jac != NULL) {  
     if (res != NULL) {
-      myGamma.multiplyInvCholeskyVector(myTmpYr, 0);
+      myGam->multiplyInvCholeskyVector(myTmpYr, 0);
     } else {
-      myGamma.multiplyInvGammaVector(myTmpYr);      
+      myGam->multiplyInvGammaVector(myTmpYr);      
     }
     computePseudoJacobianLsFromYr(myTmpYr, myTmpR, jac);
   } 
@@ -206,7 +165,7 @@ void slraFlexCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_m
       }
     }
   }
-  myGamma.multiplyInvCholeskyArray(myTmpJacobianArray, 1, getN() * getD());
+  myGam->multiplyInvCholeskyArray(myTmpJacobianArray, 1, getN() * getD());
   gsl_matrix_vec_inv(jac, myTmpJacobianArray);
   
   /* second term (naive implementation) */
@@ -214,8 +173,8 @@ void slraFlexCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_m
                                 getM() * getD(), getN() * getD());
   for (i = 0; i < getN(); i++) {
     for (j = 0; j < getD(); j++) {
-      myDerivative.computeDijGammaYr(myTmpJacobianCol, R, myPerm, i, j, yr);
-      myGamma.multiplyInvCholeskyVector(myTmpJacobianCol, 1);
+      myDeriv->computeDijGammaYr(myTmpJacobianCol, R, myPerm, i, j, yr);
+      myGam->multiplyInvCholeskyVector(myTmpJacobianCol, 1);
       gsl_matrix_set_col(&tmp_jac.matrix, i * getD() + j, myTmpJacobianCol);  
     }
   }
@@ -231,7 +190,7 @@ void slraFlexCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl
 
   /* Compute gradient of f(R) */ 
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix, 0.0, myTmpGradR);
-  myDerivative.computeYrtDgammaYr(myTmpGradR2, R, yr);
+  myDeriv->computeYrtDgammaYr(myTmpGradR2, R, yr);
   gsl_matrix_sub(myTmpGradR, myTmpGradR2);
 
   /* Compute gradient of f_{\Phi}(X) */ 
@@ -241,8 +200,8 @@ void slraFlexCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl
 
 void slraFlexCostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   computeRGammaSr(x, myTmpR, myTmpYr);
-  myGamma.multiplyInvGammaVector(myTmpYr);
-  myGamma.correctVector(p, &myStructure, myTmpR, myTmpYr);
+  myGam->multiplyInvGammaVector(myTmpYr);
+  myGam->correctVector(p, myTmpR, myTmpYr);
 }
 
 

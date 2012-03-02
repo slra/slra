@@ -115,7 +115,9 @@ int slra(gsl_vector* p, data_struct* s, int r, gsl_matrix* x,
   int res = GSL_SUCCESS;
 
   try { 
+    PRINTF("Hello!\n");
     myCostFun =  new slraFlexCostFunction(slraFlexStructure(s, p->size), r, p, opt, perm);
+    PRINTF("Hello 2!\n");
     checkAndComputeX(myCostFun, x, opt, x_given);
   
     time_t t_b = clock();
