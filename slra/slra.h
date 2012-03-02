@@ -160,7 +160,6 @@ typedef struct {
     int m, n, d; \
     gsl_matrix* c; \
     double reggamma; \
-    w_data w; \
     int k;  \
     int  n_plus_d, 		/* = col_dim(C) */ \
     n_times_d,			/* = number of elements in x */ \
@@ -203,6 +202,8 @@ typedef struct {
 
 typedef struct {
   COMMON_PARAMS;
+
+  w_data w; \
 
   /* Preallocated arrays */  
   gsl_matrix *x_ext; 
@@ -258,7 +259,7 @@ public:
   slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np = -1 );
   virtual ~slraFlexStructure() {}
 
-  void setNp( int np );
+  void setNp( int np, bool check_solvability = true );
   int getQ() const { return myQ; }
   int getK() const { return myK; }
   int getNp() const { return myNp; }
@@ -278,6 +279,8 @@ public:
   int getFlexBlockNp( int l ) const { return getFlexBlockT(l) * getK() * getFlexBlockNb(l); }
   
   void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const ; 
+  
+
 };
 
 
@@ -319,11 +322,10 @@ public:
 class slraDerivativeComputations {
 public:  
   virtual ~slraDerivativeComputations() {}
-  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
-                                   gsl_matrix *perm, gsl_vector *yr ) = 0;
+  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr ) = 0;
 
   virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   gsl_matrix *perm, int i, int j, gsl_vector *yr ) = 0;
+                   gsl_matrix *perm, int i, int j, gsl_vector *Yr ) = 0;
 
 };
 
@@ -332,6 +334,7 @@ public:
 class slraFlexGammaComputations : virtual public slraGammaComputations {
 protected:
   int my_use_slicot;
+  double my_reg_gamma;
   
   slraFlexComputationsParams *myW;
   int myM, myN, myD, myK;
@@ -351,8 +354,8 @@ protected:
   double *myCholeskyWork;
   
 public:
-  slraFlexGammaComputations( int k, int m, int n, int d, 
-     int use_slicot, slraFlexComputationsParams *w  );
+  slraFlexGammaComputations( slraFlexStructure *s, int r, 
+     int use_slicot, double reg_gamma, slraFlexComputationsParams *w  );
   virtual ~slraFlexGammaComputations();
 
   virtual const double *getPackedCholesky() { return myPackedCholesky; }
@@ -375,23 +378,25 @@ class slraFlexDerivativeComputations : virtual public
   gsl_vector *myTempWkColRow;
   gsl_matrix *myDGamma;
   
-  gsl_matrix *mySubPhiT_Wk_R;
-  gsl_matrix *mySubPhiT_WkT_R;
+  gsl_matrix *myWk_R;
+  gsl_matrix *myWkT_R;
   gsl_matrix *mySubPhiTmp;
   gsl_matrix *myN_k;
 
 public:
-  slraFlexDerivativeComputations( int k, int m, int n, int d, 
+  slraFlexDerivativeComputations( slraFlexStructure *s, int r, 
       slraFlexComputationsParams *w  );
   virtual ~slraFlexDerivativeComputations();
   
-  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
-                                   gsl_matrix *perm, gsl_vector *yr );
+  virtual void computeYrtDgammaYr( gsl_matrix *mgrad_r, gsl_matrix *R, gsl_vector *yr );
   virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   gsl_matrix *perm, int i, int j, gsl_vector *yr );
+                   gsl_matrix *perm, int i, int j, gsl_vector *Yr );
 
 };
 
+
+
+class slraFlexCostFunction;
 
 
 /* data needed for cost function and Jacobian evaluation */
@@ -449,7 +454,97 @@ typedef struct {
   slraGammaComputations *myGamma;
   slraDerivativeComputations *myDerivative;
   slraFlexStructure *myStruct;
+  
+  
+  slraFlexCostFunction *myCostFun;
 } slra_opt_data_reshaped;
+
+
+class slraFlexCostFunction {
+//  slraFlexStructure * const myStruct;
+  slraFlexStructure myStructure;
+  int myRank;
+  slraFlexComputationsParams myW;
+  slraFlexGammaComputations myGamma;
+  slraFlexDerivativeComputations myDerivative;
+  gsl_matrix *myMatr;
+  gsl_matrix *myPerm;
+  
+  gsl_matrix *myMatrMulPerm;
+  
+  /* Helper computation variables */
+  gsl_matrix *myTmpGradR;
+  gsl_matrix *myTmpGradR2;
+  gsl_matrix *myTmpR;  
+  gsl_vector *myTmpYr;  
+
+  /* Jacobian computation */
+  double *myTmpJacobianArray;  
+  gsl_vector *myTmpJacobianCol;  
+
+  gsl_matrix *myTmpGrad;  
+
+public:
+
+  slraFlexCostFunction( slraFlexStructure s, int r, 
+      gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  );
+  virtual ~slraFlexCostFunction();
+  
+  int getD() { return myStructure.getNplusD() - myRank; }
+  int getNplusD() { return myStructure.getNplusD(); }
+  int getN() { return myRank; }
+  int getM() { return myStructure.getM(); }
+
+  const gsl_matrix * getPerm() { return myPerm; }
+  const gsl_matrix * getSMatr() { return myMatr; }
+  
+  
+  void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 
+  void computeR( const gsl_vector *x, gsl_matrix *R ); 
+  void computeSr( gsl_matrix *R, gsl_vector *Sr );
+
+
+  void computeRGammaSr( const gsl_vector *x, gsl_matrix *R, gsl_vector *Sr ) {
+    computeR(x, myTmpR);
+    myGamma.computeCholeskyOfGamma(myTmpR);
+    computeSr(myTmpR, Sr);
+  } 
+  
+  void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac );
+  void computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad );
+
+
+  void computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac );
+  void computeFuncAndGrad( const gsl_vector* x, double * f, gsl_vector *grad );
+  
+  void  computeCorrection( gsl_vector* p, const gsl_vector* x );
+  
+  static int slra_f_ls( const gsl_vector* x, void* params, gsl_vector *res ) {
+    ((slraFlexCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, NULL);
+    return GSL_SUCCESS;
+  }
+  static int slra_df_ls( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
+    ((slraFlexCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, NULL, jac);
+    return GSL_SUCCESS;
+  }
+  static int slra_fdf_ls( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
+    ((slraFlexCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, jac);
+    return GSL_SUCCESS;
+  }
+
+
+  static double  slra_f( const gsl_vector* x, void* params ) {
+    double f;
+    ((slraFlexCostFunction *)params)->computeFuncAndGrad(x, &f, NULL);
+    return f;
+  }
+  static void  slra_df( const gsl_vector* x, void* params, gsl_vector *grad ) {
+    ((slraFlexCostFunction *)params)->computeFuncAndGrad(x, NULL, grad);
+  }
+  static void  slra_fdf( const gsl_vector* x, void* params, double *f, gsl_vector *grad ) {
+    ((slraFlexCostFunction *)params)->computeFuncAndGrad(x, f, grad);
+  }
+};
 
 
 
@@ -462,7 +557,6 @@ void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *,
 			  gsl_matrix *, gsl_matrix *);
 
 void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n,
-					 const data_struct* s, 
          opt_and_info *opt, slra_opt_data_reshaped *P, gsl_matrix *perm);
 void free_memory_reshaped( slra_opt_data_reshaped *P );
 
@@ -487,9 +581,9 @@ void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );
 
 
 /* Prototypes of functions */
-int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
+int slra(gsl_vector* p, data_struct* s, int rank, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix* perm, int perm_given);
+         gsl_matrix* perm);
 	
 int check_and_adjust_parameters(data_struct *s, flex_struct_add_info *psi);
 int slra_fill_matrix_from_p(gsl_matrix* c,  data_struct *s, gsl_vector* p);

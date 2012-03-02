@@ -77,10 +77,13 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   sprintf(fpresname,"res_p%s.txt",testname);
 
   try {
+
     if (!silent) {
       fprintf(log, "Running test %s\n", testname);  
     }
    
+
+
     /* Read structure */
     file = fopen(fsname,"r");
     if (file == NULL) {
@@ -102,22 +105,10 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     fclose(file);
 
-    /* read the data a, b from a.txt and b.txt */
-/*    if (((a = gsl_matrix_alloc(m, n)) == NULL) || !read_mat(a, faname, log)) {
-      throw 1;
-    }
-    if (((b = gsl_matrix_alloc(m, d)) == NULL) || !read_mat(b, fbname, log)) {
-      throw 1;
-    }*/
-
-
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
 
-    if (((perm = gsl_matrix_calloc(n+d, n+d)) == NULL)) {
-      throw 1;
-    }
 
     
     x_given = read_mat(x, fxname, log);
@@ -132,6 +123,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
     gsl_vector_memcpy(p2,p);
 
+    
     
     if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
@@ -148,9 +140,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 
 
     
-
     /* call stls */  
-    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */, perm, 0);
+    slra(p, &s, n, x, v, &opt, x_given, 1 /* Compute correction */, NULL);
 
     if (!silent) {
       print_mat(x);
@@ -207,9 +198,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     if (x != NULL) {
       gsl_matrix_free(x);
-    }
-    if (perm != NULL) {
-      gsl_matrix_free(perm);
     }
     if (xt != NULL) {
       gsl_matrix_free(xt);

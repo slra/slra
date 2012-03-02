@@ -126,106 +126,32 @@ static void comp_meth( gsl_vector* x, slra_opt_data_reshaped *P ) {
 }
 
 
-int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matrix* x,
-         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix *perm, int perm_given  ) {
-  int m,n,d ;
-  int status;
-  gsl_matrix *c;
+static int compute_tls( const gsl_matrix *c, const gsl_matrix *perm, gsl_matrix * x ) {
+  gsl_matrix * tempc = gsl_matrix_alloc(c->size1, c->size2);
   gsl_matrix_view c_sub_a, c_sub_b;
-
-
-  flex_struct_add_info si;
-
-  /* constants */
-  
-
-  if (check_and_adjust_parameters(s, &si) != GSL_SUCCESS) {
-    PRINTF("Error in structure specification: incorrect number of rows " 
-	   "in a subblock.\n");   
-    return GSL_EINVAL;
-  }  
-  
-  n = x->size1;
-  d = x->size2;
-
-  if (n + d != si.total_cols) {
-    PRINTF("Initial approximation doesn't conform to the structure" 
-	   "specification.\n");   
-    return GSL_EINVAL;
-  }
-
-  if (n + d != perm->size1 || n + d != perm->size2) {
-    PRINTF("Incorrect permutation matrix.\n");   
-    return GSL_EINVAL;
-  }
-  
-  /* Calculate number of rows m */
-  m = p->size - si.np_offset;
-  if (m <= 0) {
-    PRINTF("There is no matrix with the structure specification " 
-	   "for length %d: vector too short.\n", p->size);
-    return GSL_EINVAL;
-  }
-  if (m % si.np_scale != 0) {
-    PRINTF("There is no matrix with the structure specification for " 
-	   "length %d. scale = %d, offset = %d\n", 
-	   p->size, si.np_scale, si.np_offset);
-    return GSL_EINVAL;
-  }
-  m /= si.np_scale;
-  
-  if (m < n) {
-    PRINTF("Number of rows is less than the number of columns: " 
-	   "m = %d, r = %d.\n", m, n);
-    return GSL_EINVAL;
-  }
-
-  if (p->size < m * d) {
-    PRINTF("The inner minimization problem is overdetermined: " 
-	   "m * (n-r) = %d, n_p = %d.\n", m * d, p->size);
-    return GSL_EINVAL;
-  }
-
-  if (!perm_given) {
-    gsl_matrix_set_identity(perm);
-  }
-
-  c = gsl_matrix_alloc(m, si.total_cols);
-  ((slra_opt_data_reshaped *)pparams)->brg_c = c;
-  ((slra_opt_data_reshaped *)pparams)->myStruct = new slraFlexStructure(s, p->size);
-  ((slra_opt_data_reshaped *)pparams)->myStruct->fillMatrixFromP(c, p);
-  
-  if (!x_given) {  /* compute default initial approximation */
-    if (opt->disp == SLRA_OPT_DISP_ITER) {
-      PRINTF("X not given, computing TLS initial approximation.\n");
-    }
-    gsl_matrix * tempc = gsl_matrix_alloc(m, si.total_cols);
+  int n = x->size1, d = x->size2;
+  int status;
     
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, c, perm, 0.0, tempc);
-    c_sub_a = gsl_matrix_submatrix(tempc, 0, 0, m, n);
-    c_sub_b = gsl_matrix_submatrix(tempc, 0, n, m, d);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, c, perm, 0.0, tempc);
+  c_sub_a = gsl_matrix_submatrix(tempc, 0, 0, c->size1, n);
+  c_sub_b = gsl_matrix_submatrix(tempc, 0, n, c->size1, d);
     
-    status = tls(&c_sub_a.matrix, &c_sub_b.matrix, x);
+  status = tls(&c_sub_a.matrix, &c_sub_b.matrix, x);
     
-    gsl_matrix_free(tempc);
+  gsl_matrix_free(tempc);
 
-    if (status) {
-      PRINTF("Initial approximation can not be computed: "
-	     "MB02MD failed with an error info = %d.\n", status);
-      if (c !=  NULL) {
-        gsl_matrix_free(c);
-      }
-      return GSL_EINVAL;
-    }
+  if (status) {
+    PRINTF("Initial approximation can not be computed: "
+        "MB02MD failed with an error info = %d.\n", status);
+
+    return GSL_EINVAL;
   }
 
-  /*allocate_and_prepare_data_old(c, n, s, opt,  &params);*/
-  allocate_and_prepare_data_reshaped(c, n, s, opt, (slra_opt_data_reshaped *)pparams, perm);
-//  gsl_matrix_free(c);
+  return GSL_SUCCESS;
 }
 
-int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v ) {
+
+int slra_gsl_optimize( slraFlexCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     {gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder};
 
@@ -249,7 +175,6 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
 
 
   /* vectorize x row-wise */
-
   size_t max_ind, min_ind;
   double max_val, min_val, abs_max_val = 0, abs_min_val;
   
@@ -257,33 +182,41 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
       opt->method > sizeof(gsl_submethod_max) / sizeof(gsl_submethod_max[0]) || 
       opt->submethod < 0 || 
       opt->submethod > gsl_submethod_max[opt->method]) {
-    PRINTF("Unknown optimization method.\n");   
-    return GSL_EINVAL;
+    throw new slraException("Unknown optimization method.\n");   
   }
+  
+
+  
 
   /* LM */
   gsl_multifit_fdfsolver* solverlm;
-  /*  gsl_multifit_function_fdf fdflm = { &slra_f, &slra_df,
-      &slra_fdf, m * d, n * d, &params};*/
   gsl_multifit_function_fdf fdflm = { 
-    &slra_f_reshaped, &slra_df_reshaped, 
-    &slra_fdf_reshaped, P->m * P->d, P->n * P->d, P };
+    &(slraFlexCostFunction::slra_f_ls), 
+    &(slraFlexCostFunction::slra_df_ls), 
+    &(slraFlexCostFunction::slra_fdf_ls), F->getM() * F->getD(), F->getN() * F->getD(), F };
   gsl_vector *g;
 
   /* QN */
   double stepqn = opt->step; /* ??? */
   /*    gsl_multimin_fdfminimizer_vector_bfgs2;*/
   gsl_multimin_fdfminimizer* solverqn;
-  gsl_multimin_function_fdf fdfqn = { 
+/*  gsl_multimin_function_fdf fdfqn = { 
     &slra_f_reshaped_,
     &slra_df_reshaped_, 
-    &slra_fdf_reshaped_, P->n * P->d, P };
+    &slra_fdf_reshaped_, P->n * P->d, P }; */
+
+  gsl_multimin_function_fdf fdfqn = { 
+    &(slraFlexCostFunction::slra_f),
+    &(slraFlexCostFunction::slra_df), 
+    &(slraFlexCostFunction::slra_fdf), F->getN() * F->getD(), F };
+
 
   /* NM */
   double size;
   gsl_vector *stepnm;
   gsl_multimin_fminimizer* solvernm;
-  gsl_multimin_function fnm = { &slra_f_reshaped_, P->n * P->d, P };
+  /*gsl_multimin_function fnm = { &slra_f_reshaped_, P->n * P->d, P };*/
+  gsl_multimin_function fnm = { &slra_f_reshaped_, F->getN() * F->getD(), F };
   
   /* comp_meth(&x_vec.vector, &params); */
 
@@ -291,20 +224,20 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
     solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], 
-					    P->m * P->d, P->n * P->d);
+					    F->getM() * F->getD(), F->getN() * F->getD());
     gsl_multifit_fdfsolver_set(solverlm, &fdflm, x_vec);
-    g = gsl_vector_alloc(P->n * P->d);
+    g = gsl_vector_alloc(F->getN() * F->getD());
     break;
   case SLRA_OPT_METHOD_QN: /* QN */
     solverqn = gsl_multimin_fdfminimizer_alloc( Tqn[opt->submethod], 
-						P->n * P->d );
+						F->getN() * F->getD() );
     gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, x_vec, 
 				  stepqn, opt->tol); 
     status_dx = GSL_CONTINUE;  
     break;
   case SLRA_OPT_METHOD_NM: /* NM */
-    solvernm = gsl_multimin_fminimizer_alloc( Tnm[opt->submethod], P->n * P->d );
-    stepnm = gsl_vector_alloc( P->n * P->d );
+    solvernm = gsl_multimin_fminimizer_alloc( Tnm[opt->submethod], F->getN() * F->getD() );
+    stepnm = gsl_vector_alloc( F->getN() * F->getD() );
     gsl_vector_set_all(stepnm, opt->step); 
     gsl_multimin_fminimizer_set( solvernm, &fnm, x_vec, stepnm );
     break;
@@ -391,6 +324,11 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
       status_grad = gsl_multimin_test_gradient(
 		    gsl_multimin_fdfminimizer_gradient(solverqn), 
 		    opt->epsgrad );
+		    
+     status_dx = gsl_multifit_test_delta(solverqn->dx, 
+                                         solverqn->x, 
+					 opt->epsabs, 
+					 opt->epsrel);  		    
       if (opt->disp == SLRA_OPT_DISP_ITER) {
 	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
 	x_norm = gsl_blas_dnrm2(solverqn->x);
@@ -441,9 +379,9 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
     break;
   }
   
-  if (opt->disp == SLRA_OPT_DISP_ITER) {
+/*  if (opt->disp == SLRA_OPT_DISP_ITER) {
      opt->chol_time =  ((double)P->chol_time / CLOCKS_PER_SEC) / P->chol_count;
-  }
+  }*/
 
   
   /* print exit information */  
@@ -501,34 +439,52 @@ int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector*
 }
 
 
+static void checkAndComputeX( slraFlexCostFunction * F, gsl_matrix *x, opt_and_info* opt, int x_given ) {
+  if (x->size1 + x->size2 != F->getNplusD()) {
+    throw new slraException("Initial approximation doesn't conform to the structure" 
+                            "specification.\n");   
+  }      
+
+  if (!x_given) {  /* compute default initial approximation */
+    if (opt->disp == SLRA_OPT_DISP_ITER) {
+      PRINTF("X not given, computing TLS initial approximation.\n");
+    }
+    if (compute_tls(F->getSMatr(), F->getPerm(), x) ==  GSL_EINVAL) {
+      throw new slraException("Error while computing initial approximation.\n");   
+    }
+  }
+}
 
 
-int slra(gsl_vector* p, data_struct* s, gsl_matrix* x,
+int slra(gsl_vector* p, data_struct* s, int r, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix *perm, int perm_given ) {
-  /* slra_opt_data_old params;*/
-  slra_opt_data_reshaped params;
-  slra_opt_data_reshaped *P = &params;
-  if (slra_allocate_params(&params, p, s, x, v, opt, x_given, compute_ph, perm, perm_given) == GSL_EINVAL) {
-    return GSL_EINVAL;
-  }
+         gsl_matrix *perm ) {
+  slraFlexCostFunction * myCostFun = NULL;
+  int res = GSL_SUCCESS;
+
+  try { 
+    myCostFun =  new slraFlexCostFunction(slraFlexStructure(s, p->size), r, p, opt, perm);
+    checkAndComputeX(myCostFun, x, opt, x_given);
   
-  time_t t_b = clock();
+    time_t t_b = clock();
+    gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
+    int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), v);
+    opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
-  gsl_vector_view x_vec;
-  x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
-  
-  int status = slra_gsl_optimize(&params, opt, &(x_vec.vector), v);
- 
-  opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
-
-  if (compute_ph) {
-    slra_correction_reshaped(p, s, &params, &(x_vec.vector));
+    if (compute_ph) {
+      myCostFun->computeCorrection(p, &(x_vec.vector));
+    }
+  } catch ( slraException *e ) {
+    res = GSL_EINVAL;
+    PRINTF(e->getMessage());
+    delete e;
   }
 
-  free_memory_reshaped(&params);
+  if (myCostFun != NULL) {
+    delete myCostFun;
+  }
 
-  return GSL_SUCCESS; /* <- correct with status */
+  return res;
 }
 
 /*#define P ((slra_opt_data*) params)*/
