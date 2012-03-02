@@ -553,7 +553,7 @@ extern "C" {
 /* TODO: replace with something that uses printf. 
    #define print_vec(v) gsl_vector_fprintf(stdout,v,"%16.14f") */
 
-void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *,
+/*void xmat2_block_of_xext( gsl_matrix_const_view, gsl_matrix *,
 			  gsl_matrix *, gsl_matrix *);
 
 void allocate_and_prepare_data_reshaped( gsl_matrix* c, int n,
@@ -575,7 +575,7 @@ int slra_allocate_params( void *pparams, gsl_vector* p, data_struct* s, gsl_matr
          gsl_matrix *perm, int perm_given  );
 int slra_gsl_optimize( slra_opt_data_reshaped *P, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );  
 
-void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );
+void grad_reshaped( slra_opt_data_reshaped* P, gsl_vector* grad );*/
 
 #endif
 
