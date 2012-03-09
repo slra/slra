@@ -92,7 +92,7 @@ int tls(gsl_matrix* a, gsl_matrix* b, gsl_matrix* x)
 }
 
 
-static void checkAndComputeX( slraFlexCostFunction * F, gsl_matrix *x, opt_and_info* opt, int x_given ) {
+static void checkAndComputeX( slraCostFunction * F, gsl_matrix *x, opt_and_info* opt, int x_given ) {
   if (x->size1 + x->size2 != F->getNplusD()) {
     throw new slraException("Initial approximation doesn't conform to the structure" 
                             "specification.\n");   
@@ -108,17 +108,16 @@ static void checkAndComputeX( slraFlexCostFunction * F, gsl_matrix *x, opt_and_i
   }
 }
 
-int slra(gsl_vector* p, data_struct* s, int r, gsl_matrix* x,
-         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
+int slra(gsl_vector *p, slraStructure* s, int r, gsl_matrix* x,
+         gsl_matrix *v, opt_and_info* opt, int x_given, int compute_ph,
          gsl_matrix *perm ) {
-  slraFlexCostFunction * myCostFun = NULL;
+  slraCostFunction * myCostFun = NULL;
   int res = GSL_SUCCESS;
 
   try { 
-    PRINTF("Hello!\n");
-    myCostFun =  new slraFlexCostFunction(slraFlexStructure(s, p->size), r, p, opt, perm);
-    PRINTF("Hello 2!\n");
+    myCostFun =  new slraCostFunction(s, r, p, opt, perm);
     checkAndComputeX(myCostFun, x, opt, x_given);
+    
   
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);

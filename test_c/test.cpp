@@ -48,7 +48,11 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   
-  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
+  slraFlexStructure *myStruct = NULL;
+  
+//  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
+
+  int s_k,  s_q;
   opt_and_info opt;
   
   slraAssignDefOptValues(opt);
@@ -90,26 +94,44 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       fprintf(log, "Error opening file %s\n", fsname);
       throw 1;
     }
-    fscanf(file, "%d %d %d %d %d %d", &m, &n, &d, &s.k, &s.q, &np); 
-    if ((s.k <= 0) || (m % s.k != 0)) {
-      fprintf(log, "Bad k: %d \n", s.k);
-    }
+    fscanf(file, "%d %d %d %d", &m, &n, &s_k, &s_q); 
 
-    if ((s.q <= 0) || (s.q > 10)) {
-	    fprintf(log, "Bad k: %d \n", s.k);
-	    throw 1;
+    if ((s_k <= 0) || (m % s_k != 0)) {
+      throw new slraException("Bad k: %d \n", s_k);
+    }
+    if ((s_q <= 0) || (s_q > 10)) {
+      throw new slraException( "Bad q: %d \n", s_q);
     }
     
-    for (i = 0; i < s.q; i++)  {
-      fscanf(file, "%d %d %d %d", &(s.a[i].blocks_in_row), &(s.a[i].nb), &(s.a[i].exact), &(s.a[i].toeplitz)); 
+    PRINTF("Hello!! m = %d, k = %d, n = %d, q = %d \n", m, s_k, n, s_q);
+    
+    
+    double *str_arr = new double[s_q * 4];
+
+    for (i = 0; i < s_q; i++)  {
+      fscanf(file, "%lf %lf %lf %lf", &(str_arr[i]),&(str_arr[i + s_q]), &(str_arr[i+2*s_q]),&(str_arr[i+3*s_q]));
     }
+
+    PRINTF("Hello!! \n");
+
+    
+/*    slraFlexStructure::slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m, bool set_m  ) :*/
+    myStruct = new slraFlexStructure(str_arr, s_q, s_k, 4, m, true);
+    d = myStruct->getNplusD() - n;
+    np = myStruct->getNp();
+    
+
+
+    
+    delete [] str_arr;
+
     fclose(file);
 
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
 
-
+    PRINTF("Hello!! np = %d, d = %d, k = %d\n", np, d, s_k);
     
     x_given = read_mat(x, fxname, log);
 
@@ -128,6 +150,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
+    
+
     read_mat(xt, fxtname, log);
 
     if (((v = gsl_matrix_alloc(n*d, n*d)) == NULL)) {
@@ -138,10 +162,10 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       opt.disp = 0;
     }
 
-
+    
     
     /* call stls */  
-    slra(p, &s, n, x, v, &opt, x_given, 1 /* Compute correction */, NULL);
+    slra(p, myStruct, n, x, v, &opt, x_given, 1 /* Compute correction */, NULL);
 
     if (!silent) {
       print_mat(x);
@@ -210,6 +234,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     if (p2 != NULL) {
       gsl_vector_free(p2);
+    }
+    if (myStruct != NULL) {
+      delete myStruct;
     }
   }
 }

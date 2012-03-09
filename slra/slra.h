@@ -242,20 +242,16 @@ public:
 class slraGammaComputations {
 public:  
   virtual  ~slraGammaComputations() {}
-  virtual const double *getPackedCholesky() = 0;
   virtual void computeCholeskyOfGamma( gsl_matrix *R ) = 0;
-  virtual void multiplyInvCholeskyArray( double * yr, int trans, int rep = 1 ) = 0;  /*  yr - I/O */
- 
-  virtual void multiplyInvGammaArray( double * yr ) = 0;  /* yr - I/O */
 
-  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
-    multiplyInvCholeskyArray(yr->data, trans, 1);
+  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
+  virtual void multiplyInvGammaVector( gsl_vector * yr ) = 0;                
+  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { /* Default implementation */
+    for (int i = 0; i < yr_matr->size1; i++) {
+      gsl_vector_view row = gsl_matrix_row(yr_matr, i);
+      multiplyInvCholeskyVector(&row.vector, trans);
+    }
   }
-  virtual void multiplyInvGammaVector( gsl_vector * yr ){
-    multiplyInvGammaArray(yr->data);
-  }
-  
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f ) = 0;
 };
 
 class slraDerivativeComputations {
@@ -277,16 +273,24 @@ public:
   virtual int getM() const = 0;
   virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const = 0; 
   
-  virtual slraStructure *clone() = 0;
   virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma ) = 0;
   virtual slraDerivativeComputations *createDerivativeComputations( int r ) = 0;
+  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f ) = 0;
+};
+
+
+
+class slraWkInterface {
+public:
+  virtual const gsl_matrix *getWk( int k )  const = 0; 
+  virtual int getS() const  = 0;
+  virtual int getNplusD() const = 0;
 };
 
 
 
 
-
-class slraFlexStructure : public slraStructure {
+class slraFlexStructure : virtual public slraStructure, virtual public slraWkInterface {
   int myK;                      /* = rowdim(block in T/H blocks) */ 
   int myQ;	                /* number of blocks in C = [C1 ... Cq] */
   
@@ -303,28 +307,33 @@ class slraFlexStructure : public slraStructure {
   gsl_matrix **myA;
   
 
-  slraFlexBlock mySA[MAXQ];	/* q-element array describing C1,...,Cq; */  
+  slraFlexBlock *mySA;	/* q-element array describing C1,...,Cq; */  
 public:
   slraFlexStructure( const slraFlexStructure &s ); /* Copy constructor */
   slraFlexStructure( const data_struct *s, int np = -1 ); /* "Copy" constructor */
-  slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np = -1 );
+  slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m = -1, bool set_m = false );
   virtual ~slraFlexStructure();
 
 
   virtual int getNp() const { return myNp; }
   virtual int getNplusD() const { return myNplusD; }
   virtual int getM() const { return (myNp - myNpOffset) / myNpScale; }
-  virtual slraStructure *clone();
   virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma );
   virtual slraDerivativeComputations *createDerivativeComputations( int r );
 
 
-  void setNp( int np, bool check_solvability = true );
+
+  void setNp( int np );
+  void setM( int m );
+  
   int getQ() const { return myQ; }
   int getK() const { return myK; }
 
   int getMaxLag() const { return myMaxLag; }
-  int getS() const { return myMaxLag; }
+
+  int getNpOffset() const { return myNpOffset; }
+  int getNpScale() const { return myNpScale; }
+
   
 //  const slraFlexBlock & getFlexBlock( int i ) const { return mySA[i]; }
   
@@ -338,16 +347,14 @@ public:
   int getFlexBlockNp( int l ) const { return getFlexBlockT(l) * getK() * getFlexBlockNb(l); }
   
   virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const ; 
-  
-  const gsl_matrix *getWk( int k )  const { 
+  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f );
+
+
+  virtual int getS() const { return myMaxLag; }
+  virtual const gsl_matrix *getWk( int k ) const { 
     return myA[k]; 
   }
-
 };
-
-
-
-
 
 
 class slraFlexGammaComputations : virtual public slraGammaComputations {
@@ -355,13 +362,15 @@ protected:
   int my_use_slicot;
   double my_reg_gamma;
   
-  slraFlexStructure *myW;
-  int myM, myN, myD, myK;
+  const slraWkInterface *myW;
   
-  int m_div_k;
+  int myN, myD;
+  
+  int myMg;
+  
   int s_minus_1;
   int d_times_s;
-  int d_times_m_div_k;
+  int d_times_Mg;
   int d_times_s_minus_1;
   
   int myCholeskyWorkSize;
@@ -373,37 +382,59 @@ protected:
   double *myCholeskyWork;
   
 public:
-  slraFlexGammaComputations( slraFlexStructure *s, int r, 
+  slraFlexGammaComputations( const slraWkInterface *s, int r, int Mg,
      int use_slicot, double reg_gamma  );
   virtual ~slraFlexGammaComputations();
 
-  virtual const double *getPackedCholesky() { return myPackedCholesky; }
-  virtual void computeCholeskyOfGamma( gsl_matrix *R );
-  virtual void multiplyInvCholeskyArray( double * yr, int trans, int rep = 1 );
-  virtual void multiplyInvGammaArray( double * yr );
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f );
-};
+  int getD() const { return myD; }
 
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+
+  virtual void multiplyInvPartCholeskyArray( double * yr, int trans, int size, int chol_size );
+  virtual void multiplyInvPartGammaArray( double * yr, int size, int chol_size );
+
+
+  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
+    if (yr->stride != 1) {
+      throw new slraException("Cannot multiply vectors with stride != 1\n");
+    }
+    multiplyInvPartCholeskyArray(yr->data, trans, yr->size, d_times_Mg);
+  }
+  virtual void multiplyInvGammaVector( gsl_vector * yr ) {
+    if (yr->stride != 1) {
+      throw new slraException("Cannot multiply vectors with stride != 1\n");
+    }
+    multiplyInvPartGammaArray(yr->data, yr->size, d_times_Mg);
+  }
+
+  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) {
+    if (yr_matr->size2 != yr_matr->tda) {
+      slraGammaComputations::multiplyInvCholeskyTransMatrix(yr_matr, trans);
+    } else {
+      multiplyInvPartCholeskyArray(yr_matr->data, trans, yr_matr->size1 * yr_matr->size2, d_times_Mg);
+    }
+  }
+
+};
 
 class slraFlexDerivativeComputations : virtual public 
                                        slraDerivativeComputations {
-  slraFlexStructure *myW;
-  int myM, myN, myD, myK;
-  
-  int d_times_m_div_k;
-  int m_div_k;
+  const slraWkInterface *myW;
+  int  myD, myK;
   
   gsl_vector *myTempWkColRow;
   gsl_matrix *myDGamma;
   
   gsl_matrix *myWk_R;
   gsl_matrix *myWkT_R;
-  gsl_matrix *mySubPhiTmp;
   gsl_matrix *myN_k;
 
 public:
-  slraFlexDerivativeComputations( slraFlexStructure *s, int r );
+  slraFlexDerivativeComputations( const slraWkInterface *s, int r, int K );
   virtual ~slraFlexDerivativeComputations();
+
+  int getD() const { return myD; }
+
   
   virtual void computeYrtDgammaYr( gsl_matrix *mgrad_r, gsl_matrix *R, gsl_vector *yr );
   virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
@@ -412,8 +443,84 @@ public:
 };
 
 
+class slraFlexStructureExt : public slraStructure {
+  slraFlexStructure mySimpleStruct;
 
-class slraFlexCostFunction {
+  int myN;
+  int *myOldMl;
+  double *myWk;
+  int myMaxMl;
+  
+  
+  /* Helper variables */
+  int myM;
+  int myNp;
+
+public:
+  slraFlexStructureExt( int q, int N, double *oldNk, double *oldMl, double *Wk );
+  virtual ~slraFlexStructureExt();
+  
+  virtual int getM() const { return myM; }
+  virtual int getNp() const { 
+    return mySimpleStruct.getNpOffset() * myN + mySimpleStruct.getNpScale() * myM; 
+  }
+  virtual int getNplusD() const { return mySimpleStruct.getNplusD(); }
+
+
+  virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma );
+  virtual slraDerivativeComputations *createDerivativeComputations( int r );
+
+
+  int getMl( int k ) const { return myOldMl[k]; }
+  int getMaxMl() const { return myMaxMl; }
+  int getBlocksN() const { return myN; }
+
+  
+  const slraWkInterface *getWkInterface() const { return &mySimpleStruct; }
+
+  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) = 0;
+};
+
+
+
+class slraFlexGammaComputationsExt : public slraGammaComputations {
+  slraFlexGammaComputations myBase;
+  slraFlexStructureExt *myStruct;
+public:  
+  slraFlexGammaComputationsExt( slraFlexStructureExt *s, int r, int use_slicot, double reg_gamma  ) :
+      myStruct(s), myBase(myStruct->getWkInterface(), r, myStruct->getMaxMl(), use_slicot, reg_gamma) {}
+  virtual ~slraFlexGammaComputationsExt() {}
+  
+  virtual void computeCholeskyOfGamma( gsl_matrix *R ) {
+    myBase.computeCholeskyOfGamma(R);
+  }
+  
+  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
+  virtual void multiplyInvGammaVector( gsl_vector * yr );                
+};
+
+
+
+class slraFlexDerivativeComputationsExt : virtual public 
+                                       slraDerivativeComputations {
+  slraFlexDerivativeComputations myBase;
+  slraFlexStructureExt *myStruct;
+  gsl_matrix *myTmpGrad;
+public:  
+  slraFlexDerivativeComputationsExt( slraFlexStructureExt *s, int r  ) ;
+  virtual ~slraFlexDerivativeComputationsExt();
+
+  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );
+
+  virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+                   gsl_matrix *perm, int i, int j, gsl_vector *Yr );
+
+};
+
+
+
+
+class slraCostFunction {
   slraStructure *myStruct;
   int myRank;
   slraGammaComputations *myGam;
@@ -437,9 +544,8 @@ class slraFlexCostFunction {
 
 public:
 
-  slraFlexCostFunction( slraFlexStructure s, int r, gsl_vector *p, 
-                        opt_and_info *opt, gsl_matrix *perm  );
-  virtual ~slraFlexCostFunction();
+  slraCostFunction( slraStructure *s, int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  );
+  virtual ~slraCostFunction();
   
   int getD() { return myStruct->getNplusD() - myRank; }
   int getNplusD() { return myStruct->getNplusD(); }
@@ -471,36 +577,36 @@ public:
   void  computeCorrection( gsl_vector* p, const gsl_vector* x );
   
   static int slra_f_ls( const gsl_vector* x, void* params, gsl_vector *res ) {
-    ((slraFlexCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, NULL);
+    ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, NULL);
     return GSL_SUCCESS;
   }
   static int slra_df_ls( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
-    ((slraFlexCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, NULL, jac);
+    ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, NULL, jac);
     return GSL_SUCCESS;
   }
   static int slra_fdf_ls( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
-    ((slraFlexCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, jac);
+    ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, jac);
     return GSL_SUCCESS;
   }
 
 
   static double  slra_f( const gsl_vector* x, void* params ) {
     double f;
-    ((slraFlexCostFunction *)params)->computeFuncAndGrad(x, &f, NULL);
+    ((slraCostFunction *)params)->computeFuncAndGrad(x, &f, NULL);
     return f;
   }
   static void  slra_df( const gsl_vector* x, void* params, gsl_vector *grad ) {
-    ((slraFlexCostFunction *)params)->computeFuncAndGrad(x, NULL, grad);
+    ((slraCostFunction *)params)->computeFuncAndGrad(x, NULL, grad);
   }
   static void  slra_fdf( const gsl_vector* x, void* params, double *f, gsl_vector *grad ) {
-    ((slraFlexCostFunction *)params)->computeFuncAndGrad(x, f, grad);
+    ((slraCostFunction *)params)->computeFuncAndGrad(x, f, grad);
   }
 };
 
-int slra_gsl_optimize( slraFlexCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );
+int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );
 
 /* Prototypes of functions */
-int slra(gsl_vector* p, data_struct* s, int rank, gsl_matrix* x,
+int slra(gsl_vector* p, slraStructure * s, int rank, gsl_matrix* x,
          gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
          gsl_matrix* perm);
 	

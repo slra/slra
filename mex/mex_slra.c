@@ -84,7 +84,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   gsl_matrix *x = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL;
   gsl_vector_view vec_p;
-  data_struct s;
+  int myK;
+//  data_struct s;
   opt_and_info opt;
   char str_buf[STR_MAX_LEN];
   gsl_error_handler_t * old_gsl_error_handler = NULL;
@@ -131,7 +132,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       mexErrMsgTxt("Error in the structure specification : field " \
 		   NUM_ROLES_STR " undefined.");
     }
-    s.k = (int) mxGetScalar(field);
+    myK = (int) mxGetScalar(field);
 
     if ((strArray = mxGetField(prhs[1], 0, ARRAY_STR)) == NULL) {
       mexErrMsgTxt("Error in the structure specification : field " \
@@ -139,7 +140,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }
   } else {
     /* in this case k = 1, and prhs[1] is the array */
-    s.k = 1;
+    myK = 1;
     strArray = prhs[1];
   }
   if (mxGetN(strArray) < 1 || mxGetN(strArray) > 4) {
@@ -150,10 +151,14 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mexErrMsgTxt("Error in the structure specification : size(s." \
 		 ARRAY_STR ",1) < 1 or > 10.");
   }
+  
+  
+  slraFlexStructure myStruct(mxGetPr(strArray), mxGetM(strArray), myK, mxGetN(strArray), np);
+  n_plus_d = myStruct.getNplusD();
 
   /* Create s and check structure specification */
-  n_plus_d = slraMatrix2Struct(&s, mxGetPr(strArray),
-                 mxGetM(strArray), mxGetN(strArray));
+//  n_plus_d = slraMatrix2Struct(&s, mxGetPr(strArray),
+//                 mxGetM(strArray), mxGetN(strArray));
 
   /* Get r (rank) */
   if (nrhs > 2) {
@@ -262,7 +267,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* Call the solver */
   /* --------------- */
 
-  slra(p, &s, x, v, &opt, has_x, (nlhs > 3), perm, has_perm);
+
+  slra(p, &myStruct, n, x, v, &opt, has_x,  (nlhs > 3), (has_perm ? perm : (gsl_matrix * )NULL));
 
   /* ------------------ */
   /* Assign the outputs */

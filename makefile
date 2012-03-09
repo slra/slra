@@ -15,7 +15,7 @@ SLRA_OBJ_FILES = slra.o  slra_common.o slra_func.o slra_computation.o slra_flex_
 		slra_flex_derivative.o slra_flex_cholesky.o slra_optimize.o #slra_func_old.o
 SLRA_INCLUDE_DIR = slra
 SLRA_INCLUDE_FILES = slra/slra.h
-MEX_SRC_FILES = mex/mex_slra.c
+MEX_SRC_FILES = mex/mex_slra.cpp
 
 INC_FLAGS =  -I./$(SLRA_INCLUDE_DIR) # -I/home/kdu/local/include -g
 OPT_FLAGS = -O -pg # gprof ./test gmon.out > gmon.txt

@@ -15,9 +15,9 @@ extern "C" {
 #include "slra.h"
 
 
-slraFlexCostFunction::slraFlexCostFunction( slraFlexStructure s, 
+slraCostFunction::slraCostFunction( slraStructure *s, 
     int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r) {
-  myStruct = s.clone();     
+  myStruct = s; //.clone();     
   myGam = myStruct->createGammaComputations(r, opt->reggamma);
   myDeriv = myStruct->createDerivativeComputations(r);
       
@@ -61,9 +61,9 @@ slraFlexCostFunction::slraFlexCostFunction( slraFlexStructure s,
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myMatr, myPerm, 0.0, myMatrMulPerm);
 }
   
-slraFlexCostFunction::~slraFlexCostFunction() {
+slraCostFunction::~slraCostFunction() {
 
-  delete myStruct;     
+//  delete myStruct;     
   delete myGam;
   delete myDeriv;
 
@@ -85,7 +85,7 @@ slraFlexCostFunction::~slraFlexCostFunction() {
 
 
 
-void slraFlexCostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R ) { 
+void slraCostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R ) { 
   gsl_vector_view diag;
   gsl_matrix_view submat;
   int n = x_mat.matrix.size1, d = x_mat.matrix.size2;
@@ -102,12 +102,12 @@ void slraFlexCostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R )
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myPerm, myTmpGradR, 0.0, R);
 }
 
-void slraFlexCostFunction::computeR( const gsl_vector * x, gsl_matrix *R ) { 
+void slraCostFunction::computeR( const gsl_vector * x, gsl_matrix *R ) { 
   computeR(gsl_matrix_const_view_vector(x, myRank, getD()), R);
 }
 
 
-void slraFlexCostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
+void slraCostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
   gsl_matrix_view SrMat = gsl_matrix_view_vector(Sr, getM(), getD()); 
 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myMatr, R, 0.0, &SrMat.matrix);
@@ -115,7 +115,7 @@ void slraFlexCostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
 
 
 
-void slraFlexCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, gsl_vector *grad ) {
+void slraCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, gsl_vector *grad ) {
   computeRGammaSr(x, myTmpR, myTmpYr);
 
   if (f != NULL) {
@@ -134,7 +134,8 @@ void slraFlexCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, 
 
 
 
-void slraFlexCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
+void slraCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
+ 
   computeRGammaSr(x, myTmpR, myTmpYr);
   if (res != NULL) {
     myGam->multiplyInvCholeskyVector(myTmpYr, 1);
@@ -148,9 +149,10 @@ void slraFlexCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, 
     }
     computePseudoJacobianLsFromYr(myTmpYr, myTmpR, jac);
   } 
+
 }
 
-void slraFlexCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac ) {
+void slraCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac ) {
   int i, j, k;
 
   /* Compute first term of the jacobian */                                    
@@ -165,7 +167,8 @@ void slraFlexCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_m
       }
     }
   }
-  myGam->multiplyInvCholeskyArray(myTmpJacobianArray, 1, getN() * getD());
+  
+  myGam->multiplyInvCholeskyTransMatrix(&tmp_jac_trans.matrix, 1);
   gsl_matrix_vec_inv(jac, myTmpJacobianArray);
   
   /* second term (naive implementation) */
@@ -175,6 +178,7 @@ void slraFlexCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_m
     for (j = 0; j < getD(); j++) {
       myDeriv->computeDijGammaYr(myTmpJacobianCol, R, myPerm, i, j, yr);
       myGam->multiplyInvCholeskyVector(myTmpJacobianCol, 1);
+
       gsl_matrix_set_col(&tmp_jac.matrix, i * getD() + j, myTmpJacobianCol);  
     }
   }
@@ -183,7 +187,7 @@ void slraFlexCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_m
   gsl_matrix_sub(jac, &tmp_jac.matrix);
 }
 
-void slraFlexCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad ) {
+void slraCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad ) {
   gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getM(), getD());
   gsl_matrix_view grad_matr = gsl_matrix_view_vector(grad, getN(), getD());
   gsl_matrix_view perm_sub_matr = gsl_matrix_submatrix(myPerm, 0, 0, getNplusD(), getN());
@@ -198,10 +202,10 @@ void slraFlexCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl
 }
 
 
-void slraFlexCostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
+void slraCostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   computeRGammaSr(x, myTmpR, myTmpYr);
   myGam->multiplyInvGammaVector(myTmpYr);
-  myGam->correctVector(p, myTmpR, myTmpYr);
+  myStruct->correctVector(p, myTmpR, myTmpYr);
 }
 
 
