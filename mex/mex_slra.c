@@ -39,19 +39,15 @@
 #define FMIN_STR "fmin"
 #define ITER_STR "iter"
 #define TIME_STR "time"
-
-
+#define METHOD_STR "method"
 void SLRA_mex_error_handler(const char * reason, const char * file, int line, int gsl_errno) {
   char err_msg[250];
 
   sprintf(err_msg, "GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
-
-
   mexErrMsgTxt(err_msg);
 }
 
-
- void tolowerstr( char * str ) {
+void tolowerstr( char * str ) {
   char *c;
   for (c = str; *c != '\0'; c++) {
     *c = tolower(*c);
@@ -239,7 +235,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		      STR_MAX_LEN); 
 	  tolowerstr(str_buf);
 	  opt.disp = slraString2Disp(str_buf);  
- 	} else if (! strcmp(field_name, "method")) {
+ 	} else if (! strcmp(field_name, METHOD_STR)) {
           mxGetString(mxGetFieldByNumber(prhs[4], 0, l), str_buf, 
                STR_MAX_LEN); 
           tolowerstr(str_buf);
@@ -281,7 +277,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* output info */
   if (nlhs > 1) {
     l = 1;
-    const char *field_names[] = {FMIN_STR, ITER_STR, TIME_STR};
+    const char *field_names[] = {FMIN_STR, ITER_STR, TIME_STR, METHOD_STR};
     mxArray *temp;
     plhs[1] = mxCreateStructArray(1, &l, 3, field_names);
     temp = mxCreateDoubleScalar( opt.fmin ); 
@@ -290,6 +286,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxSetField(plhs[1], 0, ITER_STR, temp);
     temp = mxCreateDoubleScalar( opt.time ); 
     mxSetField(plhs[1], 0, TIME_STR, temp);
+    /* mxSetField(plhs[1], 0, METHOD_STR, method); */
   }
 
   /* covariance matrix */

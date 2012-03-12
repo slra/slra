@@ -12,7 +12,7 @@
 #define PRINTF Rprintf
 #define WARNING Rprintf
 
-#elif defined(BUILD_MEX_OCTAVE) ||  defined(BUILD_MEX_MATLAB)
+#elif defined(BUILD_MEX_OCTAVE) || defined(BUILD_MEX_MATLAB)
 
 #include "mex.h"
 #define PRINTF mexPrintf
@@ -40,13 +40,10 @@
 extern "C" {
 #endif
 
-
 #define SLRA_OPT_DISP_NOTIFY   0
 #define SLRA_OPT_DISP_FINAL    1
 #define SLRA_OPT_DISP_ITER     2
 #define SLRA_OPT_DISP_OFF      3
-
-
 
 #define SLRA_OPT_METHOD_LM   0
 #define SLRA_OPT_METHOD_QN   1
@@ -54,7 +51,6 @@ extern "C" {
 
 #define SLRA_OPT_SUBMETHOD_LM_LMDER         0
 #define SLRA_OPT_SUBMETHOD_LM_LMSDER        1
-
 
 #define SLRA_OPT_SUBMETHOD_QN_BFGS          0
 #define SLRA_OPT_SUBMETHOD_QN_BFGS2         1
@@ -64,6 +60,9 @@ extern "C" {
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX       0
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2      1
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2_RAND 2
+
+extern char meth_codes[];
+extern char *submeth_codes[];
 
 /* optimization options and output information structure */
 typedef struct {
@@ -125,8 +124,6 @@ typedef struct {
             slraAssignDefOptValue(opt, use_slicot); \
           } while(0)
           
-          
-
 /* structure in the data matrix C = [ A B ] */ 
 #define MAXQ 10	/* maximum number of blocks in C */
 
@@ -304,7 +301,6 @@ class slraFlexStructure : virtual public slraStructure, virtual public slraWkInt
   int myNpScale, myNpOffset;
   int myMaxLag;
 
-  
   void computeStats();
   void computeWkParams(); 
 
@@ -659,6 +655,7 @@ int slraMatrix2Struct( data_struct *s, double *s_matr,
                        int q, int s_matr_cols );
 void slraString2Method( const char *str_buf, opt_and_info *popt );
 int slraString2Disp( const char *str_value );
+
 #ifdef __cplusplus
 }
 #endif

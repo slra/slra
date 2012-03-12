@@ -119,7 +119,6 @@ void slraCostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
 }
 
 
-
 void slraCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, gsl_vector *grad ) {
   computeRGammaSr(x, myTmpR, myTmpYr);
 
@@ -137,8 +136,6 @@ void slraCostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, gsl_
   }
 }
 
-
-
 void slraCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
  
   computeRGammaSr(x, myTmpR, myTmpYr);
@@ -154,9 +151,6 @@ void slraCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_
     }
     computePseudoJacobianLsFromYr(myTmpYr, myTmpR, jac);
   } 
-
-      
-
 }
 
 void slraCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac ) {
@@ -215,7 +209,6 @@ void slraCostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   myGam->multiplyInvGammaVector(myTmpYr);
   myStruct->correctVector(p, myTmpR, myTmpYr);
 }
-
 
 /*
 

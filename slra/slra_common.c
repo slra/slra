@@ -17,13 +17,13 @@ int slraMatrix2Struct( data_struct* ps, double *s_matr,
   return n_plus_d;
 }
 
+char meth_codes[] = "lqn";
+char submeth_codes_lm[] = "ls";
+char submeth_codes_qn[] = "b2pf";
+char submeth_codes_nm[] = "n2r";
+char *submeth_codes[] = {submeth_codes_lm, submeth_codes_qn, submeth_codes_nm};
+
 void slraString2Method( const char *str_buf, opt_and_info *popt )  {
-  char meth_codes[] = "lqnm";
-  char submeth_codes_lm[] = "ls";
-  char submeth_codes_qn[] = "b2pf";
-  char submeth_codes_nm[] = "n2r";
-  char *submeth_codes[] = { submeth_codes_lm, submeth_codes_qn, 
-            submeth_codes_nm };
   int submeth_codes_max[] = { 
     sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) - 1, 
     sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) - 1, 
@@ -32,7 +32,6 @@ void slraString2Method( const char *str_buf, opt_and_info *popt )  {
   };
 
   int i;
-
 
   for (i = sizeof(meth_codes)/sizeof(meth_codes[0]) - 1; i >= 0; i--)  {
     if (str_buf[0] == meth_codes[i]) {
