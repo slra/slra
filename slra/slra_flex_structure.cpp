@@ -1,3 +1,6 @@
+#include <limits>
+
+
 #include <memory.h>
 #include <cstdarg>
 
@@ -49,14 +52,26 @@ slraFlexStructure::slraFlexStructure( const slraFlexStructure &s ) :
 
 
 
-slraFlexStructure::slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m, bool set_m  ) :
+slraFlexStructure::slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m, bool set_m, 
+                                      const double *w_k  ) :
                                       myQ(q), myK(k), mySA(NULL)  {
+  DEBUGINT(w_k);      
+
   mySA = new slraFlexBlock[myQ];
   for (int l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = *(s_matr + l);
     mySA[l].nb = (s_matr_cols > 1) ? *(s_matr + myQ + l): 1;
     mySA[l].exact = (s_matr_cols > 2) ? *(s_matr + 2 * myQ + l): 0;
     mySA[l].toeplitz = (s_matr_cols > 3) ? *(s_matr + 3 * myQ + l): 0;
+    
+    if (w_k != NULL) {
+      if (w_k[l] != std::numeric_limits<double>::infinity() && w_k[l] <= 0) {
+        throw new slraException("This value of weight is not supported: %lf\n", w_k[l]);
+      }
+      mySA[l].inv_w = 1 / w_k[l];
+    } else {
+      mySA[l].inv_w = 1;
+    }
   }    
    
   computeStats(); 
@@ -95,7 +110,7 @@ slraFlexStructure::slraFlexStructure( const data_struct *s, int np ) : myQ(s->q)
   setNp(np);                                      
 }
 
-void slraFlexStructure::fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const {
+void slraFlexStructure::fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  {
   int sum_np = 0, sum_nl = 0;
   int m_div_k = getM() / getK();
   int l,j, k, L;
@@ -139,6 +154,7 @@ void slraFlexStructure::computeWkParams() {
     zk   = gsl_matrix_alloc(getNplusD(), getNplusD());
     gsl_matrix_set_zero(zk);
     sum_nl = 0;
+
     for (l = 0; l < getQ(); l++) { 
       ncol = getFlexBlockNCol(l);
       zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, ncol, ncol); 
@@ -154,6 +170,8 @@ void slraFlexStructure::computeWkParams() {
 	  }
 	}
       } 
+      gsl_matrix_scale(&zkl.matrix, getInvBlockWeight(l));
+
       sum_nl += ncol;
     }
     myA[k] = zk;
@@ -175,7 +193,6 @@ void slraFlexStructure::computeStats() {
       myMaxLag = mySA[l].blocks_in_row;
     }
   }
-  
 }
 
 
@@ -198,7 +215,7 @@ void slraFlexStructure::setNp( int np ) {
 }
 
 
-void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f ) {
+void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
   int l, j, k, i, L, T;
   int sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix_view  p_matr_chunk, p_matr_chunk_sub;
@@ -208,7 +225,7 @@ void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector 
   gsl_vector *res;
   double tmp;
 
-  brgf_matr = gsl_matrix_view_vector(f, getM(), R->size2);
+  brgf_matr = gsl_matrix_view_vector(yr, getM(), R->size2);
     
   /* Create reversed Xext matrix for Toeplitz blocks */
   xext_rev = gsl_matrix_alloc(R->size1, R->size2); 
@@ -240,7 +257,7 @@ void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector 
     res_sub = gsl_vector_subvector(res, 0, ncol);
     res_sub_matr = gsl_matrix_view_vector(&res_sub.vector, L, getFlexBlockNb(l));
     /* Subtract correction if needed */
-    if (!isFlexBlockExact(l)) {
+    if (!isFlexBlockExact(l) && (getInvBlockWeight(l) != 0.0)) {
       p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T, getFlexBlockNb(l) * getK());
       for (j = 0; j < getK(); j++) {
         for (k = 0; k < (getM() / getK()); k++) {
@@ -249,6 +266,7 @@ void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector 
           brgf_matr_row = gsl_matrix_row(&brgf_matr.matrix, k + j * (getM() / getK())); 
           gsl_blas_dgemv(CblasNoTrans, 1.0, &b_xext.matrix, 
 			 &brgf_matr_row.vector, 0.0, &res_sub.vector);
+	  gsl_vector_scale(&res_sub.vector, sqrt(getInvBlockWeight(l)));
           gsl_matrix_sub(&p_matr_chunk_sub.matrix, &res_sub_matr.matrix); 
         }
       }
@@ -283,14 +301,17 @@ slraDerivativeComputations *slraFlexStructureExt::createDerivativeComputations( 
 
 
 slraFlexStructureExt::slraFlexStructureExt( int q, int N, double *oldNk, double *oldMl, double *Wk ) :
-    mySimpleStruct(oldNk, q, 1, 1), myN(N), myOldMl(NULL), myWk(NULL) {
+    mySimpleStruct(oldNk, q, 1, 1, -1, false, Wk), myN(N), myOldMl(NULL) {
   int k;  
+
   myOldMl = new int[N];  
-  myWk = new double[q];
+  /*myWk = new double[q];
   
   for (k = 0; k < q; k++) {
     myWk[k] = (Wk != NULL ? Wk[k] : 1);
-  }
+  }*/
+  
+
 
   myM = 0;
   myMaxMl = 0;
@@ -302,17 +323,17 @@ slraFlexStructureExt::slraFlexStructureExt( int q, int N, double *oldNk, double 
       myMaxMl = myOldMl[k];
     }
   }
+  
 }
 
 slraFlexStructureExt::~slraFlexStructureExt()  {
   if (myOldMl != NULL) {
     delete[] myOldMl;
   }
-  if (myWk != NULL) {
+/*  if (myWk != NULL) {
     delete[] myWk;
-  }
+  }*/
 }
-
 
 void slraFlexStructureExt::fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  {
   int n_row = 0, sum_np = 0;
@@ -327,5 +348,24 @@ void slraFlexStructureExt::fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  {
     mySimpleStruct.fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
   }
 }
+
+
+
+void slraFlexStructureExt::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
+  int n_row = 0, sum_np = 0;
+  gsl_vector_view sub_p;
+  gsl_vector_view sub_yr;
+  int D = R->size2;
+  
+  for (int k = 0; k < getBlocksN(); sum_np += mySimpleStruct.getNp(), n_row += getMl(k) * D, k++) {
+    sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
+    mySimpleStruct.setM(getMl(k));
+    sub_p = gsl_vector_subvector(p, sum_np, mySimpleStruct.getNp());
+  
+    mySimpleStruct.correctVector(&sub_p.vector, R, &sub_yr.vector);
+  }
+}
+
+
 
 

@@ -26,6 +26,9 @@
 
 #endif
 
+#define DEBUGINT(x) PRINTF("%s = %d\n", #x, x)
+#define DEBUGDOUBLE(x) PRINTF("%s = %f\n", #x, x)
+
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_multifit_nlin.h> /* Levenberge-Marquardt */
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
@@ -132,6 +135,7 @@ typedef struct {
   int nb;                  /* Number of columns in each small block */
   int exact;               /* 1 - exact block, 0 - not exact */  
   int toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
+  double inv_w;            /* Square root of inverse of the weight */
 } slraFlexBlock;
 
 typedef struct {
@@ -271,11 +275,11 @@ public:
   virtual int getNp() const = 0;
   virtual int getNplusD() const = 0;
   virtual int getM() const = 0;
-  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const = 0; 
+  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  = 0; 
   
   virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma ) = 0;
   virtual slraDerivativeComputations *createDerivativeComputations( int r ) = 0;
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f ) = 0;
+  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
 };
 
 
@@ -311,17 +315,15 @@ class slraFlexStructure : virtual public slraStructure, virtual public slraWkInt
 public:
   slraFlexStructure( const slraFlexStructure &s ); /* Copy constructor */
   slraFlexStructure( const data_struct *s, int np = -1 ); /* "Copy" constructor */
-  slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m = -1, bool set_m = false );
+  slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m = -1, bool set_m = false, 
+                     const double *w_k = NULL );
   virtual ~slraFlexStructure();
-
 
   virtual int getNp() const { return myNp; }
   virtual int getNplusD() const { return myNplusD; }
   virtual int getM() const { return (myNp - myNpOffset) / myNpScale; }
   virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma );
   virtual slraDerivativeComputations *createDerivativeComputations( int r );
-
-
 
   void setNp( int np );
   void setM( int m );
@@ -334,7 +336,6 @@ public:
   int getNpOffset() const { return myNpOffset; }
   int getNpScale() const { return myNpScale; }
 
-  
 //  const slraFlexBlock & getFlexBlock( int i ) const { return mySA[i]; }
   
   int getFlexBlockLag( int l ) const { return mySA[l].blocks_in_row; }
@@ -342,12 +343,13 @@ public:
   int getFlexBlockNb( int l ) const { return mySA[l].nb; }
   bool isFlexBlockExact( int l ) const { return mySA[l].exact; }
   bool isFlexBlockToeplitz( int l ) const { return mySA[l].toeplitz; }
+  double getInvBlockWeight( int l ) const { return mySA[l].inv_w; }
   
   int getFlexBlockT( int l ) const { return getFlexBlockLag(l) + (getM() / getK()) - 1; }
   int getFlexBlockNp( int l ) const { return getFlexBlockT(l) * getK() * getFlexBlockNb(l); }
   
-  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) const ; 
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *f );
+  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ); 
+  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 
 
   virtual int getS() const { return myMaxLag; }
@@ -448,7 +450,7 @@ class slraFlexStructureExt : public slraStructure {
 
   int myN;
   int *myOldMl;
-  double *myWk;
+//  double *myWk;
   int myMaxMl;
   
   
@@ -476,9 +478,12 @@ public:
   int getBlocksN() const { return myN; }
 
   
-  const slraWkInterface *getWkInterface() const { return &mySimpleStruct; }
+  const slraWkInterface *getWkInterface() const { 
+    return &mySimpleStruct; 
+  }
 
-  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) = 0;
+  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) ;
+  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 };
 
 
@@ -488,7 +493,8 @@ class slraFlexGammaComputationsExt : public slraGammaComputations {
   slraFlexStructureExt *myStruct;
 public:  
   slraFlexGammaComputationsExt( slraFlexStructureExt *s, int r, int use_slicot, double reg_gamma  ) :
-      myStruct(s), myBase(myStruct->getWkInterface(), r, myStruct->getMaxMl(), use_slicot, reg_gamma) {}
+      myStruct(s), myBase(s->getWkInterface(), r, s->getMaxMl(), use_slicot, reg_gamma) {
+  }
   virtual ~slraFlexGammaComputationsExt() {}
   
   virtual void computeCholeskyOfGamma( gsl_matrix *R ) {
@@ -497,6 +503,8 @@ public:
   
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multiplyInvGammaVector( gsl_vector * yr );                
+  
+
 };
 
 

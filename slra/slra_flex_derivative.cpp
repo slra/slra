@@ -14,7 +14,7 @@ extern "C" {
 #include "slra.h"
 
 slraFlexDerivativeComputations::slraFlexDerivativeComputations( const slraWkInterface *s, int r, int K ) :
-    myK(K),/* myN(r),*/ myD(s->getNplusD() - r), myW(s) {
+    myK(K), myD(s->getNplusD() - r), myW(s) {
   
   myTempWkColRow = gsl_vector_alloc(myW->getNplusD());
   myDGamma = gsl_matrix_alloc(myD, myD * (2 * myW->getS() - 1));
@@ -122,7 +122,7 @@ void slraFlexDerivativeComputations::computeDijGammaYr( gsl_vector *res,
 
 
 slraFlexDerivativeComputationsExt::slraFlexDerivativeComputationsExt( slraFlexStructureExt *s, int r  ) :
-    myStruct(s), myBase(myStruct->getWkInterface(), r, 1) {
+    myStruct(s), myBase(s->getWkInterface(), r, 1) {
   myTmpGrad = gsl_matrix_alloc(myStruct->getNplusD(), myBase.getD());  
 }    
 

@@ -116,13 +116,15 @@ int slra(gsl_vector *p, slraStructure* s, int r, gsl_matrix* x,
 
   try { 
     myCostFun =  new slraCostFunction(s, r, p, opt, perm);
+
     checkAndComputeX(myCostFun, x, opt, x_given);
     
-  
+
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
     int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), v);
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
+
 
     if (compute_ph) {
       myCostFun->computeCorrection(p, &(x_vec.vector));

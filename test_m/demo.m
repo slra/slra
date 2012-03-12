@@ -1,7 +1,7 @@
 % DEMO - Demo file for structured low rank approximation
 clear all, rand('state', 0), randn('state', 0), addpath '..';
 
-
+opt.disp = 'iter';
 %% Least squares problem
 
 % Define dimensions and generate random data
@@ -14,7 +14,7 @@ tic, x_ls = a \ b; t_ls = toc
 
 % Define and solve the LS problem as a (very special) SLRA problem
 s_ls = [1 n 1; 1 d 0]; at = a'; bt = b'; p = [at(:); bt(:)];
-tic, [x_slra, i_slra] = slra(p, s_ls, n); t_slra = toc
+tic, [x_slra, i_slra] = slra(p, s_ls, n, [], opt); t_slra = toc
 error = x_slra - x_ls
 
 %% Low rank approximation problem
@@ -28,7 +28,7 @@ tic, x_lra = tls(D(:, 1:n), D(:, n + 1:end)); t_lra = toc,
 
 % Define and solve the LRA problem as an SLRA problem
 s_lra = [1 n + d]; Dt = D'; p = Dt(:);
-tic, [x_slra, i_slra] = slra(p, s_lra, n); t_slra = toc
+tic, [x_slra, i_slra] = slra(p, s_lra, n, [], opt); t_slra = toc
 error = x_slra - x_lra
 
 %% Deconvolution problem
@@ -54,7 +54,7 @@ tic, xh_tls = tls(a, b); t_tls = toc
 
 % Solve the deconvolution problem via SLRA
 s = [n 1 0 1; 1 1 0 0];
-tic, [xh_slra, i_slra] = slra([p_a; b], s); t_slra = toc
+tic, [xh_slra, i_slra] = slra([p_a; b], s, n, [], opt); t_slra = toc
 
 % Compare the relative errors of estimation 
 e_ls   = norm(xh_ls - x0) / norm(x0)
@@ -72,12 +72,11 @@ c = hankel(p(1:np - n), p(np - n:np));
 a = c(:, 1:n); b = c(:, n + 1);
 
 % Define the structure and solve the problem via SLRA 
-tic, [xh_slra, i_slra, cov, ph1] = slra(p, n + 1); t_slra = toc
+tic, [xh_slra, i_slra, cov, ph1] = slra(p, n + 1, n,  [], opt); t_slra = toc
 error_data = norm(p - p0)
 error = norm(ph1 - p0)
 
 % Make the same with a permutation matrix
-opt.method = 'q'; % Works only with Quasi-Newton
 I = eye(n + 1); perm = randperm(n + 1); 
 tic, [xh_slra, i_slra, cov, ph2] = slra(p, n + 1, n, [], opt, I(perm, :)); t_slra = toc
 error_data = norm(p - p0)

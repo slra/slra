@@ -1,9 +1,11 @@
 1 sine
-2 TLS problem
-3 LS problem
-4 block hankel matrix
-5 Deconvolution problem
-6 16 sines, N = 2000, slow convergence
-7 Block hankel matrix
+2 LS problem
+3 TLS problem
+4 TLS problem (divided into blocks of different length)
+5 block hankel matrix
+6 block hankel matrix, nonnatural permutation
+7 Deconvolution problem
+8 16 sines, N = 2000, slow convergence
+9 Block hankel matrix
 8 Big example
 

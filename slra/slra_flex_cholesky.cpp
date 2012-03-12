@@ -18,7 +18,7 @@ extern "C" {
 
 slraFlexGammaComputations::slraFlexGammaComputations( const slraWkInterface *s, int r, int Mg, 
      int use_slicot, double reg_gamma  ) : 
-     myMg(Mg), myN(r), myD(s->getWk(0)->size1-r), my_use_slicot(use_slicot), my_reg_gamma(reg_gamma)  {
+     myMg(Mg), myN(r), myD(s->getNplusD()-r), my_use_slicot(use_slicot), my_reg_gamma(reg_gamma)  {
      
   myW = s;
     
@@ -33,7 +33,8 @@ slraFlexGammaComputations::slraFlexGammaComputations( const slraWkInterface *s, 
                        mymax(myW->getS(), myMg - myW->getS()) * myD * myD;
   myCholeskyWork = (double *)malloc(myCholeskyWorkSize * sizeof(double));                       
                        
-                         
+
+                       
   /* Calculate variables for FORTRAN routines */     
   s_minus_1 = myW->getS() - 1;
   d_times_s = myD * myW->getS();
@@ -101,16 +102,16 @@ void slraFlexGammaComputations::multiplyInvPartCholeskyArray( double * yr, int t
   int total_cols = size / chol_size;
 
   dtbtrs_("U", (trans ? "T" : "N"), "N", 
-          &d_times_Mg, &d_times_s_minus_1, &total_cols, 
-	  myPackedCholesky, &d_times_s, yr, &d_times_Mg, &info);
+          &chol_size, &d_times_s_minus_1, &total_cols, 
+	  myPackedCholesky, &d_times_s, yr, &chol_size, &info);
 }
   
 void slraFlexGammaComputations::multiplyInvPartGammaArray( double * yr, int size, int chol_size ) {
   int info;
   int total_cols = size / chol_size; 
   
-  dpbtrs_("U", &d_times_Mg, &d_times_s_minus_1, &total_cols, 
-          myPackedCholesky, &d_times_s, yr, &d_times_Mg, &info);  
+  dpbtrs_("U", &chol_size, &d_times_s_minus_1, &total_cols, 
+          myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
 }
 
 void slraFlexGammaComputationsExt::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {

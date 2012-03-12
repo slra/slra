@@ -18,6 +18,7 @@ extern "C" {
 slraCostFunction::slraCostFunction( slraStructure *s, 
     int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r) {
   myStruct = s; //.clone();     
+
   myGam = myStruct->createGammaComputations(r, opt->reggamma);
   myDeriv = myStruct->createDerivativeComputations(r);
       
@@ -55,10 +56,14 @@ slraCostFunction::slraCostFunction( slraStructure *s,
     gsl_matrix_memcpy(myPerm, perm);
   }
   
-  
-  
   myStruct->fillMatrixFromP(myMatr, p);
+  
+
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myMatr, myPerm, 0.0, myMatrMulPerm);
+
+/*  print_mat(myPerm);
+
+  print_mat(myMatrMulPerm);*/
 }
   
 slraCostFunction::~slraCostFunction() {
@@ -150,6 +155,8 @@ void slraCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_
     computePseudoJacobianLsFromYr(myTmpYr, myTmpR, jac);
   } 
 
+      
+
 }
 
 void slraCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac ) {
@@ -170,6 +177,7 @@ void slraCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matri
   
   myGam->multiplyInvCholeskyTransMatrix(&tmp_jac_trans.matrix, 1);
   gsl_matrix_vec_inv(jac, myTmpJacobianArray);
+
   
   /* second term (naive implementation) */
   gsl_matrix_view tmp_jac = gsl_matrix_view_array(myTmpJacobianArray, 

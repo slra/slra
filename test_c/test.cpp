@@ -2,6 +2,9 @@
    .\test i - test example i, 1 <= i <= 24
    .\test   - test all examples            */ 
 
+#include <limits>
+
+
 #include <stdio.h>
 #include <string.h>
 #include <gsl/gsl_blas.h>
@@ -10,6 +13,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
+
 
 
 
@@ -47,8 +51,10 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
                char * method = "l", int use_slicot = 0, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
+  double *w_k = NULL;
   
-  slraFlexStructure *myStruct = NULL;
+  
+  slraStructure *myStruct = NULL;
   
 //  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
 
@@ -64,10 +70,10 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
-  int x_given;
+  int x_given, perm_given, w_given;
   char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
        fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN],
-       fpresname[MAX_FN_LEN];
+       fpresname[MAX_FN_LEN], fpermname[MAX_FN_LEN];
   FILE *file;
 
   /* default file names */
@@ -79,6 +85,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   sprintf(fsname,"s%s.txt",testname);
   sprintf(fxresname,"res_x%s.txt",testname);
   sprintf(fpresname,"res_p%s.txt",testname);
+  sprintf(fpermname,"phi%s.txt",testname);
 
   try {
 
@@ -94,44 +101,49 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       fprintf(log, "Error opening file %s\n", fsname);
       throw 1;
     }
-    fscanf(file, "%d %d %d %d", &m, &n, &s_k, &s_q); 
 
-    if ((s_k <= 0) || (m % s_k != 0)) {
-      throw new slraException("Bad k: %d \n", s_k);
+
+    fscanf(file, "%d %d %d", &s_k, &s_q, &n); 
+
+    double *m_k = new double[s_k];
+    double *L_q = new double[s_q];
+      
+    for (i = 0; i < s_k; i++)  {
+      fscanf(file, "%lf", &(m_k[i]));
     }
-    if ((s_q <= 0) || (s_q > 10)) {
-      throw new slraException( "Bad q: %d \n", s_q);
-    }
-    
-    PRINTF("Hello!! m = %d, k = %d, n = %d, q = %d \n", m, s_k, n, s_q);
-    
-    
-    double *str_arr = new double[s_q * 4];
 
     for (i = 0; i < s_q; i++)  {
-      fscanf(file, "%lf %lf %lf %lf", &(str_arr[i]),&(str_arr[i + s_q]), &(str_arr[i+2*s_q]),&(str_arr[i+3*s_q]));
+      fscanf(file, "%lf", &(L_q[i]));
     }
 
-    PRINTF("Hello!! \n");
+
+    double w0;
+    if (fscanf(file, "%lf", &w0) == 1) {
+       w_k = new double[s_q];
+       w_k[0] = w0;
+         
+      for (i = 1; i < s_q; i++)  {
+        fscanf(file, "%lf", &(w_k[i]));
+      }
+    }
+      
+    myStruct = new slraFlexStructureExt(s_q, s_k, L_q, m_k, w_k);
+    m = myStruct->getM();
+      
+    delete [] m_k; 
+    delete [] L_q;
+
 
     
-/*    slraFlexStructure::slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m, bool set_m  ) :*/
-    myStruct = new slraFlexStructure(str_arr, s_q, s_k, 4, m, true);
+    fclose(file);
+
+
     d = myStruct->getNplusD() - n;
     np = myStruct->getNp();
-    
-
-
-    
-    delete [] str_arr;
-
-    fclose(file);
 
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
-
-    PRINTF("Hello!! np = %d, d = %d, k = %d\n", np, d, s_k);
     
     x_given = read_mat(x, fxname, log);
 
@@ -158,14 +170,25 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       throw 1;
     }
 
+    if (((perm = gsl_matrix_alloc(n+d, n+d)) == NULL)) {
+      throw 1;
+    }
+    
+    perm_given = read_mat(perm, fpermname, log);
+
+
+
+
+
     if (silent) {
       opt.disp = 0;
     }
 
     
+
     
     /* call stls */  
-    slra(p, myStruct, n, x, v, &opt, x_given, 1 /* Compute correction */, NULL);
+    slra(p, myStruct, n, x, v, &opt, x_given, 1 /* Compute correction */, (perm_given ? perm : NULL ) );
 
     if (!silent) {
       print_mat(x);
@@ -173,7 +196,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 
 
     file = fopen(fpresname,"w");
-    gsl_vector_fprintf(file, p, "%.10f");
+    gsl_vector_fprintf(file, p, "%.14f");
     fclose(file);
 
 
@@ -183,7 +206,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   
 
     file = fopen(fxresname,"w");
-    gsl_matrix_fprintf(file, x, "%.10f");
+    gsl_matrix_fprintf(file, x, "%.14f");
     fclose(file);
     
 
@@ -235,6 +258,12 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (p2 != NULL) {
       gsl_vector_free(p2);
     }
+    if (perm != NULL) {
+      gsl_matrix_free(perm);
+    }
+    if (w_k != NULL) {
+      delete [] w_k;
+    }
     if (myStruct != NULL) {
       delete myStruct;
     }
@@ -242,7 +271,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 }
 
 
-#define TEST_NUM 7
+#define TEST_NUM 9
 
 int main(int argc, char *argv[])
 {
@@ -267,7 +296,7 @@ int main(int argc, char *argv[])
   }
 
 
-  if (i >= 1 && i <= TEST_NUM) {
+  if (i >= 1) {
     printf("\n------------------ Testing example %d  ------------------\n\n", i);
     sprintf(num, "%d", i);
     run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot);
