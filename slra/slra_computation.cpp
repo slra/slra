@@ -16,7 +16,7 @@ extern "C" {
 
 
 slraCostFunction::slraCostFunction( slraStructure *s, 
-    int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r) {
+    int r, const gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r) {
   myStruct = s; //.clone();     
 
   myGam = myStruct->createGammaComputations(r, opt->reggamma);
@@ -55,6 +55,7 @@ slraCostFunction::slraCostFunction( slraStructure *s,
 
     gsl_matrix_memcpy(myPerm, perm);
   }
+  
   
   myStruct->fillMatrixFromP(myMatr, p);
   

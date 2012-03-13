@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
 #include "slra.h"
 
 int slraMatrix2Struct( data_struct* ps, double *s_matr, 

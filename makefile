@@ -9,8 +9,9 @@ MEX = mex -v -compatibleArrayDims -DBUILD_MEX_MATLAB
 
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f SLICOT/MB02MD.f
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o MB02MD.o
-SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.c  slra/slra_func.cpp  slra/slra_computation.cpp slra/slra_flex_structure.cpp \
-		slra/slra_flex_derivative.cpp slra/slra_flex_cholesky.cpp slra/slra_optimize.cpp  #slra/slra_func_old.c
+SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.cpp  slra/slra_func.cpp  slra/slra_computation.cpp \
+		slra/slra_flex_structure.cpp slra/slra_flex_derivative.cpp slra/slra_flex_cholesky.cpp \
+		slra/slra_optimize.cpp  #slra/slra_func_old.c
 SLRA_OBJ_FILES = slra.o  slra_common.o slra_func.o slra_computation.o slra_flex_structure.o \
 		slra_flex_derivative.o slra_flex_cholesky.o slra_optimize.o #slra_func_old.o
 SLRA_INCLUDE_DIR = slra
@@ -30,7 +31,7 @@ mexoct: SLICOT.a $(MEX_SRC_FILES)
 
 mex-im-desktop : SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/atlas-base/libcblas.a \
-	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra
+	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra 
 
 mex-im-laptop: BUILD_MODE=MEX_MATLAB
 mex-im-laptop: slra.a SLICOT.a $(MEX_SRC_FILES)

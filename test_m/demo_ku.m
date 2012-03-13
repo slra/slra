@@ -1,4 +1,4 @@
-addpath support
+addpath ..
 
 N = 119
 rk = 2
@@ -6,7 +6,7 @@ Ls = rk+1
 Ks = N - Ls+1
 
 f0 = sin((1:N)/12*pi);
-fn = normrnd(0, 0.25, 1, N);
+fn = normrnd(0, 0.15, 1, N);
 f = f0 + fn;
 h0 = hankel(f0(1:Ks), f0(Ks:N));
 h = hankel(f(1:Ks), f(Ks:N));
@@ -19,32 +19,35 @@ b = h(:,Ls);
 
 [U,S,V] = svd(h);
 x = V(:,Ls);
-x = -(x(1:(Ls-1))/x(Ls))
+x = (-(x(1:(Ls-1))/x(Ls)))
 
-s = [2 Ls 1];
+s.m = [Ls];
+s.n = [Ks]
 %pause
 
 
 h0(1:4,:)
 h(1:4,:)
 
-[xh, info, v, fh] = slra(f, s, rk, x);
-[ dp, ch, ph ] = corr( xh, h, s);
+opt.Xini = x';
+opt.disp = 'iter';
+[ph, info] = slra(f, s, rk, opt);
+%[ dp, ch, ph ] = corr( xh, h, s);
 
 
 opt.maxiter = 0;
 
 info.fmin
-xh
-[xh2, info2, v2, fh2] = slra(f, s, rk, xh, opt)
+info.Xh
+opt.Xini = info.Xh
+[ph2, info2] = slra(f, s, rk, opt);
 
 
+f_stls = ph;
+plot([f0' f' f_stls']);
+% norm(f_stls - fh')
 
-f_stls = (f'-dp)';
-plot([f0' f' f_stls' fh]);
-norm(f_stls - fh')
-
-norm(fh2 - fh)
+%norm(fh2 - fh)
 
 
 

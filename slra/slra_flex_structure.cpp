@@ -55,8 +55,6 @@ slraFlexStructure::slraFlexStructure( const slraFlexStructure &s ) :
 slraFlexStructure::slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m, bool set_m, 
                                       const double *w_k  ) :
                                       myQ(q), myK(k), mySA(NULL)  {
-  DEBUGINT(w_k);      
-
   mySA = new slraFlexBlock[myQ];
   for (int l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = *(s_matr + l);
@@ -110,23 +108,23 @@ slraFlexStructure::slraFlexStructure( const data_struct *s, int np ) : myQ(s->q)
   setNp(np);                                      
 }
 
-void slraFlexStructure::fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  {
+void slraFlexStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
   int sum_np = 0, sum_nl = 0;
   int m_div_k = getM() / getK();
   int l,j, k, L;
-  gsl_matrix_view p_matr_chunk, c_chunk, p_matr_chunk_sub, c_chunk_sub;
+  gsl_matrix_view c_chunk, c_chunk_sub;
  
   for (l = 0; l < getQ(); l++) {
     L = getFlexBlockLag(l);
 
-    p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), 
+    gsl_matrix_const_view p_matr_chunk = gsl_matrix_const_view_array(&(p->data[sum_np]), 
 					 getFlexBlockT(l), getFlexBlockNb(l) * getK());
 
     for (k = 0; k < getK(); k++) {		   
       c_chunk = gsl_matrix_submatrix(c, k * m_div_k, sum_nl, m_div_k, getFlexBlockNCol(l));
 				   
       for (j = 0; j < L; j++) {
-        p_matr_chunk_sub = gsl_matrix_submatrix(&p_matr_chunk.matrix, 
+        gsl_matrix_const_view p_matr_chunk_sub = gsl_matrix_const_submatrix(&p_matr_chunk.matrix, 
 	                                        j, k * getFlexBlockNb(l), m_div_k, getFlexBlockNb(l));
         c_chunk_sub = gsl_matrix_submatrix(&c_chunk.matrix, 0, 
                       (isFlexBlockToeplitz(l) ? (L- j -1) * getFlexBlockNb(l) : j * getFlexBlockNb(l)), 
@@ -335,15 +333,15 @@ slraFlexStructureExt::~slraFlexStructureExt()  {
   }*/
 }
 
-void slraFlexStructureExt::fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  {
+void slraFlexStructureExt::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
   int n_row = 0, sum_np = 0;
   gsl_matrix_view sub_c;
-  gsl_vector_view sub_p;
+
   
   for (int k = 0; k < getBlocksN(); sum_np += mySimpleStruct.getNp(), n_row += getMl(k), k++) {
     sub_c = gsl_matrix_submatrix(c, n_row, 0, getMl(k), c->size2);    
     mySimpleStruct.setM(getMl(k));
-    sub_p = gsl_vector_subvector(p, sum_np, mySimpleStruct.getNp());
+    gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, mySimpleStruct.getNp());
   
     mySimpleStruct.fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
   }

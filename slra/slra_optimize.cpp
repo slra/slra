@@ -194,7 +194,9 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
   case  SLRA_OPT_METHOD_LM:
     /* return the results */
     gsl_vector_memcpy(x_vec, solverlm->x);
-    gsl_multifit_covar(solverlm->J, opt->epsrel, v); /* ??? Different eps */
+    if (v != NULL) {
+      gsl_multifit_covar(solverlm->J, opt->epsrel, v); /* ??? Different eps */
+    }
     /* assign the opt output fields */
     gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
     break;

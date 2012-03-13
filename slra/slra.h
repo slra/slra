@@ -272,7 +272,7 @@ public:
   virtual int getNp() const = 0;
   virtual int getNplusD() const = 0;
   virtual int getM() const = 0;
-  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p )  = 0; 
+  virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
   
   virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma ) = 0;
   virtual slraDerivativeComputations *createDerivativeComputations( int r ) = 0;
@@ -344,7 +344,7 @@ public:
   int getFlexBlockT( int l ) const { return getFlexBlockLag(l) + (getM() / getK()) - 1; }
   int getFlexBlockNp( int l ) const { return getFlexBlockT(l) * getK() * getFlexBlockNb(l); }
   
-  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ); 
+  virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 
 
@@ -478,7 +478,7 @@ public:
     return &mySimpleStruct; 
   }
 
-  virtual void fillMatrixFromP( gsl_matrix* c, gsl_vector* p ) ;
+  virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 };
 
@@ -548,7 +548,7 @@ class slraCostFunction {
 
 public:
 
-  slraCostFunction( slraStructure *s, int r, gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  );
+  slraCostFunction( slraStructure *s, int r, const gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  );
   virtual ~slraCostFunction();
   
   int getD() { return myStruct->getNplusD() - myRank; }
@@ -610,21 +610,18 @@ public:
 int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );
 
 /* Prototypes of functions */
-int slra(gsl_vector* p, slraStructure * s, int rank, gsl_matrix* x,
-         gsl_matrix* v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix* perm);
-	
+int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
+          gsl_matrix *x_ini, gsl_matrix *perm, 
+          gsl_vector *p_out, gsl_matrix *xh, gsl_matrix *vh );
+         
+         
+
 
 void tmv_prod_new(gsl_matrix*, int, 
 	      gsl_vector*, int, gsl_vector*);
 
 int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
- 
-#endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void print_mat(const gsl_matrix*);
 void print_mat_tr(const gsl_matrix*);
@@ -632,6 +629,22 @@ void print_arr(double*, int);
 
 void gsl_matrix_vectorize(double*, gsl_matrix*);
 void gsl_matrix_vec_inv(gsl_matrix*, double*);
+
+void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
+void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
+
+/* Convert double matrix to structure */
+int slraMatrix2Struct( data_struct *s, double *s_matr, 
+                       int q, int s_matr_cols );
+void slraString2Method( const char *str_buf, opt_and_info *popt );
+int slraString2Disp( const char *str_value );
+
+ 
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /* SLICOT and LAPACK functions */
@@ -647,14 +660,6 @@ int*, int*);
 void dpbtrf_(char*, int *, int *, double *, int *, int *);
 
 
-void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
-void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
-
-/* Convert double matrix to structure */
-int slraMatrix2Struct( data_struct *s, double *s_matr, 
-                       int q, int s_matr_cols );
-void slraString2Method( const char *str_buf, opt_and_info *popt );
-int slraString2Disp( const char *str_value );
 
 #ifdef __cplusplus
 }

@@ -155,10 +155,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       throw 1;
     }
     
-    gsl_vector_memcpy(p2,p);
-
-    
-    
     if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
@@ -166,9 +162,9 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 
     read_mat(xt, fxtname, log);
 
-    if (((v = gsl_matrix_alloc(n*d, n*d)) == NULL)) {
+/*    if (((v = gsl_matrix_alloc(n*d, n*d)) == NULL)) {
       throw 1;
-    }
+    }*/
 
     if (((perm = gsl_matrix_alloc(n+d, n+d)) == NULL)) {
       throw 1;
@@ -176,19 +172,13 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
     perm_given = read_mat(perm, fpermname, log);
 
-
-
-
-
     if (silent) {
       opt.disp = 0;
     }
-
-    
-
     
     /* call stls */  
-    slra(p, myStruct, n, x, v, &opt, x_given, 1 /* Compute correction */, (perm_given ? perm : NULL ) );
+    slra(p, myStruct, n, &opt, (x_given ? x : NULL), (perm_given ? perm : NULL ), 
+         p2, x, v);
 
     if (!silent) {
       print_mat(x);
@@ -200,8 +190,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     fclose(file);
 
 
-    gsl_vector_sub(p, p2);
-    double dp_norm = gsl_blas_dnrm2(p);
+    gsl_vector_sub(p2, p);
+    double dp_norm = gsl_blas_dnrm2(p2);
     
   
 

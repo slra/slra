@@ -92,42 +92,49 @@ int tls(gsl_matrix* a, gsl_matrix* b, gsl_matrix* x)
 }
 
 
-static void checkAndComputeX( slraCostFunction * F, gsl_matrix *x, opt_and_info* opt, int x_given ) {
-  if (x->size1 + x->size2 != F->getNplusD()) {
-    throw new slraException("Initial approximation doesn't conform to the structure" 
-                            "specification.\n");   
-  }      
-
-  if (!x_given) {  /* compute default initial approximation */
+static void checkAndComputeX( slraCostFunction * F, gsl_matrix *x, opt_and_info* opt, gsl_matrix *x_ini ) {
+  if (x_ini == NULL) {  /* compute default initial approximation */
     if (opt->disp == SLRA_OPT_DISP_ITER) {
       PRINTF("X not given, computing TLS initial approximation.\n");
     }
     if (compute_tls(F->getSMatr(), F->getPerm(), x) ==  GSL_EINVAL) {
       throw new slraException("Error while computing initial approximation.\n");   
     }
+  } else {
+    if (x_ini->size1 != x->size1 || x_ini->size2 != x->size2) {
+      throw new slraException("Initial approximation doesn't conform to " 
+                            "the structure specification.\n");   
+    }      
+    gsl_matrix_memcpy(x, x_ini);
   }
 }
 
-int slra(gsl_vector *p, slraStructure* s, int r, gsl_matrix* x,
-         gsl_matrix *v, opt_and_info* opt, int x_given, int compute_ph,
-         gsl_matrix *perm ) {
+int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
+         gsl_matrix *x_ini, gsl_matrix *perm, 
+         gsl_vector *p_out, gsl_matrix *xh, gsl_matrix *vh ) { 
   slraCostFunction * myCostFun = NULL;
+  gsl_matrix *x = NULL;
   int res = GSL_SUCCESS;
 
   try { 
-    myCostFun =  new slraCostFunction(s, r, p, opt, perm);
-
-    checkAndComputeX(myCostFun, x, opt, x_given);
+    myCostFun =  new slraCostFunction(s, r, p_in, opt, perm);
+    x = gsl_matrix_alloc(myCostFun->getN(), myCostFun->getD());
     
-
+    checkAndComputeX(myCostFun, x, opt, x_ini);
+    
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
-    int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), v);
+    int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
-
-    if (compute_ph) {
-      myCostFun->computeCorrection(p, &(x_vec.vector));
+    if (p_out != NULL) {
+      if (p_out != p_in) {
+        gsl_vector_memcpy(p_out, p_in);
+      }
+      myCostFun->computeCorrection(p_out, &(x_vec.vector));
+    }
+    if (xh != NULL) {
+      gsl_matrix_memcpy(xh, x);
     }
   } catch ( slraException *e ) {
     res = GSL_EINVAL;
@@ -137,6 +144,10 @@ int slra(gsl_vector *p, slraStructure* s, int r, gsl_matrix* x,
 
   if (myCostFun != NULL) {
     delete myCostFun;
+  }
+  
+  if (x != NULL) {
+    gsl_matrix_free(x);
   }
 
   return res;
