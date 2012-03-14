@@ -24,15 +24,14 @@ BUILD_MODE=BUILD_DEFAULT
 mexoct: SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a -lgsl -lgslcblas \
 	-llapack -lblas  -o slra.mex
-#	cp -f slra.mex test_m
 
-mex-im-desktop: SLICOT.a $(MEX_SRC_FILES)
+mex-desktop: SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a \
-	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -o slra
+	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o mex_slra
 
-mex-im-laptop: BUILD_MODE=MEX_MATLAB
-mex-im-laptop: slra.a SLICOT.a $(MEX_SRC_FILES)
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) slra.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o slra
+mex-laptop: BUILD_MODE=MEX_MATLAB
+mex-laptop: slra.a SLICOT.a $(MEX_SRC_FILES)
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) slra.a SLICOT.a -lgsl -lcblas -llapack -lblas -lgfortran -o mex_slra
 
 R: BUILD_MODE=BUILD_R_PACKAGE
 R: 
@@ -59,9 +58,9 @@ testc: test.o slra.a SLICOT.a
 #	-lgfortran -lm -lgfortran 
 #	/home/kdu/src/gsl-1.15/cblas/.libs/libgslcblas.a \
 
-testc-im-desktop : test.o slra.a SLICOT.a
+testc-desktop : test.o slra.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a \
-	 -lm   -latlas -lgfortran -lf77blas -llapack 	-lcblas -lgslcblas -lgsl
+	 -lm   -latlas -lgfortran -lf77blas -llapack -lcblas -lgslcblas -lgsl
 
 test.o : test_c/test.cpp $(SLRA_INCLUDE_FILES) 
 	$(CCPP) -D$(BUILD_MODE) $(INC_FLAGS) $(OPT_FLAGS) -c test_c/test.cpp
@@ -74,19 +73,6 @@ SLICOT.a : $(SLICOT_SRC_FILES)
 	$(F77) $(INC_FLAGS) $(OPT_FLAGS) -c $(SLICOT_SRC_FILES) 
 	ar -r SLICOT.a $(SLICOT_OBJ_FILES)
 
-slra_.pdf: slra_m.nw
-	noweave -delay -index slra_m.nw >  slra_m.tex
-	latex  slra_m
-	bibtex slra_m
-	latex  slra_m
-	dvips  slra_m.dvi
-	psnup -2 -d slra_m.ps slra_m-2x1.ps
-	ps2pdf -sPAPERSIZE=a4  slra_m.ps
-#	ps2pdf -sPAPERSIZE=a4  slra_m-2x1.ps
-
-slra_.m:   slra_m.nw
-	notangle -R"[[slra.m]]" slra_m.nw > slra_.m
-
 clean : 
-	rm *.o SLICOT.a slra.a
+	rm *.o SLICOT.a slra.a *.ps 
 

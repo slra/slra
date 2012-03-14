@@ -74,7 +74,7 @@ method  = 'l';
 epsrel  = 1e-4;
 epsabs  = 1e-4;
 epsgrad = 1e-4;
-maxiter = 100;
+maxiter = 1000;
 sys0    = []; 
 exct    = []; 
 
@@ -160,7 +160,7 @@ if ~isempty(opt.sys0)
     end
 end
 % Modify the next line to change the default initial approximation 
-%if isempty(sys0), sys0 = ??; end
+if isempty(sys0), sys0 = n4sid(iddata(w(:, m + 1:end), w(:, 1:m)), l * p); end
 
 %% Structure specification
 ne = length(exct);
@@ -196,7 +196,7 @@ end
 
 %% Call the SLRA solver
 x0 = sys2x(sys0, exct, noisy);
-[x, info, cov, parh] = slra(par, struct, l1 * m + n, x0, opt);
+[x, info, cov, parh] = mex_slra(par, struct, l1 * m + n, x0, opt);
 info.M = sqrt(info.fmin); info = rmfield(info, 'fmin');
 
 if nargout > 2
