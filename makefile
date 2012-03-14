@@ -1,19 +1,22 @@
 # makefile: SLRA makefile
 
-CC = gcc -g -fPIC -static
-CCPP = g++ -g -fPIC 
+CC  = gcc  -g -fPIC -static -Wno-write-strings
+CCPP  = g++  -g -fPIC -Wno-write-strings
 F77 = gcc -g -fPIC -static 
 
 OCTAVE_MEX = mkoctfile --mex -v -DBUILD_MEX_OCTAVE #mex -v -compatibleArrayDims
 MEX = mex -v -compatibleArrayDims -DBUILD_MEX_MATLAB 
 
-SLICOT_SRC_FILES = SLICOT/MA02FD.f SLICOT/MB02CU.f SLICOT/MB02CV.f SLICOT/MB02GD.f SLICOT/MB02MD.f
-SLICOT_OBJ_FILES = MA02FD.o MB02CU.o MB02CV.o MB02GD.o MB02MD.o
-SLRA_SRC_FILES = slra/slra.c slra/slra_common.c slra/slra_func.c # slra/slra_func_old.c
-SLRA_OBJ_FILES = slra.o slra_common.o slra_func.o  #slra_func_old.o
+SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f SLICOT/MB02MD.f
+SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o MB02MD.o
+SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.cpp  slra/slra_func.cpp  slra/slra_computation.cpp \
+		slra/slra_flex_structure.cpp slra/slra_flex_derivative.cpp slra/slra_flex_cholesky.cpp \
+		slra/slra_optimize.cpp  #slra/slra_func_old.c
+SLRA_OBJ_FILES = slra.o  slra_common.o slra_func.o slra_computation.o slra_flex_structure.o \
+		slra_flex_derivative.o slra_flex_cholesky.o slra_optimize.o #slra_func_old.o
 SLRA_INCLUDE_DIR = slra
 SLRA_INCLUDE_FILES = slra/slra.h
-MEX_SRC_FILES = mex/mex_slra.c
+MEX_SRC_FILES = mex/mex_slra.cpp
 
 INC_FLAGS = -I./$(SLRA_INCLUDE_DIR) # -I/home/kdu/local/include -g
 OPT_FLAGS = -O -pg # gprof ./test gmon.out > gmon.txt
@@ -25,9 +28,9 @@ mexoct: SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a -lgsl -lgslcblas \
 	-llapack -lblas  -o slra.mex
 
-mex-desktop: SLICOT.a $(MEX_SRC_FILES)
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/libcblas.a \
-	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o mex_slra
+mex-im-desktop : SLICOT.a $(MEX_SRC_FILES)
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a /usr/lib/libgsl.a /usr/lib/atlas-base/libcblas.a \
+	 /usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra 
 
 mex-laptop: BUILD_MODE=MEX_MATLAB
 mex-laptop: slra.a SLICOT.a $(MEX_SRC_FILES)
@@ -42,8 +45,8 @@ R:
 	R CMD build Rslra
 	R CMD INSTALL Rslra
 
-testc: test.o slra.a SLICOT.a
-	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a \
+testc : test.o slra.a SLICOT.a
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o slra.a SLICOT.a  \
 	/home/kdu/local/lib/liblapack.a \
 	/home/kdu/local/lib/libgsl.a \
 	/home/kdu/local/lib/libcblas.a \

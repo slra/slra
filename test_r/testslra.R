@@ -76,6 +76,7 @@ pause();
 # Define and solve the TLS problem as an STLS problem
 s_tls <- c(1, n+d);
 print(system.time(res <- slra(as.vector(t(cbind(a,b))),s_tls,n)))
+print(res);
 print(res$xh)
 
 # Press any key to continue

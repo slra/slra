@@ -1,7 +1,7 @@
 
 # Stubs to call STLS
 slra <- function(P, S, R = (total_cols - 1), X0 = NULL, 
-            opt = list(), compute.dp = FALSE) {
+            opt = list(), compute.dp = FALSE, ret.obj=FALSE) {
 
   ###### Parse structure
   # convert stucture into list
@@ -48,7 +48,39 @@ slra <- function(P, S, R = (total_cols - 1), X0 = NULL,
     }
   }
 
-  .Call("rslra", n, d, P, S, X0, opt, compute.dp);
+  sobj <- .Call("create_slra_object", n, d, P, S, X0, opt, compute.dp);
+  
+  if (ret.obj) {
+    res <- sobj; 
+  } else {
+    .Call("optimize_slra", sobj);
+    res <- .Call("return_slra_object", sobj);
+    if (compute.dp) {
+      res <- c(res, list(ph=.Call("compute_slra_correction", sobj)));
+    }
+  }
+
+  res;    
+}
+
+optimize_slra <- function(sobj) {
+  .Call("optimize_slra", sobj);
+}
+
+evaluate_slra_f <- function(sobj, ...) {
+  .Call("evaluate_slra_f", sobj, ...);
+}
+
+evaluate_slra_df <- function(sobj, ...) {
+  .Call("evaluate_slra_df", sobj, ...);
+}
+
+return_slra_object <- function(sobj) {
+  .Call("return_slra_object", sobj);
+}
+
+compute_slra_correction <- function(sobj) {
+  .Call("compute_slra_correction", sobj);
 }
 
 

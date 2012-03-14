@@ -2,6 +2,9 @@
    .\test i - test example i, 1 <= i <= 24
    .\test   - test all examples            */ 
 
+#include <limits>
+
+
 #include <stdio.h>
 #include <string.h>
 #include <gsl/gsl_blas.h>
@@ -11,7 +14,8 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
 
-#define TEST_NUM 7
+
+
 
 #define MAX_FN_LEN  60
 
@@ -43,23 +47,33 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
   return 1;
 }
 
-void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, bool silent = false ) {
+void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, 
+               char * method = "l", int use_slicot = 0, bool silent = false ) {
   gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
+  double *w_k = NULL;
   
-  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
+  
+  slraStructure *myStruct = NULL;
+  
+//  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
+
+  int s_k,  s_q;
   opt_and_info opt;
   
   slraAssignDefOptValues(opt);
+//  opt.maxiter = 500;
   opt.maxiter = 500;
-  opt.method = SLRA_OPT_METHOD_LM;
+  opt.disp = SLRA_OPT_DISP_ITER;
+  slraString2Method(method, &opt);
+  opt.use_slicot = use_slicot;
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
-  int x_given;
+  int x_given, perm_given, w_given;
   char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
        fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN],
-       fpresname[MAX_FN_LEN];
+       fpresname[MAX_FN_LEN], fpermname[MAX_FN_LEN];
   FILE *file;
 
   /* default file names */
@@ -71,50 +85,65 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   sprintf(fsname,"s%s.txt",testname);
   sprintf(fxresname,"res_x%s.txt",testname);
   sprintf(fpresname,"res_p%s.txt",testname);
+  sprintf(fpermname,"phi%s.txt",testname);
 
   try {
+
     if (!silent) {
       fprintf(log, "Running test %s\n", testname);  
     }
    
+
+
     /* Read structure */
     file = fopen(fsname,"r");
     if (file == NULL) {
       fprintf(log, "Error opening file %s\n", fsname);
       throw 1;
     }
-    fscanf(file, "%d %d %d %d %d %d", &m, &n, &d, &s.k, &s.q, &np); 
-    if ((s.k <= 0) || (m % s.k != 0)) {
-      fprintf(log, "Bad k: %d \n", s.k);
+
+
+    fscanf(file, "%d %d %d", &s_k, &s_q, &n); 
+
+    double *m_k = new double[s_k];
+    double *L_q = new double[s_q];
+      
+    for (i = 0; i < s_k; i++)  {
+      fscanf(file, "%lf", &(m_k[i]));
     }
 
-    if ((s.q <= 0) || (s.q > 10)) {
-	    fprintf(log, "Bad k: %d \n", s.k);
-	    throw 1;
+    for (i = 0; i < s_q; i++)  {
+      fscanf(file, "%lf", &(L_q[i]));
     }
+
+
+    double w0;
+    if (fscanf(file, "%lf", &w0) == 1) {
+       w_k = new double[s_q];
+       w_k[0] = w0;
+         
+      for (i = 1; i < s_q; i++)  {
+        fscanf(file, "%lf", &(w_k[i]));
+      }
+    }
+      
+    myStruct = new slraFlexStructureExt(s_q, s_k, L_q, m_k, w_k);
+    m = myStruct->getM();
+      
+    delete [] m_k; 
+    delete [] L_q;
+
+
     
-    for (i = 0; i < s.q; i++)  {
-      fscanf(file, "%d %d %d %d", &(s.a[i].blocks_in_row), &(s.a[i].nb), &(s.a[i].exact), &(s.a[i].toeplitz)); 
-    }
     fclose(file);
 
-    /* read the data a, b from a.txt and b.txt */
-/*    if (((a = gsl_matrix_alloc(m, n)) == NULL) || !read_mat(a, faname, log)) {
-      throw 1;
-    }
-    if (((b = gsl_matrix_alloc(m, d)) == NULL) || !read_mat(b, fbname, log)) {
-      throw 1;
-    }*/
 
+    d = myStruct->getNplusD() - n;
+    np = myStruct->getNp();
 
     if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
-
-    if (((perm = gsl_matrix_calloc(n+d, n+d)) == NULL)) {
-      throw 1;
-    }
-
     
     x_given = read_mat(x, fxname, log);
 
@@ -126,27 +155,30 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       throw 1;
     }
     
-    gsl_vector_memcpy(p2,p);
-
-    
     if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
       throw 1;
     }
+    
+
     read_mat(xt, fxtname, log);
 
-    if (((v = gsl_matrix_alloc(n*d, n*d)) == NULL)) {
+/*    if (((v = gsl_matrix_alloc(n*d, n*d)) == NULL)) {
+      throw 1;
+    }*/
+
+    if (((perm = gsl_matrix_alloc(n+d, n+d)) == NULL)) {
       throw 1;
     }
+    
+    perm_given = read_mat(perm, fpermname, log);
 
     if (silent) {
       opt.disp = 0;
     }
-
-
     
-
     /* call stls */  
-    slra(p, &s, x, v, &opt, x_given, 1 /* Compute correction */, perm, 0);
+    slra(p, myStruct, n, &opt, (x_given ? x : NULL), (perm_given ? perm : NULL ), 
+         p2, x, v);
 
     if (!silent) {
       print_mat(x);
@@ -154,17 +186,17 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 
 
     file = fopen(fpresname,"w");
-    gsl_vector_fprintf(file, p, "%.10f");
+    gsl_vector_fprintf(file, p, "%.14f");
     fclose(file);
 
 
-    gsl_vector_sub(p, p2);
-    double dp_norm = gsl_blas_dnrm2(p);
+    gsl_vector_sub(p2, p);
+    double dp_norm = gsl_blas_dnrm2(p2);
     
   
 
     file = fopen(fxresname,"w");
-    gsl_matrix_fprintf(file, x, "%.10f");
+    gsl_matrix_fprintf(file, x, "%.14f");
     fclose(file);
     
 
@@ -185,6 +217,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     time = opt.time;
     fmin = opt.fmin;
     iter = opt.iter;
+    
+//    fmin2 = opt.chol_time;
     fmin2 = dp_norm * dp_norm;
     
 
@@ -202,9 +236,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (x != NULL) {
       gsl_matrix_free(x);
     }
-    if (perm != NULL) {
-      gsl_matrix_free(perm);
-    }
     if (xt != NULL) {
       gsl_matrix_free(xt);
     }
@@ -217,27 +248,61 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (p2 != NULL) {
       gsl_vector_free(p2);
     }
+    if (perm != NULL) {
+      gsl_matrix_free(perm);
+    }
+    if (w_k != NULL) {
+      delete [] w_k;
+    }
+    if (myStruct != NULL) {
+      delete myStruct;
+    }
   }
 }
 
 
-
+#define TEST_NUM 9
 
 int main(int argc, char *argv[])
 {
   double times[TEST_NUM+1], misfits[TEST_NUM+1], misfits2[TEST_NUM+1],  diffs[TEST_NUM+1];
   int iters[TEST_NUM+1];
   char num[10];
-  int  i;
+  char * method = "l";
+  int  i = -1;
+  int use_slicot = 1;
 
-  if (argc == 2) {
-    run_test(stdout, argv[1], times[0], misfits[0], misfits2[0], iters[0], diffs[0]);
-  } else { /* test all examples */
+
+  if (argc > 1) {
+    method = argv[1];
+  }
+
+  if (argc > 3) {
+    i = atoi(argv[3]);
+  }
+
+  if (argc > 2) {
+    use_slicot = atoi(argv[2]);
+  }
+
+
+  if (i >= 1) {
+    printf("\n------------------ Testing example %d  ------------------\n\n", i);
+    sprintf(num, "%d", i);
+    run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot);
+
+    printf("\n------------ Results summary --------------------\n\n");
+    printf("------------------------------------------------------------------------\n");
+    printf("|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (X) |\n");
+    printf("------------------------------------------------------------------------\n");
+    printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
+    printf("------------------------------------------------------------------------\n\n"); 
+  } else {
     printf("\n------------------ Testing all examples  ------------------\n\n");
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
-      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);
+      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot);
 
   /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  
@@ -252,16 +317,15 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n");
     printf("------------------------------------------------------------------------\n");
-    printf("|  # |       Time | Iter |     Minimum |   Min(comp) |        Diff (X) |\n");
+    printf("|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (X) |\n");
     printf("------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
-      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %1.13f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i]);
+      printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
     }
     printf("------------------------------------------------------------------------\n\n"); 
-    
+  }   
     
 
-  }
 
-  return(0);
+  return 0;
 }

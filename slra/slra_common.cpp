@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
 #include "slra.h"
 
 int slraMatrix2Struct( data_struct* ps, double *s_matr, 
@@ -27,7 +31,8 @@ void slraString2Method( const char *str_buf, opt_and_info *popt )  {
   int submeth_codes_max[] = { 
     sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) - 1, 
     sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) - 1, 
-    sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) - 1 
+    sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) - 1,
+    0 
   };
 
   int i;
