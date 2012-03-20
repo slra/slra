@@ -37,6 +37,10 @@ slraCostFunction::slraCostFunction( slraStructure *s,
 
   myTmpGrad = gsl_matrix_alloc(myRank, getD());
   
+  if (myStruct->getNp() != p->size) {
+    throw slraException("Inconsistent parameter vector\n");
+  }
+  
   if (getM() <= getNplusD()) {
     throw slraException("Number of rows %d is less than the number of columns %d: ",
               getM(), getNplusD());

@@ -17,24 +17,12 @@
 /* default constants for the exit condition */
 
 /* field names for opt */
-#define EPSABS_STR "epsabs"
-#define EPSREL_STR "epsrel"
-#define EPSGRAD_STR "epsgrad"
-#define MAXITER_STR "maxiter"
-#define REGGAMMA_STR "reggamma"
 #define DISP_STR "disp"
 #define RANK_STR "r"
 #define XINI_STR "xini"
 #define PERM_STR "phi"
 #define WK_STR "w"
 
-#define STR_MAX_LEN 25
-
-/* values for OPT.DISP_STR */
-#define NOTIFY_STR "notify"
-#define FINAL_STR "final"
-#define ITER_STR "iter"
-#define OFF_STR "off"
 
 /* field names for s */
 #define STR_ARRAY_ML "m"
@@ -52,9 +40,8 @@
 
 void SLRA_mex_error_handler(const char * reason, const char * file, int line, int gsl_errno) {
   char err_msg[250];
-
-  sprintf(err_msg, "GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
-  mexErrMsgTxt(err_msg);
+  
+  throw new slraException("GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
 }
 
 void tolowerstr( char * str ) {
@@ -63,10 +50,6 @@ void tolowerstr( char * str ) {
     *c = tolower(*c);
   }
 } 
-
-/* gsl_matrix_const_view MAT_to_trmatview( const mxArray * mat ) {
-  return  gsl_matrix_const_view_array(mxGetPr(mat), mxGetN(mat), mxGetM(mat));
-} */
 
 gsl_vector_const_view MAT_to_vecview( const mxArray * myMat ) {
   return  gsl_vector_const_view_array(mxGetPr(myMat), mxGetN(myMat) * mxGetM(myMat));
@@ -93,7 +76,6 @@ gsl_matrix *view_to_mat( gsl_matrix_view &mat_vw ) {
   return  (mat_vw.matrix.data != NULL) ? &mat_vw.matrix : NULL; 
 }
 
-
 #define IfCheckAndStoreFieldBoundL(name, lvalue)		\
   if (! strcmp(field_name, #name)) {				\
     opt.name = mxGetScalar(mxGetFieldByNumber(prhs[3], 0, l));	\
@@ -114,17 +96,21 @@ gsl_matrix *view_to_mat( gsl_matrix_view &mat_vw ) {
     }									\
   }
 
+
+#define STR_MAX_LEN 200
+
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
   gsl_error_handler_t * new_gsl_error_handler = SLRA_mex_error_handler;
   gsl_error_handler_t * old_gsl_error_handler = gsl_set_error_handler(new_gsl_error_handler);
-  char str_buf[200];
+  char str_buf[STR_MAX_LEN];
   gsl_vector_view wk = { { 0, 0, 0, 0, 0 } }; 
   gsl_matrix_view xini = { { 0, 0, 0, 0, 0, 0 } }, perm = { { 0, 0, 0, 0, 0, 0 } }, 
                   xh_view = { { 0, 0, 0, 0, 0, 0 } }, vh_view = { { 0, 0, 0, 0, 0, 0 } };
   
   slraStructure *myStruct;
   int  m, rank;
+  int was_error = 0;
   opt_and_info opt;
   
   /* Input data */
@@ -143,6 +129,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
   gsl_vector_view vec_ml = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ARRAY_ML));
   gsl_vector_view vec_nk = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ARRAY_NK));
+ 
   
   rank = mxGetScalar(prhs[2]);
   
@@ -187,53 +174,67 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
                   else IfCheckAndStoreFieldBoundLU(step, 0, 1) 
                     else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
                       else IfCheckAndStoreFieldBoundL(reggamma, 0) 
-                        else { 
-                          sprintf(str_buf, "Ignoring unrecognized"
-                             " optimization option '%s'.", field_name); 
-                          mexWarnMsgTxt(str_buf); 
-                        } 
+                        else IfCheckAndStoreFieldBoundLU(use_slicot, 0, 1) 
+                          else { 
+                            sprintf(str_buf, "Ignoring unrecognized"
+                               " optimization option '%s'.", field_name); 
+                            mexWarnMsgTxt(str_buf); 
+                          } 
         }
       }
     }
   }
   
-  
-  myStruct = new slraFlexStructureExt(vec_ml.vector.size, vec_nk.vector.size, 
+  try {
+    myStruct = new slraFlexStructureExt(vec_ml.vector.size, vec_nk.vector.size, 
                      vec_ml.vector.data, vec_nk.vector.data, wk.vector.data);
-  m = myStruct->getNplusD();
-
-  if (rank <= 0 || rank >= m) {
-    mexErrMsgTxt("Incorrect rank\n");   
-  }
+    m = myStruct->getNplusD();
+    if (rank <= 0 || rank >= m) {
+      throw new slraException("Incorrect rank\n");   
+    }
     
-  /* output info */
-  plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
-  gsl_vector_view p_out = MAT_to_vecview(plhs[0]);
+    /* output info */
+    plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
+    gsl_vector_view p_out = MAT_to_vecview(plhs[0]);
 
-  if (nlhs > 1) {
-    int l = 1;
-    const char *field_names[] = { XH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
-    plhs[1] = mxCreateStructArray(1, &l, 5, field_names);
+    if (nlhs > 1) {
+      int l = 1;
+      const char *field_names[] = { XH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
+      plhs[1] = mxCreateStructArray(1, &l, 5, field_names);
     
-    mxArray *xh = mxCreateDoubleMatrix((m - rank), rank, mxREAL);
-    mxArray *vh = mxCreateDoubleMatrix((m - rank) * rank, (m - rank) * rank, mxREAL);
-    xh_view = MAT_to_trmatview(xh);
-    vh_view = MAT_to_trmatview(vh);
+      mxArray *xh = mxCreateDoubleMatrix((m - rank), rank, mxREAL);
+      mxArray *vh = mxCreateDoubleMatrix((m - rank) * rank, (m - rank) * rank, mxREAL);
+      xh_view = MAT_to_trmatview(xh);
+      vh_view = MAT_to_trmatview(vh);
 
-    mxSetField(plhs[1], 0, XH_STR, xh);
-    mxSetField(plhs[1], 0, VH_STR, vh);
+      mxSetField(plhs[1], 0, XH_STR, xh);
+      mxSetField(plhs[1], 0, VH_STR, vh);
+    }
+
+    slra(view_to_vec(p_in), myStruct, rank, &opt, 
+         view_to_mat(xini), view_to_mat(perm),
+         view_to_vec(p_out), view_to_mat(xh_view), view_to_mat(vh_view));
+
+    mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
+    mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
+    mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
+  } catch (slraException *e) {
+    strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
+    str_buf[STR_MAX_LEN - 1] = 0;
+    was_error = 1;
+    delete e;
   }
 
-  slra(view_to_vec(p_in), myStruct, rank, &opt, 
-       view_to_mat(xini), view_to_mat(perm),
-       view_to_vec(p_out), view_to_mat(xh_view), view_to_mat(vh_view));
-
-  mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
-  mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
-  mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
-
-  delete myStruct;
+  if (myStruct != NULL) {
+    delete myStruct;
+  }
+  
   gsl_set_error_handler(old_gsl_error_handler);
+
+  if (was_error) {
+    mexErrMsgTxt(str_buf);
+  }
+
 }
 
 
