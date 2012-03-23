@@ -19,7 +19,7 @@
 /* field names for opt */
 #define DISP_STR "disp"
 #define RANK_STR "r"
-#define XINI_STR "xini"
+#define RINI_STR "rini"
 #define PERM_STR "phi"
 #define WK_STR "w"
 
@@ -30,7 +30,7 @@
 
 /* field names for info */
 
-#define XH_STR "Xh"
+#define RH_STR "Rh"
 #define VH_STR "Vh"
 #define FMIN_STR "fmin"
 #define ITER_STR "iter"
@@ -105,8 +105,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   gsl_error_handler_t * old_gsl_error_handler = gsl_set_error_handler(new_gsl_error_handler);
   char str_buf[STR_MAX_LEN];
   gsl_vector_view wk = { { 0, 0, 0, 0, 0 } }; 
-  gsl_matrix_view xini = { { 0, 0, 0, 0, 0, 0 } }, perm = { { 0, 0, 0, 0, 0, 0 } }, 
-                  xh_view = { { 0, 0, 0, 0, 0, 0 } }, vh_view = { { 0, 0, 0, 0, 0, 0 } };
+  gsl_matrix_view rini = { { 0, 0, 0, 0, 0, 0 } }, perm = { { 0, 0, 0, 0, 0, 0 } }, 
+                  rh_view = { { 0, 0, 0, 0, 0, 0 } }, vh_view = { { 0, 0, 0, 0, 0, 0 } };
   
   slraStructure *myStruct;
   int  m, rank;
@@ -149,8 +149,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 	tolowerstr(field_name);
 	
 	/* which option */
-	if (!strcmp(field_name, XINI_STR)) {
- 	  xini = MAT_to_trmatview(mxGetFieldByNumber(prhs[3], 0, l));
+	if (!strcmp(field_name, RINI_STR)) {
+ 	  rini = MAT_to_trmatview(mxGetFieldByNumber(prhs[3], 0, l));
  	} else if (!strcmp(field_name, PERM_STR)) {
  	  perm = MAT_to_trmatview(mxGetFieldByNumber(prhs[3], 0, l));
  	} else if (!strcmp(field_name, WK_STR)) {
@@ -199,21 +199,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     if (nlhs > 1) {
       int l = 1;
-      const char *field_names[] = { XH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
+      const char *field_names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
       plhs[1] = mxCreateStructArray(1, &l, 5, field_names);
     
-      mxArray *xh = mxCreateDoubleMatrix((m - rank), rank, mxREAL);
+      mxArray *rh = mxCreateDoubleMatrix((m-rank), m, mxREAL);
       mxArray *vh = mxCreateDoubleMatrix((m - rank) * rank, (m - rank) * rank, mxREAL);
-      xh_view = MAT_to_trmatview(xh);
+      rh_view = MAT_to_trmatview(rh);
       vh_view = MAT_to_trmatview(vh);
 
-      mxSetField(plhs[1], 0, XH_STR, xh);
+      mxSetField(plhs[1], 0, RH_STR, rh);
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
 
     slra(view_to_vec(p_in), myStruct, rank, &opt, 
-         view_to_mat(xini), view_to_mat(perm),
-         view_to_vec(p_out), view_to_mat(xh_view), view_to_mat(vh_view));
+         view_to_mat(rini), view_to_mat(perm),
+         view_to_vec(p_out), view_to_mat(rh_view), view_to_mat(vh_view));
 
     mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
     mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));

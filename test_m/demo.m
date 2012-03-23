@@ -5,7 +5,7 @@ opt.disp = 'iter';
 %% Least squares problem
 
 % Define dimensions and generate random data
-m = 100; n = 5; d = 1; sigma = 0.1;
+m = 100; n = 5; d = 2; sigma = 0.1;
 a0 = rand(m, n); x0 = rand(n, d); b0 = a0 * x0;
 a = a0; b = b0 + sigma * randn(m, d);
 
@@ -18,12 +18,12 @@ s_ls.n = m;
 p = [a b];
 opt.w = [Inf Inf Inf Inf Inf 1 1]
 tic, [p_slra, i_slra] = slra(p, s_ls, n, opt); t_slra = toc
-error = i_slra.Xh - x_ls
+error = i_slra.Rh(:,1:end-d) - x_ls
 
 %% Low rank approximation problem
 
 % Define dimensions and generate random data
-m = 100; n = 5; d = 1; sigma = 0.1;
+m = 100; n = 5; d = 2; sigma = 0.1;
 D0 = rand(m, n) * rand(n, n + d); 
 D  = D0 + sigma * randn(m, n + d);
 
@@ -33,9 +33,9 @@ tic, x_lra = tls(D(:, 1:n), D(:, n + 1:end))'; t_lra = toc,
 s_lra.m = ones(1, n+d);
 s_lra.n = m; p = D(:);
 opt =  rmfield(opt, 'w');
-opt
+opt.Rh = i_slra.Rh;
 tic, [p_slra, i_slra] = slra(p, s_lra, n, opt); t_slra = toc
-error = i_slra.Xh - x_lra
+error = i_slra.Rh(:,1:end-d) - x_lra
 
 %% Deconvolution problem
 
@@ -67,7 +67,7 @@ tic, [p_slra, i_slra] = slra([p_a; b], s, n, opt); t_slra = toc
 % Compare the relative errors of estimation 
 e_ls   = norm(xh_ls - x0) / norm(x0)
 e_tls  = norm(xh_tls - x0) / norm(x0)
-e_slra = norm((i_slra.Xh)' - x0) / norm(x0)
+e_slra = norm((i_slra.Rh(n:-1:1))' - x0) / norm(x0)
 
 %% Hankel structured low rank approximation problem
 
