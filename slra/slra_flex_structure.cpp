@@ -52,11 +52,11 @@ slraFlexStructure::slraFlexStructure( const slraFlexStructure &s ) :
 
 
 
-slraFlexStructure::slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m, bool set_m, 
+slraFlexStructure::slraFlexStructure( const double *s_matr, size_t q, size_t k, int s_matr_cols, int np_or_m, bool set_m, 
                                       const double *w_k  ) :
                                       myQ(q), myK(k), mySA(NULL)  {
   mySA = new slraFlexBlock[myQ];
-  for (int l = 0; l < myQ; l++) {
+  for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = *(s_matr + l);
     mySA[l].nb = (s_matr_cols > 1) ? *(s_matr + myQ + l): 1;
     mySA[l].exact = (s_matr_cols > 2) ? *(s_matr + 2 * myQ + l): 0;
@@ -111,7 +111,7 @@ slraFlexStructure::slraFlexStructure( const data_struct *s, int np ) : myQ(s->q)
 void slraFlexStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
   int sum_np = 0, sum_nl = 0;
   int m_div_k = getM() / getK();
-  int l,j, k, L;
+  size_t l,j, k, L;
   gsl_matrix_view c_chunk, c_chunk_sub;
  
   for (l = 0; l < getQ(); l++) {
@@ -298,11 +298,11 @@ slraDerivativeComputations *slraFlexStructureExt::createDerivativeComputations( 
 
 
 
-slraFlexStructureExt::slraFlexStructureExt( int q, int N, double *oldNk, double *oldMl, double *Wk ) :
+slraFlexStructureExt::slraFlexStructureExt( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk ) :
     mySimpleStruct(oldNk, q, 1, 1, -1, false, Wk), myN(N), myOldMl(NULL) {
-  int k;  
+  size_t k;  
 
-  myOldMl = new int[N];  
+  myOldMl = new size_t[N];  
   /*myWk = new double[q];
   
   for (k = 0; k < q; k++) {

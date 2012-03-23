@@ -11,9 +11,7 @@ extern "C" {
 
 }
 
-
 #include "slra.h"
-
 
 slraCostFunction::slraCostFunction( slraStructure *s, 
     int r, const gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r) {
@@ -32,7 +30,6 @@ slraCostFunction::slraCostFunction( slraStructure *s,
   myTmpR = gsl_matrix_alloc(getNplusD(), getD());
   myTmpYr = gsl_vector_alloc(getM() * getD());
   
-  myTmpJacobianArray = new double[getM() * getD() * getN() * getD()];
   myTmpJacobianCol = gsl_vector_alloc(getM() * getD());
 
   myTmpGrad = gsl_matrix_alloc(myRank, getD());
@@ -85,9 +82,6 @@ slraCostFunction::~slraCostFunction() {
   gsl_matrix_free(myTmpR);
   gsl_vector_free(myTmpYr);
 
-
-  
-  delete [] myTmpJacobianArray;
   gsl_vector_free(myTmpJacobianCol);
 
   gsl_matrix_free(myTmpGrad);
@@ -161,37 +155,19 @@ void slraCostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_
 void slraCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac ) {
   int i, j, k;
 
-  /* Compute first term of the jacobian */                                    
-  gsl_matrix_view tmp_jac_trans = gsl_matrix_view_array(myTmpJacobianArray, 
-                                      getN() * getD(), getM() * getD());
-  gsl_matrix_set_zero(&tmp_jac_trans.matrix);
-  for (j = 0; j < getN(); j++) {
-    for (i = 0; i < getM(); i++) {
-      for (k = 0; k < getD(); k++) {
-        gsl_matrix_set(&tmp_jac_trans.matrix, k + j * getD(), k + i * getD(), 
-            gsl_matrix_get(myMatrMulPerm, i, j));
-      }
-    }
-  }
-  
-  myGam->multiplyInvCholeskyTransMatrix(&tmp_jac_trans.matrix, 1);
-  gsl_matrix_vec_inv(jac, myTmpJacobianArray);
-
-  
-  /* second term (naive implementation) */
-  gsl_matrix_view tmp_jac = gsl_matrix_view_array(myTmpJacobianArray, 
-                                getM() * getD(), getN() * getD());
   for (i = 0; i < getN(); i++) {
     for (j = 0; j < getD(); j++) {
       myDeriv->computeDijGammaYr(myTmpJacobianCol, R, myPerm, i, j, yr);
-      myGam->multiplyInvCholeskyVector(myTmpJacobianCol, 1);
+      gsl_vector_scale(myTmpJacobianCol, -0.5);
 
-      gsl_matrix_set_col(&tmp_jac.matrix, i * getD() + j, myTmpJacobianCol);  
+      for (k = 0; k < getM(); k++) { 
+        (*gsl_vector_ptr(myTmpJacobianCol, j + k * getD())) += gsl_matrix_get(myMatrMulPerm, k, i);
+      }  
+
+      myGam->multiplyInvCholeskyVector(myTmpJacobianCol, 1);
+      gsl_matrix_set_col(jac, i * getD() + j, myTmpJacobianCol);  
     }
   }
-  /* deriv = deriv - 0.5 * st */
-  gsl_matrix_scale(&tmp_jac.matrix, 0.5);
-  gsl_matrix_sub(jac, &tmp_jac.matrix);
 }
 
 void slraCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad ) {
@@ -207,7 +183,6 @@ void slraCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vec
   /* Compute gradient of f_{\Phi}(X) */ 
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, myTmpGradR, 0.0, &grad_matr.matrix);
 }
-
 
 void slraCostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   computeRGammaSr(x, myTmpR, myTmpYr);

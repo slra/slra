@@ -128,16 +128,16 @@ typedef struct {
 #define MAXQ 10	/* maximum number of blocks in C */
 
 typedef struct {
-  int blocks_in_row;       /* Number of blocks in a row of Ci */
-  int nb;                  /* Number of columns in each small block */
-  int exact;               /* 1 - exact block, 0 - not exact */  
-  int toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
+  size_t blocks_in_row;       /* Number of blocks in a row of Ci */
+  size_t nb;                  /* Number of columns in each small block */
+  size_t exact;               /* 1 - exact block, 0 - not exact */  
+  size_t toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
   double inv_w;            /* Square root of inverse of the weight */
 } slraFlexBlock;
 
 typedef struct {
-  int k;	          /* = rowdim(block in T/H blocks) */ 
-  int q;	          /* number of blocks in C = [C1 ... Cq] */
+  size_t k;	          /* = rowdim(block in T/H blocks) */ 
+  size_t q;	          /* number of blocks in C = [C1 ... Cq] */
   slraFlexBlock a[MAXQ];  /* q-element array describing C1,...,Cq; */  
 } data_struct;
 
@@ -292,14 +292,14 @@ public:
 
 
 class slraFlexStructure : virtual public slraStructure, virtual public slraWkInterface {
-  int myK;                      /* = rowdim(block in T/H blocks) */ 
+  size_t myK;                      /* = rowdim(block in T/H blocks) */ 
   int myQ;	                /* number of blocks in C = [C1 ... Cq] */
   
-  int myNp;
+  size_t myNp;
   
-  int myNplusD;
+  size_t myNplusD;
   int myNpScale, myNpOffset;
-  int myMaxLag;
+  size_t myMaxLag;
 
   void computeStats();
   void computeWkParams(); 
@@ -311,7 +311,7 @@ class slraFlexStructure : virtual public slraStructure, virtual public slraWkInt
 public:
   slraFlexStructure( const slraFlexStructure &s ); /* Copy constructor */
   slraFlexStructure( const data_struct *s, int np = -1 ); /* "Copy" constructor */
-  slraFlexStructure( const double *s_matr, int q, int k, int s_matr_cols, int np_or_m = -1, bool set_m = false, 
+  slraFlexStructure( const double *s_matr, size_t q, size_t k, int s_matr_cols, int np_or_m = -1, bool set_m = false, 
                      const double *w_k = NULL );
   virtual ~slraFlexStructure();
 
@@ -362,14 +362,14 @@ protected:
   
   const slraWkInterface *myW;
   
-  int myN, myD;
+  size_t myN, myD;
   
-  int myMg;
+  size_t myMg;
   
-  int s_minus_1;
-  int d_times_s;
-  int d_times_Mg;
-  int d_times_s_minus_1;
+  size_t s_minus_1;
+  size_t d_times_s;
+  size_t d_times_Mg;
+  size_t d_times_s_minus_1;
   
   int myCholeskyWorkSize;
  
@@ -388,8 +388,8 @@ public:
 
   virtual void computeCholeskyOfGamma( gsl_matrix *R );
 
-  virtual void multiplyInvPartCholeskyArray( double * yr, int trans, int size, int chol_size );
-  virtual void multiplyInvPartGammaArray( double * yr, int size, int chol_size );
+  virtual void multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size );
+  virtual void multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size );
 
 
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
@@ -418,7 +418,7 @@ public:
 class slraFlexDerivativeComputations : virtual public 
                                        slraDerivativeComputations {
   const slraWkInterface *myW;
-  int  myD, myK;
+  size_t  myD, myK;
   
   gsl_vector *myTempWkColRow;
   gsl_matrix *myDGamma;
@@ -444,18 +444,18 @@ public:
 class slraFlexStructureExt : public slraStructure {
   slraFlexStructure mySimpleStruct;
 
-  int myN;
-  int *myOldMl;
+  size_t myN;
+  size_t *myOldMl;
 //  double *myWk;
-  int myMaxMl;
+  size_t myMaxMl;
   
   
   /* Helper variables */
-  int myM;
-  int myNp;
+  size_t myM;
+  size_t myNp;
 
 public:
-  slraFlexStructureExt( int q, int N, double *oldNk, double *oldMl, double *Wk );
+  slraFlexStructureExt( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk );
   virtual ~slraFlexStructureExt();
   
   virtual int getM() const { return myM; }
@@ -541,7 +541,6 @@ class slraCostFunction {
   gsl_vector *myTmpYr;  
 
   /* Jacobian computation */
-  double *myTmpJacobianArray;  
   gsl_vector *myTmpJacobianCol;  
 
   gsl_matrix *myTmpGrad;  
@@ -594,7 +593,7 @@ public:
   }
 
 
-  static double  slra_f( const gsl_vector* x, void* params ) {
+  static double slra_f( const gsl_vector* x, void* params ) {
     double f;
     ((slraCostFunction *)params)->computeFuncAndGrad(x, &f, NULL);
     return f;
@@ -620,7 +619,7 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
 void tmv_prod_new(gsl_matrix*, int, 
 	      gsl_vector*, int, gsl_vector*);
 
-int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);
+/*int tls(gsl_matrix*, gsl_matrix*, gsl_matrix*);*/
 
 
 void print_mat(const gsl_matrix*);
@@ -649,16 +648,40 @@ extern "C" {
 
 /* SLICOT and LAPACK functions */
 
-void mb02gd_(char*, char*, int*, int*, int*, const int*, int*,
-double*, int*, double*, int*, double*, const int*, int*);
-void mb02md_(char*, int*, int*, int*, const int*, double*, int*,
-double*, double*, int*, double*, int*, double*, int*, const int*, int*);
-void dtbtrs_(char*, const char*, char*, int*, int*, const int*, const double*,
-int*, double*, int*, int*);
-void dpbtrs_(char*, int*, int*, const int*, const double*, int*, double*,
-int*, int*);
-void dpbtrf_(char*, int *, int *, double *, int *, int *);
+#ifdef USE_SLICOT
 
+void mb02gd_(const char *typet, const char *triu, const size_t *k, const size_t *n, const size_t *nl, 
+             const size_t *p, const size_t *s, double *t, const size_t* ldt, 
+             double *rb, const size_t *ldrb, double *dwork, const size_t *ldwork, size_t *info);
+#endif             
+             
+/*void mb02md_(char*, int*, int*, int*, const int*, double*, int*,
+double*, double*, int*, double*, int*, double*, int*, const int*, int*);*/
+
+void dtbtrs_(const char* uplo, const char* trans, const char* diag, const size_t* n, const  size_t* kd, const size_t* nrhs, 
+             const double* ab, const size_t* ldab, const double* b, const size_t* ldb, size_t* info); 
+
+void dpbtrs_(const char* uplo, const size_t* n, const size_t* kd, const size_t* nrhs, 
+             const double* ab, const size_t* ldab, const double* b, const size_t* ldb,  size_t* info); 
+
+void dpbtrf_(const char* uplo, const size_t* n, const size_t* kd, double* ab, const size_t* ldab, size_t* info); 
+
+void dgelqf_(const size_t *m, const size_t *n, double *a, const  size_t *lda, 
+             double *tau, double *work, const size_t *ldwork, size_t *info);
+             
+              
+void dormlq_(const char *side, const char *trans, const size_t *m, const size_t *n, const size_t *k,
+             double *a, const size_t *lda, double *tau, double *c, const size_t *ldc, 
+             double *work, const size_t *lwork, size_t *info);
+void dtrsm_(const char* side, const char *uplo, const char *transa, const char *diag,
+            const size_t *m, const size_t *n, const double *alpha, const double *a, const size_t *lda,
+            double *b, const size_t *ldb);
+
+
+void dgesv_(const size_t* n, const size_t* nrhs, double* a, const size_t* lda, 
+            const size_t* ipiv, double* b, const size_t* ldb, size_t* info);
+            
+void dgesvd_(const char* jobu, const char* jobvt, const size_t* m, const size_t* n, double* a, const size_t* lda, double* s, const double* u, const size_t* ldu, const double* vt, const size_t* ldvt, double* work, const size_t* lwork, size_t * info);              
 
 
 #ifdef __cplusplus

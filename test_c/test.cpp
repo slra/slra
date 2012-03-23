@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
-      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot);
+      run_test(stdout, num, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method, use_slicot, false);
 
   /* 		int time, misfit, diff; 
       for (int j = 0; j < 4; j++) {  

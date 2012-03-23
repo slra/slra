@@ -51,9 +51,10 @@ slraFlexGammaComputations::~slraFlexGammaComputations() {
 }
   
 void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
-  int k, info;
+  int k;
+  size_t info;
   gsl_matrix_view submat;
-  const int zero = 0;
+  const size_t zero = 0;
 
   /* compute brgamma_k = R' * w_k * R */
   for (k = 0; k < myW->getS(); k++) {
@@ -65,6 +66,7 @@ void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
   submat = gsl_matrix_submatrix(myGamma, 0, myW->getS() * myD, myD, myD);
   gsl_matrix_set_zero(&submat.matrix);
     
+#ifdef USE_SLICOT    
   if (my_use_slicot) { /* use SLICOT */
     gsl_matrix_vectorize(myGammaVec, myGamma);
     /* Cholesky factorization of Gamma */
@@ -72,6 +74,7 @@ void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
             &myMg, myGammaVec, &myD, myPackedCholesky, &d_times_s, 
             myCholeskyWork, &myCholeskyWorkSize, &info); /**/
   } else { /* use LAPACK */
+#endif  
     int i, j, r, row_gam, col_gam, icor;
     double *gp = myPackedCholesky;
     
@@ -90,25 +93,27 @@ void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
     
     dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, 
             &d_times_s, &info);
+#ifdef USE_SLICOT
   }
+#endif  
   
   if (info) { 
     PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
   }
 }
   
-void slraFlexGammaComputations::multiplyInvPartCholeskyArray( double * yr, int trans, int size, int chol_size ) {
-  int info;
-  int total_cols = size / chol_size;
+void slraFlexGammaComputations::multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size ) {
+  size_t info;
+  size_t total_cols = size / chol_size;
 
   dtbtrs_("U", (trans ? "T" : "N"), "N", 
           &chol_size, &d_times_s_minus_1, &total_cols, 
 	  myPackedCholesky, &d_times_s, yr, &chol_size, &info);
 }
   
-void slraFlexGammaComputations::multiplyInvPartGammaArray( double * yr, int size, int chol_size ) {
-  int info;
-  int total_cols = size / chol_size; 
+void slraFlexGammaComputations::multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size ) {
+  size_t info;
+  size_t total_cols = size / chol_size; 
   
   dpbtrs_("U", &chol_size, &d_times_s_minus_1, &total_cols, 
           myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
