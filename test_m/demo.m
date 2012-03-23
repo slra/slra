@@ -33,7 +33,7 @@ tic, x_lra = tls(D(:, 1:n), D(:, n + 1:end))'; t_lra = toc,
 s_lra.m = ones(1, n+d);
 s_lra.n = m; p = D(:);
 opt =  rmfield(opt, 'w');
-opt.Rh = i_slra.Rh;
+opt.Rini = i_slra.Rh;
 tic, [p_slra, i_slra] = slra(p, s_lra, n, opt); t_slra = toc
 error = i_slra.Rh(:,1:end-d) - x_lra
 
@@ -61,6 +61,7 @@ tic, xh_tls = tls(a, b); t_tls = toc
 % Solve the deconvolution problem via SLRA
 s.m = [n 1];
 s.n = 200;
+opt =  rmfield(opt, 'Rini');
 opt.phi = [0 1 0; 1 0 0; 0 0 1];
 tic, [p_slra, i_slra] = slra([p_a; b], s, n, opt); t_slra = toc
 

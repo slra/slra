@@ -58,8 +58,6 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
   gsl_matrix_memcpy(tempphi, perm);
   gsl_matrix_memcpy(tempR, R);
  
-  PRINTF("R2x entered\n");
-
   /* Compute LQ factorization of Phi */
   size_t lwork;
   dgelqf_(&(tempphi->size2), &(tempphi->size1), tempphi->data, &(tempphi->tda), 
