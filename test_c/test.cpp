@@ -49,7 +49,7 @@ int read_vec( gsl_vector *a,  char * filename, FILE * log ) {
 
 void run_test( FILE * log, char * testname, double & time, double & fmin, double &fmin2, int & iter, double &diff, 
                char * method = "l", int use_slicot = 0, bool silent = false ) {
-  gsl_matrix *xt = NULL, *x = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
+  gsl_matrix *Rt = NULL, *R = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   double *w_k = NULL;
   
@@ -70,20 +70,20 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
-  int x_given, perm_given, w_given;
-  char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fxname[MAX_FN_LEN], fpname[MAX_FN_LEN],
-       fxtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fxresname[MAX_FN_LEN],
+  int R_given, perm_given, w_given;
+  char faname[MAX_FN_LEN], fbname[MAX_FN_LEN], fRname[MAX_FN_LEN], fpname[MAX_FN_LEN],
+       fRtname[MAX_FN_LEN], fsname[MAX_FN_LEN], fRresname[MAX_FN_LEN],
        fpresname[MAX_FN_LEN], fpermname[MAX_FN_LEN];
   FILE *file;
 
   /* default file names */
 /*  sprintf(faname,"a%s.txt",testname);
   sprintf(fbname,"b%s.txt",testname);*/
-  sprintf(fxname,"x%s.txt",testname);
+  sprintf(fRname,"r%s.txt",testname);
   sprintf(fpname,"p%s.txt",testname);
-  sprintf(fxtname,"xt%s.txt",testname);
+  sprintf(fRtname,"rt%s.txt",testname);
   sprintf(fsname,"s%s.txt",testname);
-  sprintf(fxresname,"res_x%s.txt",testname);
+  sprintf(fRresname,"res_r%s.txt",testname);
   sprintf(fpresname,"res_p%s.txt",testname);
   sprintf(fpermname,"phi%s.txt",testname);
 
@@ -141,11 +141,11 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     d = myStruct->getNplusD() - n;
     np = myStruct->getNp();
 
-    if (((x = gsl_matrix_calloc(n, d)) == NULL)) {
+    if (((R = gsl_matrix_calloc(n+d, d)) == NULL)) {
       throw 1;
     }
     
-    x_given = read_mat(x, fxname, log);
+    R_given = read_mat(R, fRname, log);
 
     if (((p = gsl_vector_alloc(np)) == NULL) || !read_vec(p, fpname, log)) { 
       throw 1;
@@ -155,12 +155,12 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       throw 1;
     }
     
-    if (((xt = gsl_matrix_calloc(n, d)) == NULL)) {
+    if (((Rt = gsl_matrix_calloc(n+d, d)) == NULL)) {
       throw 1;
     }
     
 
-    read_mat(xt, fxtname, log);
+    read_mat(Rt, fRtname, log);
 
 /*    if (((v = gsl_matrix_alloc(n*d, n*d)) == NULL)) {
       throw 1;
@@ -177,11 +177,11 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     }
     
     /* call stls */  
-    slra(p, myStruct, n, &opt, (x_given ? x : NULL), (perm_given ? perm : NULL ), 
-         p2, x, v);
+    slra(p, myStruct, n, &opt, (R_given ? R : NULL), (perm_given ? perm : NULL ), 
+         p2, R, v);
 
     if (!silent) {
-      print_mat(x);
+      print_mat(R);
     }
 
 
@@ -195,16 +195,16 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     
   
 
-    file = fopen(fxresname,"w");
-    gsl_matrix_fprintf(file, x, "%.14f");
+    file = fopen(fRresname,"w");
+    gsl_matrix_fprintf(file, R, "%.14f");
     fclose(file);
     
 
     diff = 0;
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < (n + d); i++) {
       for (j = 0; j < d; j++) {
         double td;  
-        td = gsl_matrix_get(xt, i, j) - gsl_matrix_get(x, i, j);
+        td = gsl_matrix_get(Rt, i, j) - gsl_matrix_get(R, i, j);
         diff += td*td;
       }
     }
@@ -233,11 +233,11 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (b != NULL) {
       gsl_matrix_free(b);
     }
-    if (x != NULL) {
-      gsl_matrix_free(x);
+    if (R != NULL) {
+      gsl_matrix_free(R);
     }
-    if (xt != NULL) {
-      gsl_matrix_free(xt);
+    if (Rt != NULL) {
+      gsl_matrix_free(Rt);
     }
     if (v != NULL) {
       gsl_matrix_free(v);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n");
     printf("------------------------------------------------------------------------\n");
-    printf("|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (X) |\n");
+    printf("|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (R) |\n");
     printf("------------------------------------------------------------------------\n");
     printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n", i, times[i], misfits[i], misfits2[i], iters[i], diffs[i], method);
     printf("------------------------------------------------------------------------\n\n"); 

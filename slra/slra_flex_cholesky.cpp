@@ -52,7 +52,7 @@ slraFlexGammaComputations::~slraFlexGammaComputations() {
   
 void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
   int k;
-  size_t info;
+  size_t info = 0;
   gsl_matrix_view submat;
   const size_t zero = 0;
 

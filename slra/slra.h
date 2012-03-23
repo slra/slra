@@ -610,8 +610,8 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
 
 /* Prototypes of functions */
 int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
-          gsl_matrix *x_ini, gsl_matrix *perm, 
-          gsl_vector *p_out, gsl_matrix *xh, gsl_matrix *vh );
+          gsl_matrix *r_ini, gsl_matrix *perm, 
+          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
          
          
 
@@ -655,9 +655,6 @@ void mb02gd_(const char *typet, const char *triu, const size_t *k, const size_t 
              double *rb, const size_t *ldrb, double *dwork, const size_t *ldwork, size_t *info);
 #endif             
              
-/*void mb02md_(char*, int*, int*, int*, const int*, double*, int*,
-double*, double*, int*, double*, int*, double*, int*, const int*, int*);*/
-
 void dtbtrs_(const char* uplo, const char* trans, const char* diag, const size_t* n, const  size_t* kd, const size_t* nrhs, 
              const double* ab, const size_t* ldab, const double* b, const size_t* ldb, size_t* info); 
 

@@ -53,11 +53,10 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
   double temp;
     
   double *tau = new double[perm->size2];
-  size_t status;
+  size_t status = 0;
   
   gsl_matrix_memcpy(tempphi, perm);
   gsl_matrix_memcpy(tempR, R);
- 
  
   PRINTF("R2x entered\n");
 
@@ -72,7 +71,6 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
   delete [] work;
 
 
-  PRINTF("LQ computed entered\n");
   
   /* Compute R Q^T */
   dormlq_("R", "T", &(tempR->size2), &(tempR->size1), &(tempphi->size2),
@@ -118,7 +116,7 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
 
 
 static void compute_lra_R( const gsl_matrix *c, const gsl_matrix *perm, gsl_matrix * R ) {
-  size_t status;
+  size_t status = 0;
   size_t minus1 = -1;
   double temp;
 
@@ -224,30 +222,25 @@ static void checkAndComputeX( slraCostFunction * F, gsl_matrix *x, opt_and_info*
 }*/
 
 int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
-         gsl_matrix *x_ini, gsl_matrix *perm, 
-         gsl_vector *p_out, gsl_matrix *xh, gsl_matrix *vh ) { 
+         gsl_matrix *r_ini, gsl_matrix *perm, 
+         gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh ) { 
   slraCostFunction * myCostFun = NULL;
   gsl_matrix *x = NULL;
-  gsl_matrix *x2 = NULL;
   gsl_matrix *R = NULL;
-  gsl_matrix *U = NULL;
-  gsl_rng *rg = NULL;
   int res = GSL_SUCCESS;
 
   try { 
     myCostFun =  new slraCostFunction(s, r, p_in, opt, perm);
     x = gsl_matrix_alloc(myCostFun->getN(), myCostFun->getD());
-    x2 = gsl_matrix_alloc(myCostFun->getN(), myCostFun->getD());
     R = gsl_matrix_alloc(myCostFun->getNplusD(), myCostFun->getD());
-    U = gsl_matrix_alloc(myCostFun->getD(), myCostFun->getD());
     
-    if (x_ini == NULL) {  /* compute default initial approximation */
+    if (r_ini == NULL) {  /* compute default initial approximation */
       if (opt->disp == SLRA_OPT_DISP_ITER) {
         PRINTF("X not given, computing TLS initial approximation.\n");
       }
       compute_lra_R(myCostFun->getSMatr(), myCostFun->getPerm(), R);
     } else {
-      myCostFun->computeR(gsl_matrix_const_submatrix(x_ini, 0, 0, x_ini->size1, x_ini->size2), R);
+      gsl_matrix_memcpy(R, r_ini);
     }
 
     R_2_x(R, myCostFun->getPerm(), x);
@@ -263,8 +256,8 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }
-    if (xh != NULL) {
-      gsl_matrix_memcpy(xh, x);
+    if (rh != NULL) {
+      myCostFun->computeR(gsl_matrix_const_submatrix(x, 0, 0, x->size1, x->size2), rh);
     }
   } catch ( slraException *e ) {
     res = GSL_EINVAL;
@@ -279,19 +272,10 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
   if (x != NULL) {
     gsl_matrix_free(x);
   }
-  if (x2 != NULL) {
-    gsl_matrix_free(x2);
-  }
   if (R != NULL) {
     gsl_matrix_free(R);
   }
-  if (rg != NULL) {
-    gsl_rng_free(rg);
-  }
 
-  if (U != NULL) {
-    gsl_matrix_free(U);
-  }
 
   return res;
 }

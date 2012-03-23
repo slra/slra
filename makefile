@@ -1,5 +1,5 @@
 # makefile: SLRA makefile
-CC  = gcc  -g -fPIC -static -v -Wno-write-strings
+CC  = gcc  -g -fPIC -static -Wno-write-strings
 CCPP  = g++  -g -fPIC -Wno-write-strings
 F77 = gcc -g -fPIC -static 
 
