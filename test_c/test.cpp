@@ -66,7 +66,8 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   opt.maxiter = 500;
   opt.disp = SLRA_OPT_DISP_ITER;
   slraString2Method(method, &opt);
-  opt.use_slicot = use_slicot;
+//  opt.use_slicot = use_slicot;
+  opt.ls_correction = use_slicot;
   
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;

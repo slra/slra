@@ -113,7 +113,7 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
 }
 
 
-static void compute_lra_R( const gsl_matrix *c, const gsl_matrix *perm, gsl_matrix * R ) {
+static void compute_lra_R( const gsl_matrix *c, const gsl_matrix *perm, gsl_matrix * R, bool isgcd = false ) {
   size_t status = 0;
   size_t minus1 = -1;
   double temp;
@@ -142,7 +142,13 @@ static void compute_lra_R( const gsl_matrix *c, const gsl_matrix *perm, gsl_matr
   }
 
   gsl_matrix_transpose(tempu);
-  gsl_matrix_view RlraT = gsl_matrix_submatrix(tempu, 0, tempu->size2 - R->size2, tempu->size1, R->size2);
+  
+  gsl_matrix_view RlraT;
+  if (isgcd) { 
+    RlraT = gsl_matrix_submatrix(tempu, 0, 0, tempu->size1, R->size2);
+  } else {
+    RlraT = gsl_matrix_submatrix(tempu, 0, tempu->size2 - R->size2, tempu->size1, R->size2);
+  }
   gsl_matrix_memcpy(R, &(RlraT.matrix));
     
   delete [] s;  
@@ -227,6 +233,14 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
   gsl_matrix *R = NULL;
   int res = GSL_SUCCESS;
 
+
+  if (opt->gcd && !opt->ls_correction)  {
+    opt->ls_correction = 1;
+    if (opt->disp == SLRA_OPT_DISP_ITER) {
+      PRINTF("Only correction NLS is allowed when solving AGCD problems.\n");
+    }
+  }
+
   try { 
     myCostFun =  new slraCostFunction(s, r, p_in, opt, perm);
     x = gsl_matrix_alloc(myCostFun->getN(), myCostFun->getD());
@@ -236,12 +250,14 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
       if (opt->disp == SLRA_OPT_DISP_ITER) {
         PRINTF("X not given, computing TLS initial approximation.\n");
       }
-      compute_lra_R(myCostFun->getSMatr(), myCostFun->getPerm(), R);
+      compute_lra_R(myCostFun->getSMatr(), myCostFun->getPerm(), R, opt->gcd);
     } else {
       gsl_matrix_memcpy(R, r_ini);
     }
 
     R_2_x(R, myCostFun->getPerm(), x);
+
+//format long    print_mat(x);
 
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
@@ -249,8 +265,12 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
     if (p_out != NULL) {
-      if (p_out != p_in) {
-        gsl_vector_memcpy(p_out, p_in);
+      if (opt->gcd) {
+        gsl_vector_set_zero(p_out);
+      } else {
+        if (p_out != p_in) {
+          gsl_vector_memcpy(p_out, p_in);
+        }
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }

@@ -175,11 +175,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
                     else IfCheckAndStoreFieldBoundLU(tol, 0, 1) 
                       else IfCheckAndStoreFieldBoundL(reggamma, 0) 
                         else IfCheckAndStoreFieldBoundLU(use_slicot, 0, 1) 
-                          else { 
-                            sprintf(str_buf, "Ignoring unrecognized"
-                               " optimization option '%s'.", field_name); 
-                            mexWarnMsgTxt(str_buf); 
-                          } 
+                          else IfCheckAndStoreFieldBoundLU(ls_correction, 0, 1) 
+                            else IfCheckAndStoreFieldBoundLU(gcd, 0, 1) 
+                              else { 
+                                sprintf(str_buf, "Ignoring unrecognized"
+                                    " optimization option '%s'.", field_name); 
+                                mexWarnMsgTxt(str_buf); 
+                              } 
         }
       }
     }
@@ -215,9 +217,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
          view_to_mat(rini), view_to_mat(perm),
          view_to_vec(p_out), view_to_mat(rh_view), view_to_mat(vh_view));
 
-    mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
-    mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
-    mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
+    if (nlhs > 1) {
+      mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
+      mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
+      mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
+    }
   } catch (slraException *e) {
     strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
     str_buf[STR_MAX_LEN - 1] = 0;

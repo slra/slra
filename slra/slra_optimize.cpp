@@ -43,24 +43,22 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
       opt->submethod > gsl_submethod_max[opt->method]) {
     throw new slraException("Unknown optimization method.\n");   
   }
-
+  
   /* LM */
+  int ls_nfun = opt->ls_correction ? F->getNp() : F->getM() * F->getD();
   gsl_multifit_fdfsolver* solverlm;
   gsl_multifit_function_fdf fdflm = { 
-    &(F->slra_f_ls), 
-    &(F->slra_df_ls), 
-    &(F->slra_fdf_ls), F->getM() * F->getD(), F->getN() * F->getD(), F };
+      opt->ls_correction ? &(F->slra_f_cor) : &(F->slra_f_ls), 
+      opt->ls_correction ? &(F->slra_df_cor) : &(F->slra_df_ls), 
+      opt->ls_correction ? &(F->slra_fdf_cor) : &(F->slra_fdf_ls), 
+      ls_nfun, F->getN() * F->getD(), F };
   gsl_vector *g;
 
   /* QN */
-  double stepqn = opt->step; /* ??? */
-  /*    gsl_multimin_fdfminimizer_vector_bfgs2;*/
+  double stepqn = opt->step; 
   gsl_multimin_fdfminimizer* solverqn;
-
   gsl_multimin_function_fdf fdfqn = { 
-    &(slraCostFunction::slra_f),
-    &(slraCostFunction::slra_df), 
-    &(slraCostFunction::slra_fdf), F->getN() * F->getD(), F };
+    &(F->slra_f), &(F->slra_df), &(F->slra_fdf), F->getN() * F->getD(), F };
 
 
   /* NM */
@@ -72,8 +70,7 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
   /* initialize the optimization method */
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
-    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], 
-					    F->getM() * F->getD(), F->getN() * F->getD());
+    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], ls_nfun, F->getN() * F->getD());
     gsl_multifit_fdfsolver_set(solverlm, &fdflm, x_vec);
     g = gsl_vector_alloc(F->getN() * F->getD());
     break;
@@ -109,7 +106,7 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
     x_norm = gsl_blas_dnrm2(solverlm->x);
     g_norm = gsl_blas_dnrm2(g);
-    PRINTF("  0: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", opt->fmin, g_norm, x_norm);
+    PRINTF("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", opt->fmin, g_norm, x_norm);
   }
   
   
@@ -143,15 +140,15 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
 	x_norm = gsl_blas_dnrm2(solverlm->x);
 	g_norm = gsl_blas_dnrm2(g);
 	
-	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
+	PRINTF("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
 	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     case SLRA_OPT_METHOD_QN:
       status = gsl_multimin_fdfminimizer_iterate( solverqn );
-      if (status == GSL_ENOPROG) {
-	break; /* <- THIS IS WRONG */
-      }
+/*      if (status == GSL_ENOPROG) {
+	break; /* <- THIS IS WRONG * /
+      }*/
 
       /* check the convergence criteria */
       status_grad = gsl_multimin_test_gradient(
@@ -166,7 +163,7 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
 	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
 	x_norm = gsl_blas_dnrm2(solverqn->x);
 	g_norm = gsl_blas_dnrm2(solverqn->gradient);
-	PRINTF("%3u: f0 = %16.8f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
+	PRINTF("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
 	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
@@ -180,7 +177,7 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
 	x_norm = gsl_blas_dnrm2(solvernm->x);
 
-	PRINTF("%3u: f0 = %16.8f,  ||x|| = %10.8f\n", 
+	PRINTF("%3u: f0 = %16.11f,  ||x|| = %10.8f\n", 
 	       opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
@@ -254,6 +251,7 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
     }
   }
 
+
   /* Cleanup  */
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
@@ -268,6 +266,7 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
     gsl_vector_free(stepnm);
     break;
   }
+
 
 
   return GSL_SUCCESS; /* <- correct with status */

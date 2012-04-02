@@ -59,8 +59,6 @@ slraFlexStructure::slraFlexStructure( const double *s_matr, size_t q, size_t k, 
   for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = *(s_matr + l);
     mySA[l].nb = (s_matr_cols > 1) ? *(s_matr + myQ + l): 1;
-    mySA[l].exact = (s_matr_cols > 2) ? *(s_matr + 2 * myQ + l): 0;
-    mySA[l].toeplitz = (s_matr_cols > 3) ? *(s_matr + 3 * myQ + l): 0;
     
     if (w_k != NULL) {
       if (w_k[l] != std::numeric_limits<double>::infinity() && w_k[l] <= 0) {
@@ -126,9 +124,8 @@ void slraFlexStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
       for (j = 0; j < L; j++) {
         gsl_matrix_const_view p_matr_chunk_sub = gsl_matrix_const_submatrix(&p_matr_chunk.matrix, 
 	                                        j, k * getFlexBlockNb(l), m_div_k, getFlexBlockNb(l));
-        c_chunk_sub = gsl_matrix_submatrix(&c_chunk.matrix, 0, 
-                      (isFlexBlockToeplitz(l) ? (L- j -1) * getFlexBlockNb(l) : j * getFlexBlockNb(l)), 
-                      m_div_k, getFlexBlockNb(l));
+        c_chunk_sub = gsl_matrix_submatrix(&c_chunk.matrix, 0,
+                         j * getFlexBlockNb(l), m_div_k, getFlexBlockNb(l));
         gsl_matrix_memcpy(&c_chunk_sub.matrix, &p_matr_chunk_sub.matrix);
       }
       
@@ -156,18 +153,11 @@ void slraFlexStructure::computeWkParams() {
     for (l = 0; l < getQ(); l++) { 
       ncol = getFlexBlockNCol(l);
       zkl = gsl_matrix_submatrix(zk, sum_nl, sum_nl, ncol, ncol); 
-
-      if ((!isFlexBlockExact(l))) {
-	offset = getFlexBlockNb(l) * k;
-	imax   = ncol - offset;
-	for (i = 0; i < imax; i++) {
-	  if (isFlexBlockToeplitz(l)) {
-	    gsl_matrix_set(&zkl.matrix, i, i + offset, 1);
-          } else {
-	    gsl_matrix_set(&zkl.matrix, i + offset, i, 1);
-	  }
-	}
-      } 
+      offset = getFlexBlockNb(l) * k;
+      imax   = ncol - offset;
+      for (i = 0; i < imax; i++) {
+        gsl_matrix_set(&zkl.matrix, i + offset, i, 1);
+      }
       gsl_matrix_scale(&zkl.matrix, getInvBlockWeight(l));
 
       sum_nl += ncol;
@@ -187,7 +177,7 @@ void slraFlexStructure::computeStats() {
     myNpOffset += myK * (getFlexBlockLag(l) - 1) * getFlexBlockNb(l);
     myNpScale += getFlexBlockNb(l);
     
-    if ((!mySA[l].exact) && getFlexBlockLag(l) > myMaxLag) {
+    if ((!isFlexBlockExact(l)) && getFlexBlockLag(l) > myMaxLag) {
       myMaxLag = mySA[l].blocks_in_row;
     }
   }
@@ -218,34 +208,19 @@ void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector 
   int sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix_view  p_matr_chunk, p_matr_chunk_sub;
   gsl_matrix_view brgf_matr, res_sub_matr, b_xext;
-  gsl_vector_view p_chunk_vec, brgf_matr_row, res_sub, b_xext_sub;
-  gsl_matrix *xext_rev;
+  gsl_vector_view p_chunk_vec, brgf_matr_row, res_sub;
   gsl_vector *res;
   double tmp;
 
   brgf_matr = gsl_matrix_view_vector(yr, getM(), R->size2);
     
-  /* Create reversed Xext matrix for Toeplitz blocks */
-  xext_rev = gsl_matrix_alloc(R->size1, R->size2); 
-
-  for (i = 0; i < R->size1; i++) {
-    b_xext_sub = gsl_matrix_row(R, R->size1 - i - 1);
-    gsl_matrix_set_row(xext_rev, i,  &b_xext_sub.vector);
-  }
-
   /* Allocate a vector for intermediate results */  
   res = gsl_vector_alloc(R->size1);
 
   for (l = 0; l < getQ(); l++) {
     int ncol = getFlexBlockNCol(l);
-  
-    /* Select submatrix being used */
-    if (isFlexBlockToeplitz(l)) {
-      b_xext = gsl_matrix_submatrix(xext_rev, (R->size1 - (sum_nl + ncol)), 0, ncol, R->size2);
-    } else {
-      b_xext = gsl_matrix_submatrix(R, sum_nl, 0, ncol, R->size2); 
-    }
-
+    b_xext = gsl_matrix_submatrix(R, sum_nl, 0, ncol, R->size2); 
+    
     /* Calculate dimensions of current parameter chunk */
     L = getFlexBlockLag(l);
     T = getFlexBlockT(l);
@@ -255,7 +230,7 @@ void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector 
     res_sub = gsl_vector_subvector(res, 0, ncol);
     res_sub_matr = gsl_matrix_view_vector(&res_sub.vector, L, getFlexBlockNb(l));
     /* Subtract correction if needed */
-    if (!isFlexBlockExact(l) && (getInvBlockWeight(l) != 0.0)) {
+    if (!isFlexBlockExact(l)) {
       p_matr_chunk = gsl_matrix_view_array(&(p->data[sum_np]), T, getFlexBlockNb(l) * getK());
       for (j = 0; j < getK(); j++) {
         for (k = 0; k < (getM() / getK()); k++) {
@@ -274,7 +249,6 @@ void slraFlexStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector 
   }
   
   gsl_vector_free(res);
-  gsl_matrix_free(xext_rev); 
 }
 
 void slraFlexStructure::setM( int m ) {

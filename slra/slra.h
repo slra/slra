@@ -85,6 +85,8 @@ typedef struct {
   
   double reggamma; /* To be worked out */
   int use_slicot;
+  int ls_correction;  /* Use correction computation in nonlinear least squares */
+  int gcd;         /* Is gcd being computed? */
 
   /* output information */
   int iter;
@@ -105,6 +107,8 @@ typedef struct {
 #define SLRA_DEF_tol      1e-6
 #define SLRA_DEF_reggamma 0.001
 #define SLRA_DEF_use_slicot 1
+#define SLRA_DEF_ls_correction 0
+#define SLRA_DEF_gcd          0
 
 #define slraAssignDefOptValue(opt, field) \
   do { opt.field = SLRA_DEF_##field; } while(0)
@@ -122,6 +126,8 @@ typedef struct {
             slraAssignDefOptValue(opt, tol); \
             slraAssignDefOptValue(opt, reggamma); \
             slraAssignDefOptValue(opt, use_slicot); \
+            slraAssignDefOptValue(opt, ls_correction); \
+            slraAssignDefOptValue(opt, gcd); \
           } while(0)
           
 /* structure in the data matrix C = [ A B ] */ 
@@ -130,8 +136,8 @@ typedef struct {
 typedef struct {
   size_t blocks_in_row;       /* Number of blocks in a row of Ci */
   size_t nb;                  /* Number of columns in each small block */
-  size_t exact;               /* 1 - exact block, 0 - not exact */  
-  size_t toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
+/*  size_t exact;               /* 1 - exact block, 0 - not exact */  
+/*  size_t toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
   double inv_w;            /* Square root of inverse of the weight */
 } slraFlexBlock;
 
@@ -337,8 +343,8 @@ public:
   int getFlexBlockLag( int l ) const { return mySA[l].blocks_in_row; }
   int getFlexBlockNCol( int l ) const { return mySA[l].blocks_in_row * mySA[l].nb; }
   int getFlexBlockNb( int l ) const { return mySA[l].nb; }
-  bool isFlexBlockExact( int l ) const { return mySA[l].exact; }
-  bool isFlexBlockToeplitz( int l ) const { return mySA[l].toeplitz; }
+  bool isFlexBlockExact( int l ) const { return (mySA[l].inv_w == 0.0); }
+//  bool isFlexBlockToeplitz( int l ) const { return mySA[l].toeplitz; }
   double getInvBlockWeight( int l ) const { return mySA[l].inv_w; }
   
   int getFlexBlockT( int l ) const { return getFlexBlockLag(l) + (getM() / getK()) - 1; }
@@ -539,6 +545,12 @@ class slraCostFunction {
   gsl_matrix *myTmpGradR2;
   gsl_matrix *myTmpR;  
   gsl_vector *myTmpYr;  
+  gsl_vector *myTmpCorr;  
+  
+  const gsl_vector *myP;
+  double myPNorm;
+  bool isGCD;
+
 
   /* Jacobian computation */
   gsl_vector *myTmpJacobianCol;  
@@ -554,6 +566,7 @@ public:
   int getNplusD() { return myStruct->getNplusD(); }
   int getN() { return myRank; }
   int getM() { return myStruct->getM(); }
+  int getNp() { return myStruct->getNp(); }
 
   const gsl_matrix * getPerm() { return myPerm; }
   const gsl_matrix * getSMatr() { return myMatr; }
@@ -569,11 +582,18 @@ public:
     myGam->computeCholeskyOfGamma(myTmpR);
     computeSr(myTmpR, Sr);
   } 
+
+  void computeJacobianZij( gsl_vector *res, int i, int j,
+                           gsl_vector* yr, gsl_matrix *R, double factor = 0.5 );
+
+  void computePseudoJacobianCorrectFromYr( gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac );
   
   void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac );
   void computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad );
 
 
+
+  void computeCorrectionAndJacobian( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac  );
   void computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac );
   void computeFuncAndGrad( const gsl_vector* x, double * f, gsl_vector *grad );
   
@@ -589,6 +609,20 @@ public:
   }
   static int slra_fdf_ls( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
     ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, jac);
+    return GSL_SUCCESS;
+  }
+
+
+  static int slra_f_cor( const gsl_vector* x, void* params, gsl_vector *res ) {
+    ((slraCostFunction *)params)->computeCorrectionAndJacobian(x, res, NULL);
+    return GSL_SUCCESS;
+  }
+  static int slra_df_cor( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
+    ((slraCostFunction *)params)->computeCorrectionAndJacobian(x, NULL, jac);
+    return GSL_SUCCESS;
+  }
+  static int slra_fdf_cor( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
+    ((slraCostFunction *)params)->computeCorrectionAndJacobian(x, res, jac);
     return GSL_SUCCESS;
   }
 
