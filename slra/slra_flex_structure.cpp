@@ -25,12 +25,12 @@ slraException::slraException( const char *format, ... ) {
 }
 
 
-slraGammaComputations *slraLayeredHankelStructure::createGammaComputations( int r, double reg_gamma )  {
-  return new slraFlexGammaComputations(this, r, getM(), 1, reg_gamma);
+slraGammaCholesky *slraLayeredHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
+  return new slraBTBGammaCholesky(this, r, getM(), 1, reg_gamma);
 }
 
-slraDerivativeComputations *slraLayeredHankelStructure::createDerivativeComputations( int r ) {
-  return new slraFlexDerivativeComputations(this, r);
+slraDGamma *slraLayeredHankelStructure::createDerivativeComputations( int r ) const {
+  return new slraDGammaToeplitz(this, r);
 }
 
   
@@ -46,13 +46,13 @@ slraLayeredHankelStructure::slraLayeredHankelStructure( const slraLayeredHankelS
   
   computeStats(); 
   computeWkParams();
-  setNp(s.myNp);
+  setM(s.myM);
 }
 
 
 
-slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, size_t q, int np_or_m, bool set_m, const double *w_k  ) :
-                                      myQ(q), mySA(NULL)  {
+slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, size_t q, int M, const double *w_k  ) :
+                                      myQ(q), myM(M), mySA(NULL)  {
   mySA = new slraFlexBlock[myQ];
   for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = oldNk[l];
@@ -69,11 +69,6 @@ slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, siz
    
   computeStats(); 
   computeWkParams();
-  if (set_m) {
-    setM(np_or_m);                                      
-  } else {
-    setNp(np_or_m);                                      
-  }
 }
 
 slraLayeredHankelStructure::~slraLayeredHankelStructure() {
@@ -138,36 +133,15 @@ void slraLayeredHankelStructure::computeWkParams() {
 
 void slraLayeredHankelStructure::computeStats() {
   myNplusD = 0;
-  myNpOffset = 0;
   myMaxLag = 1;
   
   for (int l = 0; l < myQ; l++) {
     myNplusD += getFlexBlockNCol(l);
-    myNpOffset += getFlexBlockLag(l) - 1;
     
     if ((!isFlexBlockExact(l)) && getFlexBlockLag(l) > myMaxLag) {
       myMaxLag = mySA[l].blocks_in_row;
     }
   }
-}
-
-
-void slraLayeredHankelStructure::setNp( int np ) {
-  if (np <= 0) {
-    np = getNpScale() + myNpOffset;
-  }
-  
-  if (np < getNpScale() + myNpOffset) {
-    throw slraException("There is no matrix with the structure specification " 
-                        "for length %d: vector too short.\n", np);
-  }
-  if ((np - myNpOffset) % getNpScale() != 0) {
-    throw slraException("There is no matrix with the structure specification "
-                        "for length %d. scale = %d, offset = %d\n", np,
-	                getNpScale(), myNpOffset);
-  }
-
-  myNp = np;
 }
 
 
@@ -200,91 +174,88 @@ void slraLayeredHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gs
 }
 
 void slraLayeredHankelStructure::setM( int m ) {
-  if (m <= 0) {
-    m = 1;
+  myM = m <= 0 ? 1 : m;
+}
+
+
+slraGammaCholesky *slraMosaicHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
+  return new slraSameDiagBTBGammaCholesky(this, r, 1, reg_gamma);
+}
+
+slraGammaCholesky *slraStripedStructure::createGammaComputations( int r, double reg_gamma ) const {
+  return new slraDiagGammaCholesky(this, r, reg_gamma);
+}
+
+slraDGamma *slraStripedStructure::createDerivativeComputations( int r ) const {
+  return new slraDGammaStriped(this, r);
+}
+
+
+
+typedef slraStructure* pslraStructure;
+
+
+pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk )  {
+  pslraStructure *res = new pslraStructure[N];
+  
+  for (size_t k = 0; k < N; k++) {
+    res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
   }
   
-  myNp = getNpScale() * m + myNpOffset;
+  return res;
 }
 
 
-
-slraGammaComputations *slraMosaicHankelStructure::createGammaComputations( int r, double reg_gamma )  {
-  return new slraFlexGammaComputationsExt(this, r, 1, reg_gamma);
-}
-
-
-slraDerivativeComputations *slraMosaicHankelStructure::createDerivativeComputations( int r ) {
-  return new slraFlexDerivativeComputationsExt(this, r);
-}
-
-
-
-slraMosaicHankelStructure::slraMosaicHankelStructure( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk ) :
-    mySimpleStruct(oldNk, q, -1, false, Wk), myN(N), myOldMl(NULL) {
+slraStripedStructure::slraStripedStructure( size_t N, slraStructure **stripe  ) : myN(N), myLHStripe(stripe) {
   size_t k;  
-
-  myOldMl = new size_t[N];  
-  /*myWk = new double[q];
-  
-  for (k = 0; k < q; k++) {
-    myWk[k] = (Wk != NULL ? Wk[k] : 1);
-  }*/
-  
-
-
   myM = 0;
-  myMaxMl = 0;
+  myNp = 0;
+  myMaxMlInd = 0;
+
   for (k = 0; k < myN; k++) {
-    myOldMl[k] = oldMl[k];
-    myM += myOldMl[k];
-    
-    if (myOldMl[k] > myMaxMl) {
-      myMaxMl = myOldMl[k];
+    myM += myLHStripe[k]->getM();
+    myNp += myLHStripe[k]->getNp();
+    if (myLHStripe[k]->getM() > myLHStripe[myMaxMlInd]->getM()) {
+      myMaxMlInd = k;
     }
   }
-  
 }
 
-slraMosaicHankelStructure::~slraMosaicHankelStructure()  {
-  if (myOldMl != NULL) {
-    delete[] myOldMl;
+
+slraStripedStructure::~slraStripedStructure()  {
+  if (myLHStripe != NULL) {
+    for (size_t k = 0; k < myN; k++) {
+      if (myLHStripe[k] != NULL) {
+        delete myLHStripe[k];
+      }
+    }
+    delete[] myLHStripe;
   }
-/*  if (myWk != NULL) {
-    delete[] myWk;
-  }*/
 }
 
-void slraMosaicHankelStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
+void slraStripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
   int n_row = 0, sum_np = 0;
   gsl_matrix_view sub_c;
-
   
-  for (int k = 0; k < getBlocksN(); sum_np += mySimpleStruct.getNp(), n_row += getMl(k), k++) {
+  for (int k = 0; k < getBlocksN(); sum_np += myLHStripe[k]->getNp(), n_row += getMl(k), k++) {
     sub_c = gsl_matrix_submatrix(c, n_row, 0, getMl(k), c->size2);    
-    mySimpleStruct.setM(getMl(k));
-    gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, mySimpleStruct.getNp());
-  
-    mySimpleStruct.fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
+    gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, myLHStripe[k]->getNp());
+    myLHStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
   }
 }
 
-
-
-void slraMosaicHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
+void slraStripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
   int n_row = 0, sum_np = 0;
-  gsl_vector_view sub_p;
-  gsl_vector_view sub_yr;
+  gsl_vector_view sub_p, sub_yr;
   int D = R->size2;
   
-  for (int k = 0; k < getBlocksN(); sum_np += mySimpleStruct.getNp(), n_row += getMl(k) * D, k++) {
+  for (int k = 0; k < getBlocksN(); sum_np += myLHStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
     sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
-    mySimpleStruct.setM(getMl(k));
-    sub_p = gsl_vector_subvector(p, sum_np, mySimpleStruct.getNp());
-  
-    mySimpleStruct.correctVector(&sub_p.vector, R, &sub_yr.vector);
+    sub_p = gsl_vector_subvector(p, sum_np, myLHStripe[k]->getNp());
+    myLHStripe[k]->correctVector(&sub_p.vector, R, &sub_yr.vector);
   }
 }
+
 
 
 

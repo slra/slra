@@ -180,7 +180,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     /* call stls */  
     slra(p, myStruct, n, &opt, (R_given ? R : NULL), (perm_given ? perm : NULL ), 
          p2, R, v);
-
+         
     if (!silent) {
       print_mat(R);
     }
@@ -255,6 +255,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (w_k != NULL) {
       delete [] w_k;
     }
+    
     if (myStruct != NULL) {
       delete myStruct;
     }

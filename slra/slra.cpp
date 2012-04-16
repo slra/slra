@@ -257,8 +257,6 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
 
     R_2_x(R, myCostFun->getPerm(), x);
 
-//format long    print_mat(x);
-
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
     int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);

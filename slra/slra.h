@@ -145,9 +145,9 @@ public:
 };
 
 
-class slraGammaComputations {
+class slraGammaCholesky {
 public:  
-  virtual  ~slraGammaComputations() {}
+  virtual  ~slraGammaCholesky() {}
   virtual void computeCholeskyOfGamma( gsl_matrix *R ) = 0;
 
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
@@ -160,9 +160,9 @@ public:
   }
 };
 
-class slraDerivativeComputations {
+class slraDGamma {
 public:  
-  virtual ~slraDerivativeComputations() {}
+  virtual ~slraDGamma() {}
   virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr ) = 0;
 
   virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
@@ -179,8 +179,8 @@ public:
   virtual int getM() const = 0;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
   
-  virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma ) = 0;
-  virtual slraDerivativeComputations *createDerivativeComputations( int r ) = 0;
+  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const = 0;
+  virtual slraDGamma *createDerivativeComputations( int r ) const = 0;
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
 };
 
@@ -197,13 +197,10 @@ public:
 
 
 class slraLayeredHankelStructure : virtual public slraStructure, virtual public slraWkInterface {
-//  size_t myK;                      /* = rowdim(block in T/H blocks) */ 
-  int myQ;	                /* number of blocks in C = [C1 ... Cq] */
-  
-  size_t myNp;
+  int myQ;	                /* number of layers */
+  size_t myM;
   
   size_t myNplusD;
-  int  myNpOffset;
   size_t myMaxLag;
 
   void computeStats();
@@ -214,25 +211,22 @@ class slraLayeredHankelStructure : virtual public slraStructure, virtual public 
   slraFlexBlock *mySA;	/* q-element array describing C1,...,Cq; */  
 public:
   slraLayeredHankelStructure( const slraLayeredHankelStructure &s ); /* Copy constructor */
-  slraLayeredHankelStructure( const double *oldNk, size_t q, int np_or_m = -1, bool set_m = false, 
+  slraLayeredHankelStructure( const double *oldNk, size_t q, int M, 
                      const double *w_k = NULL );
   virtual ~slraLayeredHankelStructure();
 
-  virtual int getNp() const { return myNp; }
   virtual int getNplusD() const { return myNplusD; }
-  virtual int getM() const { return (myNp - myNpOffset) / getNpScale(); }
-  virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma );
-  virtual slraDerivativeComputations *createDerivativeComputations( int r );
+  virtual int getM() const { return myM; }
+  virtual int getNp() const { return (myM - 1) * myQ + myNplusD; }
+  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
+  virtual slraDGamma *createDerivativeComputations( int r ) const;
 
-  void setNp( int np );
   void setM( int m );
   
   int getQ() const { return myQ; }
-  int getNpScale() const { return myQ; }
-
+ 
   int getMaxLag() const { return myMaxLag; }
-  int getNpOffset() const { return myNpOffset; }
-
+  
   
   int getFlexBlockLag( int l ) const { return mySA[l].blocks_in_row; }
   int getFlexBlockNCol( int l ) const { return mySA[l].blocks_in_row; }
@@ -252,7 +246,7 @@ public:
 };
 
 
-class slraFlexGammaComputations : virtual public slraGammaComputations {
+class slraBTBGammaCholesky : public slraGammaCholesky {
 protected:
   int my_use_slicot;
   double my_reg_gamma;
@@ -277,9 +271,9 @@ protected:
   double *myCholeskyWork;
   
 public:
-  slraFlexGammaComputations( const slraWkInterface *s, int r, int Mg,
+  slraBTBGammaCholesky( const slraWkInterface *s, int r, int Mg,
      int use_slicot, double reg_gamma  );
-  virtual ~slraFlexGammaComputations();
+  virtual ~slraBTBGammaCholesky();
 
   int getD() const { return myD; }
 
@@ -304,7 +298,7 @@ public:
 
   virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) {
     if (yr_matr->size2 != yr_matr->tda) {
-      slraGammaComputations::multiplyInvCholeskyTransMatrix(yr_matr, trans);
+      slraGammaCholesky::multiplyInvCholeskyTransMatrix(yr_matr, trans);
     } else {
       multiplyInvPartCholeskyArray(yr_matr->data, trans, yr_matr->size1 * yr_matr->size2, d_times_Mg);
     }
@@ -312,8 +306,8 @@ public:
 
 };
 
-class slraFlexDerivativeComputations : virtual public 
-                                       slraDerivativeComputations {
+class slraDGammaToeplitz : virtual public 
+                                       slraDGamma {
   const slraWkInterface *myW;
   size_t  myD, myK;
   
@@ -325,9 +319,8 @@ class slraFlexDerivativeComputations : virtual public
   gsl_matrix *myN_k;
 
 public:
-  slraFlexDerivativeComputations( const slraWkInterface *s, int r );
-  virtual ~slraFlexDerivativeComputations();
-
+  slraDGammaToeplitz( const slraWkInterface *s, int r );
+  virtual ~slraDGammaToeplitz();
   int getD() const { return myD; }
 
   
@@ -338,78 +331,115 @@ public:
 };
 
 
-class slraMosaicHankelStructure : public slraStructure {
-  slraLayeredHankelStructure mySimpleStruct;
-
+class slraStripedStructure : public slraStructure {
+  slraStructure **myLHStripe;
   size_t myN;
-  size_t *myOldMl;
-//  double *myWk;
-  size_t myMaxMl;
-  
-  
+
   /* Helper variables */
   size_t myM;
   size_t myNp;
 
+  size_t myMaxMlInd;
+protected:
+  slraStripedStructure( size_t N, slraStructure **stripe );
+
 public:
-  slraMosaicHankelStructure( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk );
-  virtual ~slraMosaicHankelStructure();
-  
+  virtual ~slraStripedStructure();
+
   virtual int getM() const { return myM; }
-  virtual int getNp() const { 
-    return mySimpleStruct.getNpOffset() * myN + mySimpleStruct.getNpScale() * myM; 
-  }
-  virtual int getNplusD() const { return mySimpleStruct.getNplusD(); }
-
-
-  virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma );
-  virtual slraDerivativeComputations *createDerivativeComputations( int r );
-
-
-  int getMl( int k ) const { return myOldMl[k]; }
-  int getMaxMl() const { return myMaxMl; }
+  virtual int getNp() const { return myNp; }
+  virtual int getNplusD() const { return myLHStripe[0]->getNplusD(); }
+  
   int getBlocksN() const { return myN; }
 
-  
-  const slraWkInterface *getWkInterface() const { 
-    return &mySimpleStruct; 
+  int getMl( int k ) const { return myLHStripe[k]->getM(); }
+  const slraStructure *getBlock( size_t k ) const { 
+    return myLHStripe[k]; 
+  }
+
+  int getMaxMl() const { return getMl(myMaxMlInd); }
+  const slraStructure *getMaxBlock() const { 
+    return getBlock(myMaxMlInd); 
   }
 
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+
+ 
+  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
+  virtual slraDGamma *createDerivativeComputations( int r ) const;
+};
+
+class slraDiagGammaCholesky : virtual public slraGammaCholesky {
+  slraGammaCholesky **myGamma;
+  int myD;
+  const slraStripedStructure *myStruct;
+public:  
+  slraDiagGammaCholesky( const slraStripedStructure *s, int r, double reg_gamma  ) ;
+  virtual ~slraDiagGammaCholesky();
+
+  
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+
+  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
+  virtual void multiplyInvGammaVector( gsl_vector * yr );                
 };
 
 
+class slraMosaicHankelStructure : public slraStripedStructure {
+public:
+  static slraStructure **allocStripe( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk );
 
-class slraFlexGammaComputationsExt : public slraGammaComputations {
-  slraFlexGammaComputations myBase;
-  slraMosaicHankelStructure *myStruct;
-public:  
-  slraFlexGammaComputationsExt( slraMosaicHankelStructure *s, int r, int use_slicot, double reg_gamma  ) :
-      myStruct(s), myBase(s->getWkInterface(), r, s->getMaxMl(), use_slicot, reg_gamma) {
+  slraMosaicHankelStructure( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk ) :
+      slraStripedStructure(N, allocStripe(q, N, oldNk, oldMl, Wk)) {
   }
-  virtual ~slraFlexGammaComputationsExt() {}
+  virtual ~slraMosaicHankelStructure() {}
+
+  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
+};
+
+
+/*
+
+class slraDiagGammaCholesky : public slraGammaCholesky {
+  slraStructure **myStructs;
+  slraDiagGammaCholesky **myCholesky;
+  int myN;
+
+public:
+  slraDiagGammaCholesky( slraStructs **structs, int N, int r );
+  virtual ~slraDiagGammaCholesky();
+};
+*/
+
+class slraSameDiagBTBGammaCholesky : public slraGammaCholesky {
+  slraBTBGammaCholesky *myBase;
+  const slraMosaicHankelStructure *myStruct;
+public:  
+  slraSameDiagBTBGammaCholesky( const slraMosaicHankelStructure *s, int r, int use_slicot, double reg_gamma  ) :
+      myStruct(s) {
+    myBase = (slraBTBGammaCholesky *)myStruct->getMaxBlock()->createGammaComputations(r, reg_gamma);  
+  }
+  virtual ~slraSameDiagBTBGammaCholesky() {
+    delete myBase;
+  }
   
   virtual void computeCholeskyOfGamma( gsl_matrix *R ) {
-    myBase.computeCholeskyOfGamma(R);
+    myBase->computeCholeskyOfGamma(R);
   }
   
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multiplyInvGammaVector( gsl_vector * yr );                
-  
-
 };
 
 
-
-class slraFlexDerivativeComputationsExt : virtual public 
-                                       slraDerivativeComputations {
-  slraFlexDerivativeComputations myBase;
-  slraMosaicHankelStructure *myStruct;
+class slraDGammaStriped : virtual public slraDGamma {
+  slraDGamma **myLHDGamma;
+  const slraStripedStructure *myStruct;
   gsl_matrix *myTmpGrad;
 public:  
-  slraFlexDerivativeComputationsExt( slraMosaicHankelStructure *s, int r  ) ;
-  virtual ~slraFlexDerivativeComputationsExt();
+  slraDGammaStriped( const slraStripedStructure *s, int r  ) ;
+  virtual ~slraDGammaStriped();
 
   virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );
 
@@ -424,8 +454,8 @@ public:
 class slraCostFunction {
   slraStructure *myStruct;
   int myRank;
-  slraGammaComputations *myGam;
-  slraDerivativeComputations *myDeriv;
+  slraGammaCholesky *myGam;
+  slraDGamma *myDeriv;
   gsl_matrix *myMatr;
   gsl_matrix *myPerm;
   

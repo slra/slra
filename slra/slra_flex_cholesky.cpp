@@ -16,7 +16,7 @@ extern "C" {
 #include "slra.h"
 
 
-slraFlexGammaComputations::slraFlexGammaComputations( const slraWkInterface *s, int r, int Mg, 
+slraBTBGammaCholesky::slraBTBGammaCholesky( const slraWkInterface *s, int r, int Mg, 
      int use_slicot, double reg_gamma  ) : 
      myMg(Mg), myN(r), myD(s->getNplusD()-r), my_use_slicot(use_slicot), my_reg_gamma(reg_gamma)  {
      
@@ -42,7 +42,7 @@ slraFlexGammaComputations::slraFlexGammaComputations( const slraWkInterface *s, 
   d_times_s_minus_1 = myD * myW->getS() - 1;
 }
   
-slraFlexGammaComputations::~slraFlexGammaComputations() {
+slraBTBGammaCholesky::~slraBTBGammaCholesky() {
   free(myGammaVec);
   gsl_matrix_free(myGamma);
   gsl_matrix_free(myWkTmp);
@@ -50,7 +50,7 @@ slraFlexGammaComputations::~slraFlexGammaComputations() {
   free(myCholeskyWork);
 }
   
-void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
+void slraBTBGammaCholesky::computeCholeskyOfGamma( gsl_matrix *R )  {
   int k;
   size_t info = 0;
   gsl_matrix_view submat;
@@ -102,7 +102,7 @@ void slraFlexGammaComputations::computeCholeskyOfGamma( gsl_matrix *R )  {
   }
 }
   
-void slraFlexGammaComputations::multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size ) {
+void slraBTBGammaCholesky::multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size ) {
   size_t info;
   size_t total_cols = size / chol_size;
 
@@ -111,7 +111,7 @@ void slraFlexGammaComputations::multiplyInvPartCholeskyArray( double * yr, int t
 	  myPackedCholesky, &d_times_s, yr, &chol_size, &info);
 }
   
-void slraFlexGammaComputations::multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size ) {
+void slraBTBGammaCholesky::multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size ) {
   size_t info;
   size_t total_cols = size / chol_size; 
   
@@ -119,29 +119,79 @@ void slraFlexGammaComputations::multiplyInvPartGammaArray( double * yr, size_t s
           myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
 }
 
-void slraFlexGammaComputationsExt::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
+void slraSameDiagBTBGammaCholesky::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
   
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myBase.getD(), myStruct->getMl(k) * myBase.getD());    
+    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), myStruct->getMl(k) * myBase->getD());    
   
-    myBase.multiplyInvPartCholeskyArray(sub_yr.vector.data, trans, 
+    myBase->multiplyInvPartCholeskyArray(sub_yr.vector.data, trans, 
         sub_yr.vector.size, sub_yr.vector.size);
   }
 }
 
-void slraFlexGammaComputationsExt::multiplyInvGammaVector( gsl_vector * yr ) {
+void slraSameDiagBTBGammaCholesky::multiplyInvGammaVector( gsl_vector * yr ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
   
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myBase.getD(), myStruct->getMl(k) * myBase.getD());    
+    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), myStruct->getMl(k) * myBase->getD());    
   
-    myBase.multiplyInvPartGammaArray(sub_yr.vector.data, sub_yr.vector.size, sub_yr.vector.size);
+    myBase->multiplyInvPartGammaArray(sub_yr.vector.data, sub_yr.vector.size, sub_yr.vector.size);
   }
 }
 
+typedef slraGammaCholesky* pslraGammaCholesky;
+
+slraDiagGammaCholesky::slraDiagGammaCholesky( const slraStripedStructure *s, int r, double reg_gamma  ) :
+    myStruct(s) {
+  myD = s->getNplusD() - r;
+  myGamma = new pslraGammaCholesky[myStruct->getBlocksN()];
+  for (int k = 0; k < myStruct->getBlocksN(); k++) {
+    myGamma[k] = myStruct->getBlock(k)->createGammaComputations(r, reg_gamma);
+  }
+}    
+
+slraDiagGammaCholesky::~slraDiagGammaCholesky() {
+  if (myGamma != NULL) {
+    for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
+      if (myGamma[k] != NULL) {
+        delete myGamma[k];
+      }
+    }
+    delete[] myGamma;
+  }
+}
+
+void slraDiagGammaCholesky::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
+  int n_row = 0;
+  gsl_vector_view sub_yr;
+  
+  for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
+    sub_yr = gsl_vector_subvector(yr, n_row * myD, myStruct->getMl(k) * myD);    
+  
+    myGamma[k]->multiplyInvCholeskyVector(&sub_yr.vector, trans);
+  }
+}
+
+void slraDiagGammaCholesky::multiplyInvGammaVector( gsl_vector * yr ) {
+  int n_row = 0;
+  gsl_vector_view sub_yr;
+  
+  for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
+    sub_yr = gsl_vector_subvector(yr, n_row * myD, myStruct->getMl(k) * myD);    
+  
+    myGamma[k]->multiplyInvGammaVector(&sub_yr.vector);
+  }
+}
+
+
+void slraDiagGammaCholesky::computeCholeskyOfGamma( gsl_matrix *R ) {
+  for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
+    myGamma[k]->computeCholeskyOfGamma(R);  
+  }
+}
 
 
 
