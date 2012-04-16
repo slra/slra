@@ -128,7 +128,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       }
     }
       
-    myStruct = new slraFlexStructureExt(s_q, s_k, L_q, m_k, w_k);
+    myStruct = new slraMosaicHankelStructure(s_q, s_k, L_q, m_k, w_k);
     m = myStruct->getM();
       
     delete [] m_k; 
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
   char num[10];
   char * method = "l";
   int  i = -1;
-  int use_slicot = 1;
+  int use_slicot = 0;
 
 
   if (argc > 1) {

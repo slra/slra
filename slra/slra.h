@@ -36,10 +36,6 @@
 /* size of the work array for mb02gd */
 #define EITER 1 /* maximum number of iterations reached */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define SLRA_OPT_DISP_NOTIFY   0
 #define SLRA_OPT_DISP_FINAL    1
 #define SLRA_OPT_DISP_ITER     2
@@ -130,109 +126,13 @@ typedef struct {
             slraAssignDefOptValue(opt, gcd); \
           } while(0)
           
-/* structure in the data matrix C = [ A B ] */ 
-#define MAXQ 10	/* maximum number of blocks in C */
-
 typedef struct {
   size_t blocks_in_row;       /* Number of blocks in a row of Ci */
-  size_t nb;                  /* Number of columns in each small block */
-/*  size_t exact;               /* 1 - exact block, 0 - not exact */  
-/*  size_t toeplitz;            /* 1 - Toeplitz marix, 0 - Hankel matrix */  
   double inv_w;            /* Square root of inverse of the weight */
 } slraFlexBlock;
 
-typedef struct {
-  size_t k;	          /* = rowdim(block in T/H blocks) */ 
-  size_t q;	          /* number of blocks in C = [C1 ... Cq] */
-  slraFlexBlock a[MAXQ];  /* q-element array describing C1,...,Cq; */  
-} data_struct;
-
-/* additional info about matrix structure */
-typedef struct {
-  int total_cols;
-  int np_scale, np_offset; /* Coefficients in the formula  
-			      np = np_scale * m + np_offset */
-} flex_struct_add_info;
-
-/* three dimensional array of covariances w */
-typedef struct {
-  int s;	/* length of the array (w.s = s+1 from the paper) */
-  gsl_matrix **a;
-} w_data;
-
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
 #define mymin(a, b) ((a) < (b) ? (a) : (b))
-
-#define COMMON_PARAMS  \
-    int m, n, d; \
-    gsl_matrix* c; \
-    double reggamma; \
-    int k;  \
-    int  n_plus_d, 		/* = col_dim(C) */ \
-    n_times_d,			/* = number of elements in x */ \
-    k_times_d,			/* = row_dim(gamma) */ \
-    k_times_d_times_s,		/* = col_dim(gamma) */ \
-    k_times_d_times_s_minus_1,  /* = col_dim(gamma) - 1 */ \
-    m_times_d, 			/* = row_dim(rb) */ \
-    m_div_k,  \
-    s_minus_1;  \
-    int one; /* One for blas routines */ \
-    int use_slicot; \
-    int chol_count; \
-    clock_t chol_time; 
-
-#define PREPARE_COMMON_PARAMS(C, Nn, S, OPT, PP, isblock) \
-  do {\
-  PP->m = C->size1; \
-  PP->n = Nn; \
-  PP->d = C->size2 - Nn;		\
-  /* set other parameters */ \
-  PP->c = gsl_matrix_alloc(C->size1, C->size2); \
-  gsl_matrix_memcpy(PP->c, C); \
-  PP->reggamma = OPT->reggamma; \
-  /* find Wk  */ \
-  s2w(S, &PP->w, PP->n+PP->d, isblock);\
-  PP->k = S->k;  \
-  PP->n_plus_d = PP->n + PP->d;   \
-  PP->n_times_d = PP->n * PP->d;   \
-  PP->k_times_d = S->k * PP->d; \
-  PP->k_times_d_times_s = PP->k_times_d * PP->w.s;\
-  PP->k_times_d_times_s_minus_1 = PP->k_times_d_times_s - 1;\
-  PP->m_times_d = PP->m * PP->d;\
-  PP->m_div_k = (int) PP->m / S->k;\
-  PP->s_minus_1 = PP->w.s - 1;\
-  PP->one = 1;\
-  PP->use_slicot = OPT->use_slicot; \
-  PP->chol_count = 0; \
-  PP->chol_time = 0; \
-  } while (0)
-
-typedef struct {
-  COMMON_PARAMS;
-
-  w_data w; \
-
-  /* Preallocated arrays */  
-  gsl_matrix *x_ext; 
-  gsl_vector *yr;
-  
-  /* Preallocated arrays for cholgam */
-  double *rb;   /* Result of Cholesky factorization */
-  gsl_matrix *tmp; /* Temp matrix for cholgam (x_ext' * w_k) 
-		      P->k_times_d x SIZE_W  */
-  gsl_matrix *gamma;
-  double *gamma_vec;
-  int ldwork;       /* Size of Dwork for MB02GD  */
-  double *dwork;    /* Dwork for MB02GD  */
-
-  /* Preallocated arrays for jacobian */
-  gsl_matrix *dgamma, *st;
-  double *jres1, * jres2;
-} slra_opt_data_old;
-
-
-#ifdef __cplusplus
-}
 
 
 class slraException {
@@ -243,7 +143,6 @@ public:
   slraException( const char *msg, ... );
   const char *getMessage()  { return myMsg; }
 };
-
 
 
 class slraGammaComputations {
@@ -297,33 +196,31 @@ public:
 
 
 
-class slraFlexStructure : virtual public slraStructure, virtual public slraWkInterface {
-  size_t myK;                      /* = rowdim(block in T/H blocks) */ 
+class slraLayeredHankelStructure : virtual public slraStructure, virtual public slraWkInterface {
+//  size_t myK;                      /* = rowdim(block in T/H blocks) */ 
   int myQ;	                /* number of blocks in C = [C1 ... Cq] */
   
   size_t myNp;
   
   size_t myNplusD;
-  int myNpScale, myNpOffset;
+  int  myNpOffset;
   size_t myMaxLag;
 
   void computeStats();
   void computeWkParams(); 
 
   gsl_matrix **myA;
-  
 
   slraFlexBlock *mySA;	/* q-element array describing C1,...,Cq; */  
 public:
-  slraFlexStructure( const slraFlexStructure &s ); /* Copy constructor */
-  slraFlexStructure( const data_struct *s, int np = -1 ); /* "Copy" constructor */
-  slraFlexStructure( const double *s_matr, size_t q, size_t k, int s_matr_cols, int np_or_m = -1, bool set_m = false, 
+  slraLayeredHankelStructure( const slraLayeredHankelStructure &s ); /* Copy constructor */
+  slraLayeredHankelStructure( const double *oldNk, size_t q, int np_or_m = -1, bool set_m = false, 
                      const double *w_k = NULL );
-  virtual ~slraFlexStructure();
+  virtual ~slraLayeredHankelStructure();
 
   virtual int getNp() const { return myNp; }
   virtual int getNplusD() const { return myNplusD; }
-  virtual int getM() const { return (myNp - myNpOffset) / myNpScale; }
+  virtual int getM() const { return (myNp - myNpOffset) / getNpScale(); }
   virtual slraGammaComputations *createGammaComputations( int r, double reg_gamma );
   virtual slraDerivativeComputations *createDerivativeComputations( int r );
 
@@ -331,28 +228,22 @@ public:
   void setM( int m );
   
   int getQ() const { return myQ; }
-  int getK() const { return myK; }
+  int getNpScale() const { return myQ; }
 
   int getMaxLag() const { return myMaxLag; }
-
   int getNpOffset() const { return myNpOffset; }
-  int getNpScale() const { return myNpScale; }
 
-//  const slraFlexBlock & getFlexBlock( int i ) const { return mySA[i]; }
   
   int getFlexBlockLag( int l ) const { return mySA[l].blocks_in_row; }
-  int getFlexBlockNCol( int l ) const { return mySA[l].blocks_in_row * mySA[l].nb; }
-  int getFlexBlockNb( int l ) const { return mySA[l].nb; }
+  int getFlexBlockNCol( int l ) const { return mySA[l].blocks_in_row; }
+
   bool isFlexBlockExact( int l ) const { return (mySA[l].inv_w == 0.0); }
-//  bool isFlexBlockToeplitz( int l ) const { return mySA[l].toeplitz; }
   double getInvBlockWeight( int l ) const { return mySA[l].inv_w; }
   
-  int getFlexBlockT( int l ) const { return getFlexBlockLag(l) + (getM() / getK()) - 1; }
-  int getFlexBlockNp( int l ) const { return getFlexBlockT(l) * getK() * getFlexBlockNb(l); }
+  int getFlexBlockNp( int l ) const { return getFlexBlockLag(l) + getM() - 1; }
   
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
-
 
   virtual int getS() const { return myMaxLag; }
   virtual const gsl_matrix *getWk( int k ) const { 
@@ -434,7 +325,7 @@ class slraFlexDerivativeComputations : virtual public
   gsl_matrix *myN_k;
 
 public:
-  slraFlexDerivativeComputations( const slraWkInterface *s, int r, int K );
+  slraFlexDerivativeComputations( const slraWkInterface *s, int r );
   virtual ~slraFlexDerivativeComputations();
 
   int getD() const { return myD; }
@@ -447,8 +338,8 @@ public:
 };
 
 
-class slraFlexStructureExt : public slraStructure {
-  slraFlexStructure mySimpleStruct;
+class slraMosaicHankelStructure : public slraStructure {
+  slraLayeredHankelStructure mySimpleStruct;
 
   size_t myN;
   size_t *myOldMl;
@@ -461,8 +352,8 @@ class slraFlexStructureExt : public slraStructure {
   size_t myNp;
 
 public:
-  slraFlexStructureExt( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk );
-  virtual ~slraFlexStructureExt();
+  slraMosaicHankelStructure( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk );
+  virtual ~slraMosaicHankelStructure();
   
   virtual int getM() const { return myM; }
   virtual int getNp() const { 
@@ -492,9 +383,9 @@ public:
 
 class slraFlexGammaComputationsExt : public slraGammaComputations {
   slraFlexGammaComputations myBase;
-  slraFlexStructureExt *myStruct;
+  slraMosaicHankelStructure *myStruct;
 public:  
-  slraFlexGammaComputationsExt( slraFlexStructureExt *s, int r, int use_slicot, double reg_gamma  ) :
+  slraFlexGammaComputationsExt( slraMosaicHankelStructure *s, int r, int use_slicot, double reg_gamma  ) :
       myStruct(s), myBase(s->getWkInterface(), r, s->getMaxMl(), use_slicot, reg_gamma) {
   }
   virtual ~slraFlexGammaComputationsExt() {}
@@ -514,10 +405,10 @@ public:
 class slraFlexDerivativeComputationsExt : virtual public 
                                        slraDerivativeComputations {
   slraFlexDerivativeComputations myBase;
-  slraFlexStructureExt *myStruct;
+  slraMosaicHankelStructure *myStruct;
   gsl_matrix *myTmpGrad;
 public:  
-  slraFlexDerivativeComputationsExt( slraFlexStructureExt *s, int r  ) ;
+  slraFlexDerivativeComputationsExt( slraMosaicHankelStructure *s, int r  ) ;
   virtual ~slraFlexDerivativeComputationsExt();
 
   virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );
@@ -667,14 +558,12 @@ void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
 void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
 
 /* Convert double matrix to structure */
-int slraMatrix2Struct( data_struct *s, double *s_matr, 
-                       int q, int s_matr_cols );
+/*int slraMatrix2Struct( data_struct *s, double *s_matr, 
+                       int q, int s_matr_cols );*/
 void slraString2Method( const char *str_buf, opt_and_info *popt );
 int slraString2Disp( const char *str_value );
 
  
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

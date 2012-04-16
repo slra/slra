@@ -188,7 +188,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
   
   try {
-    myStruct = new slraFlexStructureExt(vec_ml.vector.size, vec_nk.vector.size, 
+    myStruct = new slraMosaicHankelStructure(vec_ml.vector.size, vec_nk.vector.size, 
                      vec_ml.vector.data, vec_nk.vector.data, wk.vector.data);
     m = myStruct->getNplusD();
     if (rank <= 0 || rank >= m) {

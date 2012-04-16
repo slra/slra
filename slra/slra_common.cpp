@@ -4,24 +4,6 @@
 
 #include "slra.h"
 
-int slraMatrix2Struct( data_struct* ps, double *s_matr, 
-                       int q, int s_matr_cols ) {
-  ps->q  = q;
-  int l;
-
-  int n_plus_d = 0;
-  for (l = 0; l < ps->q; l++) {
-    ps->a[l].blocks_in_row = *(s_matr + l);
-    ps->a[l].nb = (s_matr_cols > 1) ? *(s_matr + ps->q + l): 1;
-/*    ps->a[l].exact = (s_matr_cols > 2) ? *(s_matr + 2 * ps->q + l): 0;
-    ps->a[l].toeplitz = (s_matr_cols > 3) ? *(s_matr + 3 * ps->q + l): 0;*/
-    ps->a[l].inv_w = 0;
-    n_plus_d += ps->a[l].blocks_in_row * ps->a[l].nb;
-  }
-
-  return n_plus_d;
-}
-
 char meth_codes[] = "lqn";
 char submeth_codes_lm[] = "ls";
 char submeth_codes_qn[] = "b2pf";
