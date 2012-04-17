@@ -5,36 +5,22 @@
 #include <cstdarg>
 
 extern "C" {
-
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
-
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
-
 }
 
 #include "slra.h"
 
-slraException::slraException( const char *format, ... ) { 
-  va_list vl;
-  va_start(vl, format);  
-  myMsg[MSG_MAX-1] = 0;
-  vsnprintf(myMsg, MSG_MAX-1, format, vl); 
-}
-
-
 slraGammaCholesky *slraLayeredHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new slraBTBGammaCholesky(this, r, getM(), 1, reg_gamma);
+  return new slraGammaCholeskyBTBanded(this, r, getM(), 1, reg_gamma);
 }
 
 slraDGamma *slraLayeredHankelStructure::createDerivativeComputations( int r ) const {
-  return new slraDGammaToeplitz(this, r);
+  return new slraDGammaBTBanded(this, r);
 }
-
-  
-
 
 slraLayeredHankelStructure::slraLayeredHankelStructure( const slraLayeredHankelStructure &s ) :  myQ(s.myQ), mySA(NULL) {
   int k;  
@@ -49,14 +35,11 @@ slraLayeredHankelStructure::slraLayeredHankelStructure( const slraLayeredHankelS
   setM(s.myM);
 }
 
-
-
 slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, size_t q, int M, const double *w_k  ) :
                                       myQ(q), myM(M), mySA(NULL)  {
   mySA = new slraFlexBlock[myQ];
   for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = oldNk[l];
-    
     if (w_k != NULL) {
       if (w_k[l] != std::numeric_limits<double>::infinity() && w_k[l] <= 0) {
         throw new slraException("This value of weight is not supported: %lf\n", w_k[l]);
@@ -144,7 +127,6 @@ void slraLayeredHankelStructure::computeStats() {
   }
 }
 
-
 void slraLayeredHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
   int l, k;
   int sum_np = 0, sum_nl = 0, p_len;
@@ -177,23 +159,11 @@ void slraLayeredHankelStructure::setM( int m ) {
   myM = m <= 0 ? 1 : m;
 }
 
-
 slraGammaCholesky *slraMosaicHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new slraSameDiagBTBGammaCholesky(this, r, 1, reg_gamma);
+  return new slraGammaCholeskySameDiagBTBanded(this, r, 1, reg_gamma);
 }
-
-slraGammaCholesky *slraStripedStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new slraDiagGammaCholesky(this, r, reg_gamma);
-}
-
-slraDGamma *slraStripedStructure::createDerivativeComputations( int r ) const {
-  return new slraDGammaStriped(this, r);
-}
-
-
 
 typedef slraStructure* pslraStructure;
-
 
 pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk )  {
   pslraStructure *res = new pslraStructure[N];
@@ -206,55 +176,6 @@ pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, dou
 }
 
 
-slraStripedStructure::slraStripedStructure( size_t N, slraStructure **stripe  ) : myN(N), myLHStripe(stripe) {
-  size_t k;  
-  myM = 0;
-  myNp = 0;
-  myMaxMlInd = 0;
-
-  for (k = 0; k < myN; k++) {
-    myM += myLHStripe[k]->getM();
-    myNp += myLHStripe[k]->getNp();
-    if (myLHStripe[k]->getM() > myLHStripe[myMaxMlInd]->getM()) {
-      myMaxMlInd = k;
-    }
-  }
-}
-
-
-slraStripedStructure::~slraStripedStructure()  {
-  if (myLHStripe != NULL) {
-    for (size_t k = 0; k < myN; k++) {
-      if (myLHStripe[k] != NULL) {
-        delete myLHStripe[k];
-      }
-    }
-    delete[] myLHStripe;
-  }
-}
-
-void slraStripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
-  int n_row = 0, sum_np = 0;
-  gsl_matrix_view sub_c;
-  
-  for (int k = 0; k < getBlocksN(); sum_np += myLHStripe[k]->getNp(), n_row += getMl(k), k++) {
-    sub_c = gsl_matrix_submatrix(c, n_row, 0, getMl(k), c->size2);    
-    gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, myLHStripe[k]->getNp());
-    myLHStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
-  }
-}
-
-void slraStripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
-  int n_row = 0, sum_np = 0;
-  gsl_vector_view sub_p, sub_yr;
-  int D = R->size2;
-  
-  for (int k = 0; k < getBlocksN(); sum_np += myLHStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
-    sub_p = gsl_vector_subvector(p, sum_np, myLHStripe[k]->getNp());
-    myLHStripe[k]->correctVector(&sub_p.vector, R, &sub_yr.vector);
-  }
-}
 
 
 
