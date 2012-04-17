@@ -40,6 +40,8 @@ public:
   virtual int getNp() const = 0;
   virtual int getNplusD() const = 0;
   virtual int getM() const = 0;
+  virtual int getS() const = 0;
+  
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
   
   virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const = 0;
@@ -47,11 +49,9 @@ public:
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
 };
 
-class slraWkInterface {
+class slraStationaryStructure : public slraStructure {
 public:
   virtual const gsl_matrix *getWk( int k )  const = 0; 
-  virtual int getS() const  = 0;
-  virtual int getNplusD() const = 0;
 };
 
 

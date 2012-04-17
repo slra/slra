@@ -1,61 +1,47 @@
-class slraGammaCholeskyBTBanded : public slraGammaCholesky {
+class slraGammaCholeskyBBanded : public slraGammaCholesky {
 protected:
-  int my_use_slicot;
+  const slraStructure *myW;
+  size_t myD;
   double my_reg_gamma;
-  
-  const slraWkInterface *myW;
-  
-  size_t myN, myD;
-  
-  size_t myMg;
-  
+    
   size_t s_minus_1;
   size_t d_times_s;
   size_t d_times_Mg;
   size_t d_times_s_minus_1;
   
-  int myCholeskyWorkSize;
- 
-  double *myGammaVec;
-  gsl_matrix *myGamma;
-  gsl_matrix *myWkTmp;
   double *myPackedCholesky;
-  double *myCholeskyWork;
-  
 public:
-  slraGammaCholeskyBTBanded( const slraWkInterface *s, int r, int Mg,
-     int use_slicot, double reg_gamma  );
-  virtual ~slraGammaCholeskyBTBanded();
+  slraGammaCholeskyBBanded( const slraStructure *s, int r, double reg_gamma );
+  virtual ~slraGammaCholeskyBBanded();
 
   int getD() const { return myD; }
-
-  virtual void computeCholeskyOfGamma( gsl_matrix *R );
-
+  int getM() const { return myW->getM(); }
+  int getNplusD() const { return myW->getNplusD(); }
+  int getS() const { return myW->getS(); }
+  
   virtual void multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size );
   virtual void multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size );
 
+  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );
+  virtual void multiplyInvGammaVector( gsl_vector * yr );
+  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
+};
 
-  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
-    if (yr->stride != 1) {
-      throw new slraException("Cannot multiply vectors with stride != 1\n");
-    }
-    multiplyInvPartCholeskyArray(yr->data, trans, yr->size, d_times_Mg);
-  }
-  virtual void multiplyInvGammaVector( gsl_vector * yr ) {
-    if (yr->stride != 1) {
-      throw new slraException("Cannot multiply vectors with stride != 1\n");
-    }
-    multiplyInvPartGammaArray(yr->data, yr->size, d_times_Mg);
-  }
+class slraGammaCholeskyBTBanded : public slraGammaCholeskyBBanded {
+  const slraStationaryStructure *myWs;
 
-  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) {
-    if (yr_matr->size2 != yr_matr->tda) {
-      slraGammaCholesky::multiplyInvCholeskyTransMatrix(yr_matr, trans);
-    } else {
-      multiplyInvPartCholeskyArray(yr_matr->data, trans, yr_matr->size1 * yr_matr->size2, d_times_Mg);
-    }
-  }
+  gsl_matrix *myGamma;
+  gsl_matrix *myWkTmp;
+#ifdef USE_SLICOT
+  double *myGammaVec;
+  double *myCholeskyWork;
+  int myCholeskyWorkSize;
+#endif  
+public:
+  slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  );
+  virtual ~slraGammaCholeskyBTBanded();
 
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
 };
 
 class slraGammaCholeskySameDiagBTBanded : public slraGammaCholesky {
@@ -78,3 +64,26 @@ public:
   virtual void multiplyInvGammaVector( gsl_vector * yr );                
 };
 
+
+
+class slraGammaCholeskyBBandedLH : public slraGammaCholeskyBBanded {
+  const slraLayeredHankelWeightedStructure *myWs;
+  gsl_matrix *myTempR, *myTempRtWkt, *myTempGammaij;
+  gsl_vector *myTempInvW;
+public:
+  slraGammaCholeskyBBandedLH( const slraLayeredHankelWeightedStructure *s, int r, double reg_gamma ) :
+      slraGammaCholeskyBBanded(s, r, reg_gamma), myWs(s) {
+    myTempR = gsl_matrix_alloc(getNplusD(), getD());
+    myTempRtWkt = gsl_matrix_alloc(getD(), getNplusD());
+    myTempGammaij = gsl_matrix_alloc(getD(), getD());
+    myTempInvW = gsl_vector_alloc(getNplusD());
+  }
+  virtual ~slraGammaCholeskyBBandedLH() {
+    gsl_matrix_free(myTempR);
+    gsl_matrix_free(myTempRtWkt);
+    gsl_matrix_free(myTempGammaij);
+    gsl_vector_free(myTempInvW);
+  }
+
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+};

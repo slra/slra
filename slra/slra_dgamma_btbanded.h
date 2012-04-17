@@ -1,7 +1,7 @@
 class slraDGammaBTBanded : virtual public 
                                        slraDGamma {
-  const slraWkInterface *myW;
-  size_t  myD, myK;
+  const slraStationaryStructure *myW;
+  size_t  myD;
   
   gsl_vector *myTempWkColRow;
   gsl_matrix *myDGamma;
@@ -11,7 +11,7 @@ class slraDGammaBTBanded : virtual public
   gsl_matrix *myN_k;
 
 public:
-  slraDGammaBTBanded( const slraWkInterface *s, int r );
+  slraDGammaBTBanded( const slraStationaryStructure *s, int r );
   virtual ~slraDGammaBTBanded();
   int getD() const { return myD; }
 

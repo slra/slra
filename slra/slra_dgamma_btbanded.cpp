@@ -13,7 +13,7 @@ extern "C" {
 
 #include "slra.h"
 
-slraDGammaBTBanded::slraDGammaBTBanded( const slraWkInterface *s, int r ) :
+slraDGammaBTBanded::slraDGammaBTBanded( const slraStationaryStructure *s, int r ) :
     myD(s->getNplusD() - r), myW(s) {
   
   myTempWkColRow = gsl_vector_alloc(myW->getNplusD());
@@ -40,20 +40,17 @@ void slraDGammaBTBanded::computeYrtDgammaYr( gsl_matrix *mgrad_r,
   gsl_matrix_set_zero(mgrad_r);
          
   for (int k = 0; k < myW->getS(); k++) {
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myW->getWk(k), R, 0.0,  myWk_R);
-
-    if (k > 0) {
-      gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myW->getWk(k), R, 0.0, myWkT_R);
-    }
-
     yr_matr = gsl_matrix_view_vector(yr, m, myD);
     yr_matr1 = gsl_matrix_submatrix(&yr_matr.matrix, 0, 0, m - k, myD);
     yr_matr2 = gsl_matrix_submatrix(&yr_matr.matrix, k, 0, m - k, myD);
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, 
         &yr_matr1.matrix, &yr_matr2.matrix, 0.0, myN_k);
-
+    
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myW->getWk(k), R, 0.0,  myWk_R);
     gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, myWk_R, myN_k, 1.0, mgrad_r);
+
     if (k > 0) {
+      gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myW->getWk(k), R, 0.0, myWkT_R);
       gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myWkT_R, myN_k, 1.0, mgrad_r);
     }
   }       
@@ -98,5 +95,4 @@ void slraDGammaBTBanded::computeDijGammaYr( gsl_vector *res,
        
   tmv_prod_new(myDGamma, myW->getS(), yr, yr->size / myD, res);  /* compute st_ij = DGamma * yr */
 }
-
 

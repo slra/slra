@@ -16,6 +16,7 @@ public:
   virtual int getM() const { return myM; }
   virtual int getNp() const { return myNp; }
   virtual int getNplusD() const { return myLHStripe[0]->getNplusD(); }
+  virtual int getS() const { return myLHStripe[0]->getS(); }
   
   int getBlocksN() const { return myN; }
 

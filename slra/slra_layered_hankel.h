@@ -1,13 +1,12 @@
 
 
-
-class slraLayeredHankelStructure : virtual public slraStructure, virtual public slraWkInterface {
+class slraLayeredHankelStructure : public slraStationaryStructure {
   int myQ;	                /* number of layers */
   size_t myM;
   typedef struct {
     size_t blocks_in_row;       /* Number of blocks in a row of Ci */
     double inv_w;            /* Square root of inverse of the weight */
-  } slraFlexBlock;
+  } slraLayer;
 
   
   size_t myNplusD;
@@ -18,38 +17,37 @@ class slraLayeredHankelStructure : virtual public slraStructure, virtual public 
 
   gsl_matrix **myA;
 
-  slraFlexBlock *mySA;	/* q-element array describing C1,...,Cq; */  
+  slraLayer *mySA;	/* q-element array describing C1,...,Cq; */  
+protected:
+  int nvGetNp() const { return (myM - 1) * myQ + myNplusD; }  
+  
 public:
-  slraLayeredHankelStructure( const slraLayeredHankelStructure &s ); /* Copy constructor */
   slraLayeredHankelStructure( const double *oldNk, size_t q, int M, 
-                     const double *w_k = NULL );
+                     const double *layer_w = NULL );
   virtual ~slraLayeredHankelStructure();
 
   virtual int getNplusD() const { return myNplusD; }
   virtual int getM() const { return myM; }
-  virtual int getNp() const { return (myM - 1) * myQ + myNplusD; }
+  virtual int getS() const { return myMaxLag; }
+  
+  virtual int getNp() const { return nvGetNp(); }
   virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
   virtual slraDGamma *createDerivativeComputations( int r ) const;
 
   void setM( int m );
   
   int getQ() const { return myQ; }
- 
   int getMaxLag() const { return myMaxLag; }
   
-  
-  int getFlexBlockLag( int l ) const { return mySA[l].blocks_in_row; }
-  int getFlexBlockNCol( int l ) const { return mySA[l].blocks_in_row; }
-
-  bool isFlexBlockExact( int l ) const { return (mySA[l].inv_w == 0.0); }
-  double getInvBlockWeight( int l ) const { return mySA[l].inv_w; }
-  
-  int getFlexBlockNp( int l ) const { return getFlexBlockLag(l) + getM() - 1; }
+  int getLayerLag( int l ) const { return mySA[l].blocks_in_row; }
+  bool isLayerExact( int l ) const { return (mySA[l].inv_w == 0.0); }
+  double getLayerInvWeight( int l ) const { return mySA[l].inv_w; }
+  int getLayerNp( int l ) const { return getLayerLag(l) + getM() - 1; }
   
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 
-  virtual int getS() const { return myMaxLag; }
+
   virtual const gsl_matrix *getWk( int k ) const { 
     return myA[k]; 
   }
@@ -68,6 +66,21 @@ public:
   virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
 };
 
+
+class slraLayeredHankelWeightedStructure : public slraLayeredHankelStructure {
+  gsl_vector *myInvSqrtWeights;
+public:
+  slraLayeredHankelWeightedStructure( const double *oldNk, size_t q, int M, 
+                     const double *weights = NULL );
+  virtual ~slraLayeredHankelWeightedStructure();
+
+  double getInvSqrtWeights( int i ) const { return gsl_vector_get(myInvSqrtWeights, i); }
+
+  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
+  virtual slraDGamma *createDerivativeComputations( int r ) const;
+  
+  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+};
 
 
 

@@ -11,35 +11,26 @@ extern "C" {
 
 #include "slra.h"
 
-slraGammaCholeskyBTBanded::slraGammaCholeskyBTBanded( const slraWkInterface *s, int r, int Mg, 
-     int use_slicot, double reg_gamma  ) : 
-     myMg(Mg), myN(r), myD(s->getNplusD()-r), my_use_slicot(use_slicot), my_reg_gamma(reg_gamma)  {
-  myW = s;
-    
-  /* Preallocate arrays */
-  myGammaVec = (double*) malloc(myD * myD * (myW->getS() + 1) * sizeof(double));
-  myGamma = gsl_matrix_alloc(myD, myD * (myW->getS() + 1));
-  myWkTmp = gsl_matrix_alloc(myD, myN + myD);
-  myPackedCholesky = (double *)malloc(myMg * myD * myD * myW->getS() * 
-                              sizeof(double));
-  myCholeskyWorkSize = 1 + myW->getS() * myD * myD + /* pDW */ 
-                       3 * myD + /* 3 * K */
-                       mymax(myW->getS(), myMg - myW->getS()) * myD * myD;
+slraGammaCholeskyBTBanded::slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  ) : 
+    slraGammaCholeskyBBanded(s, r, reg_gamma), myWs(s)  {
+  myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
+  myWkTmp = gsl_matrix_alloc(getD(), getNplusD());
+#ifdef USE_SLICOT
+  myGammaVec = (double*) malloc(getD() * getD() * (getS() + 1) * sizeof(double));
+  myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 
+                       3 * getD() + /* 3 * K */
+                       mymax(getS(), getM() - getS()) * getD() * getD();
   myCholeskyWork = (double *)malloc(myCholeskyWorkSize * sizeof(double));                       
-                       
-  /* Calculate variables for FORTRAN routines */     
-  s_minus_1 = myW->getS() - 1;
-  d_times_s = myD * myW->getS();
-  d_times_Mg = myMg * myD;
-  d_times_s_minus_1 = myD * myW->getS() - 1;
+#endif  
 }
   
 slraGammaCholeskyBTBanded::~slraGammaCholeskyBTBanded() {
-  free(myGammaVec);
   gsl_matrix_free(myGamma);
   gsl_matrix_free(myWkTmp);
-  free(myPackedCholesky);
+#ifdef USE_SLICOT  
+  free(myGammaVec);
   free(myCholeskyWork);
+#endif  
 }
   
 void slraGammaCholeskyBTBanded::computeCholeskyOfGamma( gsl_matrix *R )  {
@@ -47,66 +38,97 @@ void slraGammaCholeskyBTBanded::computeCholeskyOfGamma( gsl_matrix *R )  {
   gsl_matrix_view submat;
   const size_t zero = 0;
 
-  /* compute brgamma_k = R' * w_k * R */
-  for (k = 0; k < myW->getS(); k++) {
-    submat = gsl_matrix_submatrix(myGamma, 0, k * myD, myD, myD);
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, R, myW->getWk(k), 0.0, myWkTmp);
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myWkTmp, R, 0.0, 
-        &submat.matrix);
+  for (k = 0; k < getS(); k++) { /* compute brgamma_k = R' * w_k * R */
+    submat = gsl_matrix_submatrix(myGamma, 0, k * getD(), getD(), getD());
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, R, myWs->getWk(k), 0.0, myWkTmp);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myWkTmp, R, 0.0, &submat.matrix);
   }
-  submat = gsl_matrix_submatrix(myGamma, 0, myW->getS() * myD, myD, myD);
+  submat = gsl_matrix_submatrix(myGamma, 0, getS() * getD(), getD(), getD());
   gsl_matrix_set_zero(&submat.matrix);
     
 #ifdef USE_SLICOT    
-  if (my_use_slicot) { /* use SLICOT */
-    gsl_matrix_vectorize(myGammaVec, myGamma);
-    /* Cholesky factorization of Gamma */
-    mb02gd_("R", "N", &myD, &myMg, &s_minus_1, &zero, 
-            &myMg, myGammaVec, &myD, myPackedCholesky, &d_times_s, 
-            myCholeskyWork, &myCholeskyWorkSize, &info); /**/
-  } else { /* use LAPACK */
-#endif  
-    int i, j, r, row_gam, col_gam, icor;
-    double *gp = myPackedCholesky;
+  size_t D = getD(), Mg = getM();
+  gsl_matrix_vectorize(myGammaVec, myGamma);
     
-    for (i = 0; i < d_times_s; i++) {
-      for (j = 0; j < myD; j++) {
-        icor = i + j + 1;
-        gp[i + j * d_times_s] = gsl_matrix_get(myGamma, 
-            icor % myD, j + (myW->getS() - (icor / myD)) * myD);
-      }
+  mb02gd_("R", "N", &D, &Mg, &s_minus_1, &zero, 
+          &myMg, myGammaVec, &D, myPackedCholesky, &d_times_s, 
+          myCholeskyWork, &myCholeskyWorkSize, &info); /**/
+#else /* USE_SLICOT */
+  int row_gam, col_gam, icor;
+  double *gp = myPackedCholesky;
+    
+  for (int i = 0; i < d_times_s; i++) {
+    for (int j = 0; j < getD(); j++) {
+      icor = i + j + 1;
+      gp[i + j * d_times_s] = gsl_matrix_get(myGamma, 
+          icor % getD(), j + (getS() - (icor / getD())) * getD());
     }
-    
-    for (r = 1; r < myMg; r++) {
-      gp +=  d_times_s * myD;
-      memcpy(gp, myPackedCholesky, d_times_s * myD * sizeof(double));
-    }
-    
-    dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, 
-            &d_times_s, &info);
-#ifdef USE_SLICOT
   }
-#endif  
+  for (int r = 1; r < getM(); r++) {
+    gp +=  d_times_s * getD();
+    memcpy(gp, myPackedCholesky, d_times_s * getD() * sizeof(double));
+  }
   
+  dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, 
+          &d_times_s, &info);
+#endif /* USE_SLICOT */       
+
   if (info) { 
     PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
   }
 }
-  
-void slraGammaCholeskyBTBanded::multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size ) {
-  size_t info, total_cols = size / chol_size;
 
-  dtbtrs_("U", (trans ? "T" : "N"), "N", 
-          &chol_size, &d_times_s_minus_1, &total_cols, 
-	  myPackedCholesky, &d_times_s, yr, &chol_size, &info);
-}
+
+void slraGammaCholeskyBBandedLH::computeCholeskyOfGamma( gsl_matrix *R ) {
+  size_t i, l, k, j, sum_np, sum_nl, info = 0;
+  gsl_vector_view R_row, TempR_row;
   
-void slraGammaCholeskyBTBanded::multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size ) {
-  size_t info, total_cols = size / chol_size; 
+  for (i = 0; i < getM(); i++) {
+    for (sum_np = i, sum_nl = 0, l = 0; l < myWs->getQ(); 
+         sum_np += myWs->getLayerNp(k), sum_nl += myWs->getLayerLag(l), ++l) {
+      for (k = 0; k < myWs->getLayerLag(l); k++) {
+        double w = myWs->getInvSqrtWeights(sum_np + k);
+        TempR_row = gsl_matrix_row(myTempR, sum_nl + k);
+        gsl_vector_set_all(&TempR_row.vector, w * w);
+
+        R_row = gsl_matrix_row(R, sum_nl + k);
+        gsl_vector_mul(&TempR_row.vector, &R_row.vector);
+      }
+    }
+
+    gsl_matrix_view blk_row = gsl_matrix_view_array_with_tda(myPackedCholesky, 
+        (getS() + 1) * getD(), getD(), d_times_s_minus_1);
   
-  dpbtrs_("U", &chol_size, &d_times_s_minus_1, &total_cols, 
-          myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
+    for (j = 0; j < mymin(getS() + 1, getM() - i);  j++) {
+      if (j < getS()) {
+        gsl_blas_dgemm(CblasTrans, CblasTrans, 1.0, R, myWs->getWk(k), 0.0, myTempRtWkt);
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myTempRtWkt, myTempR, 0.0, myTempGammaij);
+      } else {
+        gsl_matrix_set_zero(myTempGammaij);
+      }
+
+      gsl_matrix_view gamma_ij = gsl_matrix_submatrix(&blk_row.matrix, 0, 0, j * getD(), getD());
+      
+      if (j == 0)  {
+        for (k = 0; k < getD(); k++) {
+          for (l = 0; l < k; l++) {
+            gsl_matrix_set(&gamma_ij.matrix, l, k, gsl_matrix_get(myTempGammaij, l, k));
+          }
+        }
+      } else {
+        gsl_matrix_memcpy(&gamma_ij.matrix, myTempGammaij);
+      }
+    }
+  }
+
+
+
+  if (info) { 
+    PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
+  }
 }
+
+
 
 void slraGammaCholeskySameDiagBTBanded::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
   int n_row = 0;
@@ -130,8 +152,3 @@ void slraGammaCholeskySameDiagBTBanded::multiplyInvGammaVector( gsl_vector * yr 
     myBase->multiplyInvPartGammaArray(sub_yr.vector.data, sub_yr.vector.size, sub_yr.vector.size);
   }
 }
-
-
-
-
-

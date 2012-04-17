@@ -1,40 +1,22 @@
 #include "slra.h"
 
-
 extern "C" {
-
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
-
 }
 
 /* Structure striped classes */
-
-slraGammaCholesky *slraStripedStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new slraDiagGammaCholesky(this, r, reg_gamma);
-}
-
-slraDGamma *slraStripedStructure::createDerivativeComputations( int r ) const {
-  return new slraDGammaStriped(this, r);
-}
-
-
 slraStripedStructure::slraStripedStructure( size_t N, slraStructure **stripe  ) : myN(N), myLHStripe(stripe) {
   size_t k;  
-  myM = 0;
-  myNp = 0;
-  myMaxMlInd = 0;
 
-  for (k = 0; k < myN; k++) {
-    myM += myLHStripe[k]->getM();
-    myNp += myLHStripe[k]->getNp();
+  for (k = 0, myM = 0, myNp = 0, myMaxMlInd = 0; k < myN; 
+       myM += myLHStripe[k]->getM(), myNp += myLHStripe[k]->getNp(), k++) {
     if (myLHStripe[k]->getM() > myLHStripe[myMaxMlInd]->getM()) {
       myMaxMlInd = k;
     }
   }
 }
-
 
 slraStripedStructure::~slraStripedStructure()  {
   if (myLHStripe != NULL) {
@@ -59,9 +41,8 @@ void slraStripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )
 }
 
 void slraStripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
-  int n_row = 0, sum_np = 0;
+  size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector_view sub_p, sub_yr;
-  int D = R->size2;
   
   for (int k = 0; k < getBlocksN(); sum_np += myLHStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
     sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
@@ -70,9 +51,15 @@ void slraStripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vect
   }
 }
 
+slraGammaCholesky *slraStripedStructure::createGammaComputations( int r, double reg_gamma ) const {
+  return new slraDiagGammaCholesky(this, r, reg_gamma);
+}
+
+slraDGamma *slraStripedStructure::createDerivativeComputations( int r ) const {
+  return new slraDGammaStriped(this, r);
+}
 
 /* Cholesky striped classes */
-
 typedef slraGammaCholesky* pslraGammaCholesky;
 
 slraDiagGammaCholesky::slraDiagGammaCholesky( const slraStripedStructure *s, int r, double reg_gamma  ) :
@@ -122,13 +109,10 @@ void slraDiagGammaCholesky::computeCholeskyOfGamma( gsl_matrix *R ) {
 }
 
 /* DGamma striped classes */
-
 typedef slraDGamma* pslraDGamma;
 
-slraDGammaStriped::slraDGammaStriped( const slraStripedStructure *s, int r  ) :
-    myStruct(s) {
+slraDGammaStriped::slraDGammaStriped( const slraStripedStructure *s, int r  ) : myStruct(s) {
   myTmpGrad = gsl_matrix_alloc(myStruct->getNplusD(), myStruct->getNplusD() - r);  
-  
   myLHDGamma = new pslraDGamma[myStruct->getBlocksN()];
   for (int k = 0; k < myStruct->getBlocksN(); k++) {
     myLHDGamma[k] = myStruct->getBlock(k)->createDerivativeComputations(r);
@@ -147,7 +131,6 @@ slraDGammaStriped::~slraDGammaStriped() {
   }
 }
 
-
 void slraDGammaStriped::computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
@@ -159,12 +142,10 @@ void slraDGammaStriped::computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl
   }
 }
 
-
 void slraDGammaStriped::computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *yr ) {
   int n_row = 0;
-  gsl_vector_view sub_yr;
-  gsl_vector_view sub_res;
+  gsl_vector_view sub_yr, sub_res;
   
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * R->size2, myStruct->getMl(k) * R->size2);    

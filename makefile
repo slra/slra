@@ -9,12 +9,14 @@ MEX = mex -v -compatibleArrayDims -DBUILD_MEX_MATLAB
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  SLICOT/MB02CV.f  SLICOT/MB02GD.f 
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o 
 SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.cpp  slra/slra_func.cpp  slra/slra_computation.cpp \
-		slra/slra_layered_hankel.cpp slra/slra_striped.cpp \
-		slra/slra_dgamma_btbanded.cpp slra/slra_cholesky_btbanded.cpp \
+		slra/slra_layered_hankel.cpp slra/slra_layered_hankel_weighted.cpp \
+		slra/slra_striped.cpp slra/slra_dgamma_btbanded.cpp \
+		slra/slra_cholesky_bbanded.cpp slra/slra_cholesky_btbanded.cpp \
 		slra/slra_optimize.cpp  
 SLRA_OBJ_FILES = slra.o  slra_common.o  slra_func.o  slra_computation.o \
-		slra_layered_hankel.o slra_striped.o \
-		slra_dgamma_btbanded.o slra_cholesky_btbanded.o \
+		slra_layered_hankel.o slra_layered_hankel_weighted.o \
+		slra_striped.o slra_dgamma_btbanded.o \
+		slra_cholesky_bbanded.o slra_cholesky_btbanded.o \
 		slra_optimize.o 
 
 SLRA_INCLUDE_DIR = slra
