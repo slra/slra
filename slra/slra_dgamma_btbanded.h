@@ -4,7 +4,10 @@ class slraDGammaBTBanded : virtual public
   size_t  myD;
   
   gsl_vector *myTempWkColRow;
+  gsl_vector *myDGammaVec;
+  gsl_matrix *myDGammaTrMat;
   gsl_matrix *myDGamma;
+  gsl_vector *myTmpCol;
   
   gsl_matrix *myWk_R;
   gsl_matrix *myWkT_R;

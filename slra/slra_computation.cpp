@@ -238,10 +238,6 @@ void slraCostFunction::computePseudoJacobianCorrectFromYr( gsl_vector* yr, gsl_m
   }
 }
 
-
-
-
-
 void slraCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad ) {
   gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getM(), getD());
   gsl_matrix_view grad_matr = gsl_matrix_view_vector(grad, getN(), getD());

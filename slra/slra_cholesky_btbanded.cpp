@@ -14,7 +14,7 @@ extern "C" {
 slraGammaCholeskyBTBanded::slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  ) : 
     slraGammaCholeskyBBanded(s, r, reg_gamma), myWs(s)  {
   myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
-  myWkTmp = gsl_matrix_alloc(getD(), getNplusD());
+  myWkTmp = gsl_matrix_alloc(getNplusD(), getD());
 #ifdef USE_SLICOT
   myGammaVec = (double*) malloc(getD() * getD() * (getS() + 1) * sizeof(double));
   myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 
@@ -40,8 +40,7 @@ void slraGammaCholeskyBTBanded::computeCholeskyOfGamma( gsl_matrix *R )  {
 
   for (k = 0; k < getS(); k++) { /* compute brgamma_k = R' * w_k * R */
     submat = gsl_matrix_submatrix(myGamma, 0, k * getD(), getD(), getD());
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, R, myWs->getWk(k), 0.0, myWkTmp);
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myWkTmp, R, 0.0, &submat.matrix);
+    myWs->AtWkB(&submat.matrix, k, R, R, myWkTmp);
   }
   submat = gsl_matrix_submatrix(myGamma, 0, getS() * getD(), getD(), getD());
   gsl_matrix_set_zero(&submat.matrix);
@@ -98,30 +97,26 @@ void slraGammaCholeskyBBandedLH::computeCholeskyOfGamma( gsl_matrix *R ) {
 
     gsl_matrix_view blk_row = gsl_matrix_view_array_with_tda(myPackedCholesky, 
         (getS() + 1) * getD(), getD(), d_times_s_minus_1);
+ 
+    /* Compute Gamma_{i,i} */ 
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, R, myTempR, 0.0, myTempGammaij);
+    gsl_matrix_view gamma_ij = gsl_matrix_submatrix(&blk_row.matrix, 0, 0, getD(), getD());
+    for (k = 0; k < getD(); k++) {
+      for (l = 0; l < k; l++) {
+        gsl_matrix_set(&gamma_ij.matrix, l, k, gsl_matrix_get(myTempGammaij, l, k));
+      }
+    }
   
-    for (j = 0; j < mymin(getS() + 1, getM() - i);  j++) {
+    /* Compute Gamma_{i, i+j} */ 
+    for (j = 1; j < mymin(getS() + 1, getM() - i);  j++) {
+      gamma_ij = gsl_matrix_submatrix(&blk_row.matrix, 0, j * getD(), getD(), getD());
       if (j < getS()) {
-        gsl_blas_dgemm(CblasTrans, CblasTrans, 1.0, R, myWs->getWk(k), 0.0, myTempRtWkt);
-        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myTempRtWkt, myTempR, 0.0, myTempGammaij);
+        myWs->AtWkB(&gamma_ij.matrix, -k, R, myTempR, myTempWktR);
       } else {
         gsl_matrix_set_zero(myTempGammaij);
       }
-
-      gsl_matrix_view gamma_ij = gsl_matrix_submatrix(&blk_row.matrix, 0, 0, j * getD(), getD());
-      
-      if (j == 0)  {
-        for (k = 0; k < getD(); k++) {
-          for (l = 0; l < k; l++) {
-            gsl_matrix_set(&gamma_ij.matrix, l, k, gsl_matrix_get(myTempGammaij, l, k));
-          }
-        }
-      } else {
-        gsl_matrix_memcpy(&gamma_ij.matrix, myTempGammaij);
-      }
     }
   }
-
-
 
   if (info) { 
     PRINTF("Error: info = %d", info); /* TO BE COMPLETED */

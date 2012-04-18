@@ -40,7 +40,6 @@ public:
   virtual int getNp() const = 0;
   virtual int getNplusD() const = 0;
   virtual int getM() const = 0;
-  virtual int getS() const = 0;
   
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
   
@@ -49,9 +48,45 @@ public:
   virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
 };
 
-class slraStationaryStructure : public slraStructure {
+
+
+class slraSDependentStructure : public slraStructure {
 public:
-  virtual const gsl_matrix *getWk( int k )  const = 0; 
+  virtual int getS() const = 0;
+  virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const = 0;
+  virtual void AtWijB( gsl_matrix *res, int i, int j, 
+                      const gsl_matrix *A, const gsl_matrix *B, 
+                      gsl_matrix *tmpWjiB, double beta = 0 ) const = 0;
+  virtual void AtWijV( gsl_vector *res, int i, int j,
+                      const gsl_matrix *A, const gsl_vector *V, 
+                      gsl_vector *tmpWijV, double beta = 0 ) const = 0;
+
 };
 
 
+class slraStationaryStructure : public slraSDependentStructure {
+
+public:
+  virtual void WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const = 0;
+  virtual void AtWkB( gsl_matrix *res, int k, 
+                      const gsl_matrix *A, const gsl_matrix *B, 
+                      gsl_matrix *tmpWkB, double beta = 0 ) const = 0;
+  virtual void AtWkV( gsl_vector *res, int k,
+                      const gsl_matrix *A, const gsl_vector *V, 
+                      gsl_vector *tmpWkV, double beta = 0 ) const = 0;
+                      
+  virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const {
+    WkB(res, j- i, B);
+  }
+  virtual void AtWijB( gsl_matrix *res, int i, int j, 
+                      const gsl_matrix *A, const gsl_matrix *B, 
+                      gsl_matrix *tmpWijB, double beta = 0 ) const {
+    AtWkB(res, j - i, A, B, tmpWijB, beta);
+  }
+
+  virtual void AtWijV( gsl_vector *res, int i, int j, 
+                      const gsl_matrix *A, const gsl_vector *V, 
+                      gsl_vector *tmpWijV, double beta = 0 ) const {
+    AtWkV(res, j - i, A, V, tmpWijV, beta);
+  }                      
+};

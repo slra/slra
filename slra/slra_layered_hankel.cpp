@@ -118,6 +118,25 @@ void slraLayeredHankelStructure::setM( int m ) {
   myM = m <= 0 ? 1 : m;
 }
 
+
+void slraLayeredHankelStructure::WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const {
+  gsl_matrix_memcpy(res, B);
+  gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, 1.0, myA[abs(k)], res);
+}
+
+void slraLayeredHankelStructure::AtWkB( gsl_matrix *res, int k,
+         const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWkB, double beta ) const {
+  WkB(tmpWkB, k, B);
+  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpWkB, beta, res);       
+}
+
+void slraLayeredHankelStructure::AtWkV( gsl_vector *res, int k, 
+         const gsl_matrix *A, const gsl_vector *V, gsl_vector *tmpWkV, double beta ) const {
+  gsl_vector_memcpy(tmpWkV, V);
+  gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, myA[abs(k)], tmpWkV);
+  gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
+}
+
 slraGammaCholesky *slraMosaicHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
   return new slraGammaCholeskySameDiagBTBanded(this, r, 1, reg_gamma);
 }
@@ -133,6 +152,7 @@ pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, dou
   
   return res;
 }
+
 
 
 

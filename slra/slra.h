@@ -33,6 +33,9 @@
 #include <gsl/gsl_multifit_nlin.h> /* Levenberge-Marquardt */
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
 
+
+#include <gsl/gsl_blas.h>
+
 /* size of the work array for mb02gd */
 #define EITER 1 /* maximum number of iterations reached */
 
