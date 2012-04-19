@@ -14,7 +14,8 @@ extern "C" {
 #include "slra.h"
 
 slraCostFunction::slraCostFunction( slraStructure *s, 
-    int r, const gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : myRank(r), myP(p), isGCD(opt->gcd) {
+    int r, const gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  ) : 
+    myRank(r), myP(p), isGCD(opt->gcd) {
   myStruct = s; //.clone();     
 
   gsl_blas_ddot(myP, myP, &myPNorm);
@@ -184,22 +185,25 @@ void slraCostFunction::computeCorrectionAndJacobian( const gsl_vector* x, gsl_ve
 
 void slraCostFunction::computeJacobianZij( gsl_vector *res, int i, int j,
                                            gsl_vector* yr, gsl_matrix *R, double factor ) {
-  myDeriv->computeDijGammaYr(res, R, myPerm, i, j, yr);
+  myDeriv->calcDijGammaYr(res, R, myPerm, i, j, yr);
   gsl_vector_scale(res, -factor);
   
-  for (int k = 0; k < getM(); k++) { 
+  for (int k = 0; k < getM(); k++) {  /* Convert to vector strides */
     (*gsl_vector_ptr(res, j + k * getD())) += gsl_matrix_get(myMatrMulPerm, k, i);
   }  
 }
 
 void slraCostFunction::computePseudoJacobianLsFromYr(  gsl_vector* yr, gsl_matrix *R, gsl_matrix *jac ) {
   int i, j;
+//  gsl_vector m_col;
 
   for (i = 0; i < getN(); i++) {
     for (j = 0; j < getD(); j++) {
       computeJacobianZij(myTmpJacobianCol, i, j, yr, R);
 
       myGam->multiplyInvCholeskyVector(myTmpJacobianCol, 1);
+//      m_col = gsl_matrix_column(jac, i * getD() + j).vector;
+//      gsl_blas_dcopy(myTmpJacobianCol, &m_col);
       gsl_matrix_set_col(jac, i * getD() + j, myTmpJacobianCol);  
     }
   }
@@ -245,7 +249,7 @@ void slraCostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vec
 
   /* Compute gradient of f(R) */ 
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix, 0.0, myTmpGradR);
-  myDeriv->computeYrtDgammaYr(myTmpGradR2, R, yr);
+  myDeriv->calcYrtDgammaYr(myTmpGradR2, R, yr);
   gsl_matrix_sub(myTmpGradR, myTmpGradR2);
 
   /* Compute gradient of f_{\Phi}(X) */ 

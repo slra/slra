@@ -27,7 +27,8 @@ class slraCostFunction {
 
 public:
 
-  slraCostFunction( slraStructure *s, int r, const gsl_vector *p, opt_and_info *opt, gsl_matrix *perm  );
+  slraCostFunction( slraStructure *s, int r, const gsl_vector *p, 
+                    opt_and_info *opt, gsl_matrix *perm  );
   virtual ~slraCostFunction();
   
   int getD() { return myStruct->getNplusD() - myRank; }

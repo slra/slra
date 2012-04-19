@@ -12,12 +12,12 @@ SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.cpp slra/slra_computation.cpp \
 		slra/slra_layered_hankel.cpp slra/slra_layered_hankel_weighted.cpp \
 		slra/slra_striped.cpp slra/slra_dgamma_btbanded.cpp \
 		slra/slra_cholesky_bbanded.cpp slra/slra_cholesky_btbanded.cpp \
-		slra/slra_optimize.cpp  
+		slra/slra_optimize.cpp  slra/slra_utils.cpp
 SLRA_OBJ_FILES = slra.o slra_common.o slra_computation.o \
 		slra_layered_hankel.o slra_layered_hankel_weighted.o \
 		slra_striped.o slra_dgamma_btbanded.o \
 		slra_cholesky_bbanded.o slra_cholesky_btbanded.o \
-		slra_optimize.o 
+		slra_optimize.o slra_utils.o
 
 SLRA_INCLUDE_DIR = slra
 SLRA_INCLUDE_FILES = slra/slra.h

@@ -8,16 +8,25 @@ protected:
   size_t d_times_s;
   size_t d_times_Mg;
   size_t d_times_s_minus_1;
+  gsl_matrix *myTempR, *myTempWktR, *myTempGammaij;
   
   double *myPackedCholesky;
+
+protected:  
+  virtual void computeGammaUpperPart( gsl_matrix *R );
+
 public:
-  slraGammaCholeskyBBanded( const slraStructure *s, int r, double reg_gamma );
+  slraGammaCholeskyBBanded( const slraSDependentStructure *s, int r, double reg_gamma );
   virtual ~slraGammaCholeskyBBanded();
 
   int getD() const { return myD; }
   int getM() const { return myW->getM(); }
   int getNplusD() const { return myW->getNplusD(); }
   int getS() const { return myW->getS(); }
+
+
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+
   
   virtual void multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size );
   virtual void multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size );
@@ -28,21 +37,34 @@ public:
 };
 
 class slraGammaCholeskyBTBanded : public slraGammaCholeskyBBanded {
+protected:
   const slraStationaryStructure *myWs;
 
   gsl_matrix *myGamma;
   gsl_matrix *myWkTmp;
-#ifdef USE_SLICOT
-  double *myGammaVec;
-  double *myCholeskyWork;
-  int myCholeskyWorkSize;
-#endif  
+  
+  virtual void computeGammak( gsl_matrix *R );
 public:
   slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  );
   virtual ~slraGammaCholeskyBTBanded();
 
-  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+  virtual void computeGammaUpperPart( gsl_matrix *R );
 };
+
+
+#ifdef USE_SLICOT
+class slraGammaCholeskyBTBandedSlicot : public slraGammaCholeskyBTBanded {
+  double *myGammaVec;
+  double *myCholeskyWork;
+  int myCholeskyWorkSize;
+public:
+  slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  );
+  virtual ~slraGammaCholeskyBTBanded();
+
+  virtual void computeGammaUpperPart( gsl_matrix *R );
+};
+#endif /* USE_SLICOT */
+
 
 class slraGammaCholeskySameDiagBTBanded : public slraGammaCholesky {
   slraGammaCholeskyBTBanded *myBase;
@@ -66,24 +88,4 @@ public:
 
 
 
-class slraGammaCholeskyBBandedLH : public slraGammaCholeskyBBanded {
-  const slraLayeredHankelWeightedStructure *myWs;
-  gsl_matrix *myTempR, *myTempWktR, *myTempGammaij;
-  gsl_vector *myTempInvW;
-public:
-  slraGammaCholeskyBBandedLH( const slraLayeredHankelWeightedStructure *s, int r, double reg_gamma ) :
-      slraGammaCholeskyBBanded(s, r, reg_gamma), myWs(s) {
-    myTempR = gsl_matrix_alloc(getNplusD(), getD());
-    myTempWktR = gsl_matrix_alloc(getNplusD(), getD());
-    myTempGammaij = gsl_matrix_alloc(getD(), getD());
-    myTempInvW = gsl_vector_alloc(getNplusD());
-  }
-  virtual ~slraGammaCholeskyBBandedLH() {
-    gsl_matrix_free(myTempR);
-    gsl_matrix_free(myTempWktR);
-    gsl_matrix_free(myTempGammaij);
-    gsl_vector_free(myTempInvW);
-  }
 
-  virtual void computeCholeskyOfGamma( gsl_matrix *R );
-};

@@ -4,7 +4,12 @@
  * T - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].
  * m = number of block rows / columns
  */ 
-void tmv_prod_new( gsl_matrix *T, int s,  gsl_vector *v, int m, gsl_vector *p, double beta = 0.0 );
+void tmv_prod_vector( gsl_vector *T, int s, gsl_vector* v, int m, gsl_vector* p );
+void tmv_prod_new( gsl_matrix *T, int s,  gsl_vector *v, int m, gsl_vector *p, 
+         double beta = 0.0 );
+         
+void copyLowerTrg( gsl_matrix * dest, const gsl_matrix *src  );         
+void shiftLowerTrg( gsl_matrix * dest, const gsl_matrix *src  );         
 
 void print_mat(const gsl_matrix*);
 void print_mat_tr(const gsl_matrix*);

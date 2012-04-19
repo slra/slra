@@ -1,7 +1,6 @@
 #include <limits>
 #include <memory.h>
 #include <cstdarg>
-
 extern "C" {
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
@@ -9,7 +8,6 @@ extern "C" {
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
 }
-
 #include "slra.h"
 
 slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, size_t q, int M, const double *layer_w  ) :
@@ -107,21 +105,23 @@ void slraLayeredHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gs
 }
 
 slraGammaCholesky *slraLayeredHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new slraGammaCholeskyBTBanded(this, r, reg_gamma);
+//  return new slraGammaCholeskyBTBanded(this, r, reg_gamma);
+  return new slraGammaCholeskyBBanded(this, r, reg_gamma);
 }
 
 slraDGamma *slraLayeredHankelStructure::createDerivativeComputations( int r ) const {
   return new slraDGammaBTBanded(this, r);
 }
 
+
 void slraLayeredHankelStructure::setM( int m ) {
   myM = m <= 0 ? 1 : m;
 }
 
-
 void slraLayeredHankelStructure::WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const {
+
   gsl_matrix_memcpy(res, B);
-  gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, 1.0, myA[abs(k)], res);
+  gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, 1.0, getWk(abs(k)), res);
 }
 
 void slraLayeredHankelStructure::AtWkB( gsl_matrix *res, int k,
@@ -132,8 +132,8 @@ void slraLayeredHankelStructure::AtWkB( gsl_matrix *res, int k,
 
 void slraLayeredHankelStructure::AtWkV( gsl_vector *res, int k, 
          const gsl_matrix *A, const gsl_vector *V, gsl_vector *tmpWkV, double beta ) const {
-  gsl_vector_memcpy(tmpWkV, V);
-  gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, myA[abs(k)], tmpWkV);
+  gsl_blas_dcopy(V, tmpWkV);
+  gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, getWk(abs(k)), tmpWkV);
   gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
 }
 
@@ -145,13 +145,20 @@ typedef slraStructure* pslraStructure;
 
 pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk )  {
   pslraStructure *res = new pslraStructure[N];
-  
+
   for (size_t k = 0; k < N; k++) {
-    res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
+//    res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
+    res[k] = new slraLayeredHankelWeightedStructure(oldNk, q, oldMl[k], Wk, true);
   }
-  
+
   return res;
 }
+
+slraMosaicHankelStructure::slraMosaicHankelStructure( size_t q, size_t N,
+    double *oldNk, double *oldMl, double *Wk ) :
+        slraStripedStructure(N, allocStripe(q, N, oldNk, oldMl, Wk)) {
+}
+
 
 
 

@@ -32,7 +32,7 @@ slraDGammaBTBanded::~slraDGammaBTBanded() {
   gsl_matrix_free(myN_k);
 }
 
-void slraDGammaBTBanded::computeYrtDgammaYr( gsl_matrix *mgrad_r, 
+void slraDGammaBTBanded::calcYrtDgammaYr( gsl_matrix *mgrad_r, 
          gsl_matrix *R, gsl_vector *yr ) {
   int m = yr->size / myD;
   gsl_matrix Yr = gsl_matrix_view_vector(yr, m, myD).matrix, YrL, YrR;
@@ -53,72 +53,9 @@ void slraDGammaBTBanded::computeYrtDgammaYr( gsl_matrix *mgrad_r,
   }       
 }
 
-void tmv_prod_vector( gsl_vector *T, int s, gsl_vector* v, int m, gsl_vector* p )
-{
-  double res;
-  size_t i, temp, s_1 = s - 1;
-  size_t bCols = T->size / (2 * s - 1), corner_row_lim = GSL_MIN(s_1, m/2); 
-  gsl_vector subT, subv; /* subvectors of v and p */
-
-  for (i = 0; i < corner_row_lim; i++) {  /* beginning and end parts */
-    temp = GSL_MIN(s + i, m) * bCols;
-    /* beginning part of the product p */
-    subv = gsl_vector_subvector(v, 0, temp).vector;
-    subT = gsl_vector_subvector(T, (s_1 - i) * bCols, temp).vector;
-    gsl_blas_ddot(&subT, &subv, &res);
-    gsl_vector_set(p, i, res);
-    
-    /* last part of the product p */
-    subv = gsl_vector_subvector(v, v->size - temp, temp).vector;
-    subT = gsl_vector_subvector(T, (s + i) * bCols - temp, temp).vector;    
-    gsl_blas_ddot(&subT, &subv, &res);
-    gsl_vector_set(p, p->size - (i + 1), res);
-  }
-  /* middle part */
-  for (i = s_1; i < m - s_1; i++) {
-    subv = gsl_vector_subvector(v, (i - s_1) * bCols, T->size).vector;
-    gsl_blas_ddot(T, &subv, &res);
-    gsl_vector_set(p, i,  res);
-  }
-}
-
-void tmv_prod_new( gsl_matrix *T, int s, gsl_vector* v, int m, gsl_vector* p, double beta )
-{
-  size_t i, temp, s_1 = s - 1;
-  size_t D = T->size1;
-  size_t bCols = T->size2 / (2 * s - 1), corner_row_lim = GSL_MIN(s_1, m/2); 
-  gsl_matrix_view subT;
-  gsl_vector_view subv, subp; 	/* subvectors of v and p */
-
-  for (i = 0; i < corner_row_lim; i++) {  /* beginning and end parts */
-    temp = GSL_MIN(s + i, m) * bCols;
-    /* beginning part of the product p */
-    subp = gsl_vector_subvector(p, i * D, D);
-    subv = gsl_vector_subvector(v, 0, temp);
-    subT = gsl_matrix_submatrix(T, 0, (s_1 - i) * bCols, D, temp);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, &subT.matrix, &subv.vector, beta, &subp.vector);
-    /* last part of the product p */
-    subp = gsl_vector_subvector(p, p->size - (i + 1) * D, D);
-    subv = gsl_vector_subvector(v, v->size - temp, temp);
-    subT = gsl_matrix_submatrix(T, 0, (s + i) * bCols - temp, D, temp);    
-    gsl_blas_dgemv(CblasNoTrans, 1.0, &subT.matrix, &subv.vector, beta, &subp.vector);
-  }
-  /* middle part */
-  for (i = s_1; i < m - s_1; i++) {
-    subp = gsl_vector_subvector(p, i * T->size1, T->size1);
-    subv = gsl_vector_subvector(v, (i - s_1) * bCols, T->size2);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, T, &subv.vector, beta, &subp.vector);
-  }
-}
-
-void slraDGammaBTBanded::computeDijGammaYr( gsl_vector *res, 
+void slraDGammaBTBanded::calcDijGammaYr( gsl_vector *res, 
          gsl_matrix *R, gsl_matrix *perm, int i, int j,  gsl_vector *yr ) {
-  gsl_vector_view dgamma_j_row;
-  gsl_vector gv_sub;
-  gsl_matrix gv_sub_m;
-  gsl_vector perm_col = gsl_matrix_column(perm, i).vector;
-  gsl_matrix perm_col_m = gsl_matrix_submatrix(perm, 0, i, perm->size1, 1).matrix;
-  gsl_matrix temp_col_m = gsl_matrix_view_vector(myTempWkColRow, myTempWkColRow->size, 1).matrix;
+  gsl_vector gv_sub, perm_col = gsl_matrix_column(perm, i).vector, dgamma_j_row;
 
   for (int k = 1 - myW->getS(); k < myW->getS(); k++) {
     gv_sub = gsl_vector_subvector(myDGammaVec, (k + myW->getS() - 1) * myD, myD).vector;
@@ -127,10 +64,9 @@ void slraDGammaBTBanded::computeDijGammaYr( gsl_vector *res,
   }
 
   int M = yr->size / myD;
-  
   if (myD == 1) {
-    dgamma_j_row = gsl_matrix_row(myDGammaTrMat, 0);
-    gsl_vector_add (myDGammaVec, &dgamma_j_row.vector);
+    dgamma_j_row = gsl_matrix_row(myDGammaTrMat, 0).vector;
+    gsl_vector_add (myDGammaVec, &dgamma_j_row);
     tmv_prod_vector(myDGammaVec, myW->getS(), yr, M, res);  
   } else {
     gsl_vector_view res_stride = gsl_vector_subvector_with_stride(res, j, myD, M);       

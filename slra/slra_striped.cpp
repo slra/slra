@@ -131,18 +131,18 @@ slraDGammaStriped::~slraDGammaStriped() {
   }
 }
 
-void slraDGammaStriped::computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr ) {
+void slraDGammaStriped::calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
   
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * R->size2, myStruct->getMl(k) * R->size2);    
-    myLHDGamma[k]->computeYrtDgammaYr(myTmpGrad, R, &sub_yr.vector);
+    myLHDGamma[k]->calcYrtDgammaYr(myTmpGrad, R, &sub_yr.vector);
     gsl_matrix_add(grad, myTmpGrad);
   }
 }
 
-void slraDGammaStriped::computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+void slraDGammaStriped::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *yr ) {
   int n_row = 0;
   gsl_vector_view sub_yr, sub_res;
@@ -150,6 +150,6 @@ void slraDGammaStriped::computeDijGammaYr( gsl_vector *res, gsl_matrix *R,
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * R->size2, myStruct->getMl(k) * R->size2);    
     sub_res = gsl_vector_subvector(res, n_row * R->size2, myStruct->getMl(k) * R->size2);    
-    myLHDGamma[k]->computeDijGammaYr(&sub_res.vector, R, perm, i, j, &sub_yr.vector);
+    myLHDGamma[k]->calcDijGammaYr(&sub_res.vector, R, perm, i, j, &sub_yr.vector);
   }                   
 }

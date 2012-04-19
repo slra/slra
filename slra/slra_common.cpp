@@ -17,7 +17,7 @@ char meth_codes[] = "lqn";
 char submeth_codes_lm[] = "ls";
 char submeth_codes_qn[] = "b2pf";
 char submeth_codes_nm[] = "n2r";
-char *submeth_codes[] = {submeth_codes_lm, submeth_codes_qn, submeth_codes_nm};
+char *submeth_codes[] = {submeth_codes_lm, submeth_codes_qn,submeth_codes_nm};
 
 void slraString2Method( const char *str_buf, opt_and_info *popt )  {
   int submeth_codes_max[] = { 

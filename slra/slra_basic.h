@@ -26,11 +26,10 @@ public:
 class slraDGamma {
 public:  
   virtual ~slraDGamma() {}
-  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr ) = 0;
-
-  virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
+                   gsl_vector *yr ) = 0;
+  virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr ) = 0;
-
 };
 
 
@@ -60,6 +59,8 @@ public:
   virtual void AtWijV( gsl_vector *res, int i, int j,
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWijV, double beta = 0 ) const = 0;
+                      
+
 
 };
 

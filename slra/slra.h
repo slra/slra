@@ -84,7 +84,7 @@ typedef struct {
   
   double reggamma; /* To be worked out */
   int use_slicot;
-  int ls_correction;  /* Use correction computation in nonlinear least squares */
+  int ls_correction;  /* Use correction computation in nonlinear l.s. */
   int gcd;         /* Is gcd being computed? */
 
   /* output information */
@@ -139,6 +139,7 @@ typedef struct {
 #include "slra_striped.h"
 
 #include "slra_layered_hankel.h"
+#include "slra_layered_hankel_weighted.h"
 #include "slra_cholesky_btbanded.h"
 #include "slra_dgamma_btbanded.h"
 
@@ -150,7 +151,8 @@ typedef struct {
 #include "slralapack.h"
 
 
-int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v );
+int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, 
+                       gsl_vector* x_vec, gsl_matrix *v );
 
 /* Prototypes of functions */
 int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,

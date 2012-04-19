@@ -16,7 +16,7 @@ public:
   virtual int getM() const { return myM; }
   virtual int getNp() const { return myNp; }
   virtual int getNplusD() const { return myLHStripe[0]->getNplusD(); }
-  virtual int getS() const { return myLHStripe[0]->getS(); }
+//  virtual int getS() const { return myLHStripe[0]->getS(); }
   
   int getBlocksN() const { return myN; }
 
@@ -61,9 +61,9 @@ public:
   slraDGammaStriped( const slraStripedStructure *s, int r  ) ;
   virtual ~slraDGammaStriped();
 
-  virtual void computeYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );
+  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );
 
-  virtual void computeDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+  virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr );
 
 };
