@@ -35,7 +35,7 @@ void slraGammaCholeskyBTBandedSlicot::computeCholeskyOfGamma( gsl_matrix *R )  {
   gsl_matrix_vectorize(myGammaVec, myGamma);
     
   mb02gd_("R", "N", &D, &Mg, &s_minus_1, &zero, 
-          &myMg, myGammaVec, &D, myPackedCholesky, &d_times_s, 
+          &Mg, myGammaVec, &D, myPackedCholesky, &d_times_s, 
           myCholeskyWork, &myCholeskyWorkSize, &info); /**/
 
   if (info) { 

@@ -80,4 +80,17 @@ void slraDGammaBTBanded::calcDijGammaYr( gsl_vector *res,
   }
 }
 
+slraDGammaBBanded::slraDGammaBBanded( const slraSDependentStructure *s, int r ) :
+   myD(s->getNplusD() - r), myW(s) {
+}
 
+slraDGammaBBanded::~slraDGammaBBanded(){
+}
+
+void slraDGammaBBanded::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+                   gsl_matrix *perm, int i, int j, gsl_vector *Yr ) {
+                   
+  for (size_t k = 0; k < myW->getM(); k++)  {
+    
+  }
+}

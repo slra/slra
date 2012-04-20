@@ -1,5 +1,4 @@
-class slraDGammaBTBanded : virtual public 
-                                       slraDGamma {
+class slraDGammaBTBanded : public slraDGamma {
   const slraStationaryStructure *myW;
   size_t  myD;
   
@@ -27,11 +26,14 @@ public:
 
 
 class slraDGammaBBanded : public slraDGamma {
+  const slraSDependentStructure *myW;
+  size_t myD;
+
 public:  
-  slraDGammaBBanded() {}
-  virtual ~slraDGammaBBanded() {}
+  slraDGammaBBanded( const slraSDependentStructure *s, int r );
+  virtual ~slraDGammaBBanded();
+  virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+                   gsl_matrix *perm, int i, int j, gsl_vector *Yr );
   virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
                    gsl_vector *yr ) {}
-  virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   gsl_matrix *perm, int i, int j, gsl_vector *Yr ) {}
 };

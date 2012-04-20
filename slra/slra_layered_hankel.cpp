@@ -105,8 +105,12 @@ void slraLayeredHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gs
 }
 
 slraGammaCholesky *slraLayeredHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
-//  return new slraGammaCholeskyBTBanded(this, r, reg_gamma);
-  return new slraGammaCholeskyBBanded(this, r, reg_gamma);
+#ifdef USE_SLICOT 
+  return new slraGammaCholeskyBTBandedSlicot(this, r, reg_gamma);
+#else  /* USE_SLICOT */
+  return new slraGammaCholeskyBTBanded(this, r, reg_gamma);
+#endif /* USE_SLICOT */
+//  return new slraGammaCholeskyBBanded(this, r, reg_gamma);
 }
 
 slraDGamma *slraLayeredHankelStructure::createDerivativeComputations( int r ) const {
@@ -147,8 +151,8 @@ pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, dou
   pslraStructure *res = new pslraStructure[N];
 
   for (size_t k = 0; k < N; k++) {
-//    res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
-    res[k] = new slraLayeredHankelWeightedStructure(oldNk, q, oldMl[k], Wk, true);
+    res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
+//    res[k] = new slraLayeredHankelWeightedStructure(oldNk, q, oldMl[k], Wk, true);
   }
 
   return res;

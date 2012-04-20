@@ -117,7 +117,7 @@ slraGammaCholesky *slraLayeredHankelWeightedStructure::
 
 slraDGamma *slraLayeredHankelWeightedStructure::
                 createDerivativeComputations( int r ) const {
-  return new slraDGammaBBanded();
+  return new slraDGammaBBanded(this, r);
 }
 
 

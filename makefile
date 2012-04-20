@@ -12,11 +12,13 @@ SLRA_SRC_FILES = slra/slra.cpp  slra/slra_common.cpp slra/slra_computation.cpp \
 		slra/slra_layered_hankel.cpp slra/slra_layered_hankel_weighted.cpp \
 		slra/slra_striped.cpp slra/slra_dgamma_btbanded.cpp \
 		slra/slra_cholesky_bbanded.cpp slra/slra_cholesky_btbanded.cpp \
+		slra/slra_cholesky_btbanded_slicot.cpp \
 		slra/slra_optimize.cpp  slra/slra_utils.cpp
 SLRA_OBJ_FILES = slra.o slra_common.o slra_computation.o \
 		slra_layered_hankel.o slra_layered_hankel_weighted.o \
 		slra_striped.o slra_dgamma_btbanded.o \
 		slra_cholesky_bbanded.o slra_cholesky_btbanded.o \
+		slra_cholesky_btbanded_slicot.o \
 		slra_optimize.o slra_utils.o
 
 SLRA_INCLUDE_DIR = slra
@@ -56,20 +58,28 @@ mexoct-slicot: SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX) $(INC_FLAGS) -DUSE_SLICOT $(MEX_SRC_FILES) $(SLRA_SRC_FILES) -lgsl -lgslcblas \
 	-llapack -lblas  -o slra.mex
 
+mex-static : SLICOT.a $(MEX_SRC_FILES)
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
+	/usr/lib/libgsl.a /usr/lib/atlas-base/libcblas.a \
+	/usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra 
+
+
 mex-slicot-static : SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) -DUSE_SLICOT $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a \
 	/usr/lib/libgsl.a /usr/lib/atlas-base/libcblas.a \
-	/usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgortran -o slra 
+	/usr/lib/atlas-base/atlas/liblapack.a /usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra 
 
-mex-slicot-dynamic: BUILD_MODE=MEX_MATLAB
-mex-slicot-dynamic: slra.a SLICOT.a $(MEX_SRC_FILES)
+mex-slicot: BUILD_MODE=MEX_MATLAB
+mex-slicot: slra.a SLICOT.a $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) -DUSE_SLICOT $(MEX_SRC_FILES) slra.a SLICOT.a \
 	-lgsl -lcblas -llapack -lblas -lgfortran -o mex_slra
-	
+
+testc-slicot : BUILD_MODE=USE_SLICOT
 testc-slicot : test.o slra.a SLICOT.a
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -DUSE_SLICOT -o test_c/test test.o slra.a SLICOT.a  \
 	-lgsl -lcblas -llapack -latlas -lblas -lm -lgfortran
 
+# Targets for parts of the package
 test.o : test_c/test.cpp $(SLRA_INCLUDE_FILES) 
 	$(CCPP) -D$(BUILD_MODE) $(INC_FLAGS) $(OPT_FLAGS) -c test_c/test.cpp
 

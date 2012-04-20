@@ -56,12 +56,12 @@ public:
 class slraGammaCholeskyBTBandedSlicot : public slraGammaCholeskyBTBanded {
   double *myGammaVec;
   double *myCholeskyWork;
-  int myCholeskyWorkSize;
+  size_t myCholeskyWorkSize;
 public:
-  slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  );
-  virtual ~slraGammaCholeskyBTBanded();
+  slraGammaCholeskyBTBandedSlicot( const slraStationaryStructure *s, int r, double reg_gamma  );
+  virtual ~slraGammaCholeskyBTBandedSlicot();
 
-  virtual void computeGammaUpperPart( gsl_matrix *R );
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
 };
 #endif /* USE_SLICOT */
 
