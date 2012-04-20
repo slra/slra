@@ -48,17 +48,17 @@ void WLayeredHStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector
 
       gsl_vector_memcpy(&p_chunk_sub.vector, &inv_w_chunk.vector);
 /*      PRINTF("Hello!\n");
-      print_arr(inv_w_chunk.vector.data, inv_w_chunk.vector.size);
+      print_arr(inv_w_chunk.vector.data, inv_w_chunk.vector.size);*/
      
       yr_matr_row = gsl_matrix_row(&yr_matr.matrix, k); 
       gsl_blas_dgemv(CblasNoTrans, 1.0, &b_xext.matrix, 
                       &yr_matr_row.vector, 0.0, &res_sub.vector); 
       gsl_vector_mul(&res_sub.vector, &inv_w_chunk.vector);              
-      gsl_vector_sub(&p_chunk_sub.vector, &res_sub.vector); */
+      gsl_vector_sub(&p_chunk_sub.vector, &res_sub.vector); 
     }
   }
   
-  gsl_vector_memcpy(p, myInvSqrtWeights);
+//  gsl_vector_memcpy(p, myInvSqrtWeights);
 
   gsl_vector_free(res);
 }
