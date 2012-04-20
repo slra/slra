@@ -28,7 +28,8 @@ public:
 class slraDGammaBBanded : public slraDGamma {
   const slraSDependentStructure *myW;
   size_t myD;
-
+  gsl_vector *myTmp1, *myTmp2;
+  gsl_vector *myYrR;
 public:  
   slraDGammaBBanded( const slraSDependentStructure *s, int r );
   virtual ~slraDGammaBBanded();

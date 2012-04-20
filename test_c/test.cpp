@@ -128,7 +128,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       }
     }
       
-    myStruct = new slraMosaicHankelStructure(s_q, s_k, L_q, m_k, w_k);
+    myStruct = new MosaicHStructure(s_q, s_k, L_q, m_k, w_k);
     m = myStruct->getM();
       
     delete [] m_k; 

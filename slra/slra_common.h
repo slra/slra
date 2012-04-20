@@ -15,6 +15,8 @@ void print_mat(const gsl_matrix*);
 void print_mat_tr(const gsl_matrix*);
 void print_arr(double*, int);
 
+void print_vec(const gsl_vector*);
+
 void gsl_matrix_vectorize(double*, gsl_matrix*);
 void gsl_matrix_vec_inv(gsl_matrix*, double*);
 

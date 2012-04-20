@@ -10,7 +10,8 @@ extern "C" {
 }
 #include "slra.h"
 
-slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, size_t q, int M, const double *layer_w  ) :
+slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, 
+    size_t q, int M, const double *layer_w  ) :
                                       myQ(q), myM(M), mySA(NULL)  {
   mySA = new slraLayer[myQ];
   for (size_t l = 0; l < myQ; l++) {
@@ -110,7 +111,6 @@ slraGammaCholesky *slraLayeredHankelStructure::createGammaComputations( int r, d
 #else  /* USE_SLICOT */
   return new slraGammaCholeskyBTBanded(this, r, reg_gamma);
 #endif /* USE_SLICOT */
-//  return new slraGammaCholeskyBBanded(this, r, reg_gamma);
 }
 
 slraDGamma *slraLayeredHankelStructure::createDerivativeComputations( int r ) const {
@@ -141,26 +141,35 @@ void slraLayeredHankelStructure::AtWkV( gsl_vector *res, int k,
   gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
 }
 
-slraGammaCholesky *slraMosaicHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new slraGammaCholeskySameDiagBTBanded(this, r, 1, reg_gamma);
+slraGammaCholesky *MosaicHStructure::createGammaComputations( int r, 
+    double reg_gamma ) const {
+  if (myWkIsCol) {
+    return new slraGammaCholeskySameDiagBTBanded(this, r, 1, reg_gamma);
+  } else {
+    return new StripedCholesky(this, r, reg_gamma);
+  }
 }
 
 typedef slraStructure* pslraStructure;
 
-pslraStructure * slraMosaicHankelStructure::allocStripe( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk )  {
+pslraStructure * MosaicHStructure::allocStripe( size_t q, size_t N, 
+     double *oldNk,  double *oldMl, double *Wk, bool wkIsCol )  {
   pslraStructure *res = new pslraStructure[N];
 
   for (size_t k = 0; k < N; k++) {
     res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
-//    res[k] = new slraLayeredHankelWeightedStructure(oldNk, q, oldMl[k], Wk, true);
+    if (Wk != NULL && wkIsCol) {
+      Wk += q;
+    }
   }
 
   return res;
 }
 
-slraMosaicHankelStructure::slraMosaicHankelStructure( size_t q, size_t N,
-    double *oldNk, double *oldMl, double *Wk ) :
-        slraStripedStructure(N, allocStripe(q, N, oldNk, oldMl, Wk)) {
+MosaicHStructure::MosaicHStructure( size_t q, size_t N,
+    double *oldNk, double *oldMl, double *Wk, bool wkIsCol ) :
+        StripedStructure(N, allocStripe(q, N, oldNk, oldMl, Wk, wkIsCol)),
+        myWkIsCol(wkIsCol) {
 }
 
 

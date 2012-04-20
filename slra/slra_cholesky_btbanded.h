@@ -11,12 +11,12 @@ protected:
   gsl_matrix *myTempR, *myTempWktR, *myTempGammaij;
   
   double *myPackedCholesky;
-
 protected:  
   virtual void computeGammaUpperPart( gsl_matrix *R );
 
 public:
-  slraGammaCholeskyBBanded( const slraSDependentStructure *s, int r, double reg_gamma );
+  slraGammaCholeskyBBanded( const slraSDependentStructure *s, int r,  
+                            double reg_gamma );
   virtual ~slraGammaCholeskyBBanded();
 
   int getD() const { return myD; }
@@ -28,8 +28,10 @@ public:
   virtual void computeCholeskyOfGamma( gsl_matrix *R );
 
   
-  virtual void multiplyInvPartCholeskyArray( double * yr, int trans, size_t size, size_t chol_size );
-  virtual void multiplyInvPartGammaArray( double * yr, size_t size, size_t chol_size );
+  virtual void multiplyInvPartCholeskyArray( double * yr, int trans, 
+                   size_t size, size_t chol_size );
+  virtual void multiplyInvPartGammaArray( double * yr, size_t size, 
+                   size_t chol_size );
 
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );
   virtual void multiplyInvGammaVector( gsl_vector * yr );
@@ -39,13 +41,13 @@ public:
 class slraGammaCholeskyBTBanded : public slraGammaCholeskyBBanded {
 protected:
   const slraStationaryStructure *myWs;
-
   gsl_matrix *myGamma;
   gsl_matrix *myWkTmp;
   
   virtual void computeGammak( gsl_matrix *R );
 public:
-  slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, double reg_gamma  );
+  slraGammaCholeskyBTBanded( const slraStationaryStructure *s, int r, 
+                             double reg_gamma  );
   virtual ~slraGammaCholeskyBTBanded();
 
   virtual void computeGammaUpperPart( gsl_matrix *R );
@@ -68,20 +70,13 @@ public:
 
 class slraGammaCholeskySameDiagBTBanded : public slraGammaCholesky {
   slraGammaCholeskyBTBanded *myBase;
-  const slraMosaicHankelStructure *myStruct;
+  const MosaicHStructure *myStruct;
 public:  
-  slraGammaCholeskySameDiagBTBanded( const slraMosaicHankelStructure *s, int r, int use_slicot, double reg_gamma  ) :
-      myStruct(s) {
-    myBase = (slraGammaCholeskyBTBanded *)myStruct->getMaxBlock()->createGammaComputations(r, reg_gamma);  
-  }
-  virtual ~slraGammaCholeskySameDiagBTBanded() {
-    delete myBase;
-  }
-  
-  virtual void computeCholeskyOfGamma( gsl_matrix *R ) {
-    myBase->computeCholeskyOfGamma(R);
-  }
-  
+  slraGammaCholeskySameDiagBTBanded( const MosaicHStructure *s, 
+      int r, int use_slicot, double reg_gamma );
+  virtual ~slraGammaCholeskySameDiagBTBanded();
+
+  virtual void computeCholeskyOfGamma( gsl_matrix *R );
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multiplyInvGammaVector( gsl_vector * yr );                
 };

@@ -82,15 +82,36 @@ void slraDGammaBTBanded::calcDijGammaYr( gsl_vector *res,
 
 slraDGammaBBanded::slraDGammaBBanded( const slraSDependentStructure *s, int r ) :
    myD(s->getNplusD() - r), myW(s) {
+  myTmp1 = gsl_vector_alloc(myD);  
+  myTmp2 = gsl_vector_alloc(myW->getNplusD());  
+//  myYrR = gsl_vector_alloc((myW->getNplusD()) * myW->getM());  
 }
 
 slraDGammaBBanded::~slraDGammaBBanded(){
+//  gsl_vector_free(myYrR);
+  gsl_vector_free(myTmp1);
+  gsl_vector_free(myTmp2);
 }
 
 void slraDGammaBBanded::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr ) {
-                   
-  for (size_t k = 0; k < myW->getM(); k++)  {
+  gsl_vector perm_col = gsl_matrix_column(perm, i).vector, yr_sub, res_sub;
+  int k, l, S = myW->getS(), M = Yr->size / myD;
+  double tmp;
+
+  gsl_vector_set_zero(res); 
+  for (k = 0; k < M; k++)  {
+    res_sub = gsl_vector_subvector(res, k * myD, myD).vector;
     
+    for (l = mymax(0, k - S + 1);  l < mymin(k + S, M); l++) {
+      yr_sub = gsl_vector_subvector(Yr, l * myD, myD).vector;
+
+      myW->AtWijV(myTmp1, k, l, R, &perm_col, myTmp2);
+      gsl_blas_daxpy(gsl_vector_get(&yr_sub, j), myTmp1, &res_sub);
+
+      myW->AtWijV(myTmp1, l, k, R, &perm_col, myTmp2);
+      gsl_blas_ddot(myTmp1, &yr_sub, &tmp);
+      gsl_vector_set(&res_sub, j, tmp + gsl_vector_get(&res_sub, j));
+    }
   }
 }

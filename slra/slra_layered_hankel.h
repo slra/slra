@@ -50,13 +50,15 @@ public:
   int getLayerNp( int l ) const { return getLayerLag(l) + getM() - 1; }
 };
 
-class slraMosaicHankelStructure : public slraStripedStructure {
+class MosaicHStructure : public StripedStructure {
+  bool myWkIsCol;
 protected:
   static slraStructure **allocStripe( size_t q, size_t N, double *oldNk,
-                                      double *oldMl, double *Wk );
+                                      double *oldMl, double *Wk, bool wkIsCol = true );
 public:
-  slraMosaicHankelStructure( size_t q, size_t N, double *oldNk, double *oldMl, double *Wk );
-  virtual ~slraMosaicHankelStructure() {}
+  MosaicHStructure( size_t q, size_t N, double *oldNk, double *oldMl,
+                   double *Wk, bool wkIsCol = false );
+  virtual ~MosaicHStructure() {}
   virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
 };
 

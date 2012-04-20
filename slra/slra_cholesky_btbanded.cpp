@@ -50,53 +50,29 @@ void slraGammaCholeskyBTBanded::computeGammaUpperPart( gsl_matrix *R ) {
     memcpy(gp, myPackedCholesky, d_times_s * getD() * sizeof(double));
   }
 }
+
+slraGammaCholeskySameDiagBTBanded::
+    slraGammaCholeskySameDiagBTBanded( const MosaicHStructure *s, 
+         int r, int use_slicot, double reg_gamma  ) :  myStruct(s) {
+  myBase = (slraGammaCholeskyBTBanded *)myStruct->getMaxBlock()->createGammaComputations(r, reg_gamma);  
+}
+slraGammaCholeskySameDiagBTBanded::~slraGammaCholeskySameDiagBTBanded() {
+  delete myBase;
+}
   
+void slraGammaCholeskySameDiagBTBanded::computeCholeskyOfGamma( gsl_matrix *R ) {
+  myBase->computeCholeskyOfGamma(R);
+}
 
-/*void slraGammaCholeskyBBandedLH::computeCholeskyOfGamma( gsl_matrix *R ) { FAST version
-  size_t i, j, sum_np, sum_nl, info = 0;
-  gsl_vector_view R_row, TempR_row;
   
-  for (i = 0; i < getM(); i++) {
-    gsl_matrix blk_row = gsl_matrix_view_array_with_tda(myPackedCholesky, 
-        (getS() + 1) * getD(), getD(), d_times_s_minus_1).matrix;
- 
-    gsl_matrix gamma_ij = gsl_matrix_submatrix(&blk_row, 0, 0, getD(), getD()).matrix;
-    /* Compute Gamma_{i,i} * / 
-    gsl_matrix_memcpy(myTempR, R);
-    myWs->mulInvWij(myTempR, i);
-    gsl_blas_dsyr2k(CblasLower, CblasTrans, 0.5, R, myTempR, 0.0, &gamma_ij);
-
-
-    myWs->AtWijB(myTmpGammaij, j, i, R, R, myTempWktR);  
-    
-  
-    /* Compute Gamma_{i, i+j} * / 
-    for (j = 1; (j < getS()) && (j < getM() - i);  j++) {
-      gamma_ij = gsl_matrix_submatrix(&blk_row, 0, j * getD(), getD(), getD()).matrix;
-      myWs->AtWijB(&gamma_ij, i+j, i, R, R, myTempWktR);
-    //  myWs->slraLayeredHankelStructure::AtWkB(&gamma_ij, -k, R, myTempR, myTempWktR);
-    }
-    if (getS() < getM() - i)  {
-      gamma_ij = gsl_matrix_submatrix(&blk_row, 0, getS() * getD(), getD(), getD()).matrix;
-      gsl_matrix_set_zero(&gamma_ij);
-    }
-  }
-
-  dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, &d_times_s, &info);
-
-
-  if (info) { 
-    PRINTF("Error: info = %d", info); /* TO BE COMPLETED * /
-  }
-}*/
-
-
-void slraGammaCholeskySameDiagBTBanded::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
+void slraGammaCholeskySameDiagBTBanded::
+         multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
   
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), myStruct->getMl(k) * myBase->getD());    
+    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), 
+                 myStruct->getMl(k) * myBase->getD());    
   
     myBase->multiplyInvPartCholeskyArray(sub_yr.vector.data, trans, 
         sub_yr.vector.size, sub_yr.vector.size);
@@ -108,8 +84,11 @@ void slraGammaCholeskySameDiagBTBanded::multiplyInvGammaVector( gsl_vector * yr 
   gsl_vector_view sub_yr;
   
   for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), myStruct->getMl(k) * myBase->getD());    
-  
-    myBase->multiplyInvPartGammaArray(sub_yr.vector.data, sub_yr.vector.size, sub_yr.vector.size);
+    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), 
+                 myStruct->getMl(k) * myBase->getD());    
+    myBase->multiplyInvPartGammaArray(sub_yr.vector.data, 
+        sub_yr.vector.size, sub_yr.vector.size);
   }
 }
+
+

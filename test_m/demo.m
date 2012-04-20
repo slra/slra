@@ -16,10 +16,11 @@ tic, x_ls = (a \ b)'; t_ls = toc
 s_ls.m = ones(1, n+d);
 s_ls.n = m; 
 p = [a b];
-opt.w = [Inf Inf Inf Inf Inf 1 1]
+opt.w = diag([Inf Inf Inf Inf Inf 1 1]) * ones(n+d, m)
 tic, [p_slra, i_slra] = slra(p, s_ls, n, opt); t_slra = toc
 error = i_slra.Rh(:,1:end-d) - x_ls
 
+pause
 %% Low rank approximation problem
 
 % Define dimensions and generate random data
@@ -37,6 +38,7 @@ opt.Rini = i_slra.Rh;
 tic, [p_slra, i_slra] = slra(p, s_lra, n, opt); t_slra = toc
 error = i_slra.Rh(:,1:end-d) - x_lra
 
+pause
 %% Deconvolution problem
 
 m = 200; % length(p_a0)
@@ -70,6 +72,7 @@ e_ls   = norm(xh_ls - x0) / norm(x0)
 e_tls  = norm(xh_tls - x0) / norm(x0)
 e_slra = norm((i_slra.Rh(n:-1:1))' - x0) / norm(x0)
 
+pause
 %% Hankel structured low rank approximation problem
 
 % Generate data
@@ -96,3 +99,16 @@ error_data = norm(p - p0)
 error = norm(p_slra2 - p0)
 
 norm(p_slra - p_slra2)
+
+pause
+
+%% Sylvester low-rank approximation 
+opt =  rmfield(opt, 'phi');
+a = conv([4 2 1], [5 2]) + [0.05 0.03 0.04 0];
+b = conv([4 2 1], [5 2]) + [0.04 0.02 0.01 0];
+s.m = [2 2];
+s.n = 5;
+opt.w = [Inf ones(1,length(a)) Inf Inf ones(1,length(a)) Inf];
+[ph, info] = slra([0 a 0 0 b 0], s, 3, opt)
+
+[toeplitz([a(1) 0], [a 0]) ; toeplitz([b(1) 0], [b 0])]

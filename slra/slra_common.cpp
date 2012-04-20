@@ -164,3 +164,15 @@ void print_arr(double* a, int n)
     PRINTF("%f ",*(a+i));
   PRINTF("\n");
 }
+
+
+
+void print_vec(const gsl_vector* a)
+{
+  int i;
+
+  PRINTF("\n");
+  for (i = 0; i < a->size; i++)
+    PRINTF("%f ",gsl_vector_get(a, i));
+  PRINTF("\n");
+}

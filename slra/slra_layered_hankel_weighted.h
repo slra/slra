@@ -1,10 +1,10 @@
-class slraLayeredHankelWeightedStructure : public slraSDependentStructure {
+class WLayeredHStructure : public slraSDependentStructure {
   slraLayeredHankelStructure myBase;
-  gsl_vector *myInvSqrtWeights;
 public:
-  slraLayeredHankelWeightedStructure( const double *oldNk, size_t q, int M, 
-                     const double *weights = NULL, bool block_weights = false );
-  virtual ~slraLayeredHankelWeightedStructure();
+  gsl_vector *myInvSqrtWeights;
+  WLayeredHStructure( const double *oldNk, size_t q, int M, 
+                     const double *weights = NULL );
+  virtual ~WLayeredHStructure();
 
   /* slraLayeredHankelStructure delegated methods */
   virtual int getNplusD() const { return myBase.getNplusD(); }
@@ -38,6 +38,16 @@ public:
   double getInvSqrtWeights( int i ) const { return gsl_vector_get(myInvSqrtWeights, i); }
   void mulInvWij( gsl_matrix * res, int i ) const;
 };
+
+class WMosaicHStructure : public StripedStructure {
+protected:
+  static slraStructure **allocStripe( size_t q, size_t N, double *Nk,
+                                      double *Ml, double *Wk );
+public:
+  WMosaicHStructure( size_t q, size_t N, double *Nk, double *Ml, double *Wk );
+  virtual ~WMosaicHStructure() {}
+};
+
 
 
 

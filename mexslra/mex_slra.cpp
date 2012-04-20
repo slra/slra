@@ -76,6 +76,20 @@ gsl_matrix *view_to_mat( gsl_matrix_view &mat_vw ) {
   return  (mat_vw.matrix.data != NULL) ? &mat_vw.matrix : NULL; 
 }
 
+int compute_np( gsl_vector* ml, gsl_vector *nk ) {
+  int np = 0;
+  int i;
+  
+  for (i = 0; i < ml->size; i++) {
+    np += ((int)gsl_vector_get(ml, i) - 1) * nk->size; 
+  }
+  for (i = 0; i < nk->size; i++) {
+    np += ((int)gsl_vector_get(nk, i)) * ml->size; 
+  }
+  return np;
+}
+
+
 #define IfCheckAndStoreFieldBoundL(name, lvalue)		\
   if (! strcmp(field_name, #name)) {				\
     opt.name = mxGetScalar(mxGetFieldByNumber(prhs[3], 0, l));	\
@@ -130,6 +144,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   gsl_vector_view vec_ml = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ARRAY_ML));
   gsl_vector_view vec_nk = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ARRAY_NK));
  
+  int np_comp = compute_np(&vec_ml.vector, &vec_nk.vector);
+  
+  if (p_in.vector.size < np_comp) {
+    mexErrMsgTxt("Size of vector p less that the structure requires");   
+  } else if (p_in.vector.size > np_comp) {
+    mexWarnMsgTxt("Size of vector p more that the structure requires");   
+  }
   
   rank = mxGetScalar(prhs[2]);
   
@@ -187,8 +208,26 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
   }
   
+  
+   print_vec(&p_in.vector);
+  gsl_vector_view p_out;
   try {
-    myStruct = new slraMosaicHankelStructure(vec_ml.vector.size, vec_nk.vector.size, 
+    if (wk.vector.data == NULL || 
+        wk.vector.size == vec_ml.vector.size * vec_nk.vector.size) {
+      myStruct = new MosaicHStructure(vec_ml.vector.size, vec_nk.vector.size, 
+                     vec_ml.vector.data, vec_nk.vector.data, wk.vector.data);
+    } else if (wk.vector.size == np_comp) {
+      myStruct = new WMosaicHStructure(vec_ml.vector.size, vec_nk.vector.size, 
+                     vec_ml.vector.data, vec_nk.vector.data, wk.vector.data);
+    } else if (wk.vector.size == vec_ml.vector.size) {
+      myStruct = new MosaicHStructure(vec_ml.vector.size, vec_nk.vector.size, 
+                     vec_ml.vector.data, vec_nk.vector.data, wk.vector.data, true);
+    } else {
+      throw new slraException("Incorrect weight specification\n");   
+    }
+  
+  
+    myStruct = new MosaicHStructure(vec_ml.vector.size, vec_nk.vector.size, 
                      vec_ml.vector.data, vec_nk.vector.data, wk.vector.data);
     m = myStruct->getNplusD();
     if (rank <= 0 || rank >= m) {
@@ -197,7 +236,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     
     /* output info */
     plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
-    gsl_vector_view p_out = MAT_to_vecview(plhs[0]);
+    p_out = MAT_to_vecview(plhs[0]);
 
     if (nlhs > 1) {
       int l = 1;
@@ -227,12 +266,22 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     str_buf[STR_MAX_LEN - 1] = 0;
     was_error = 1;
     delete e;
-  }
+  } 
+
+
+  /*if (wk.vector.size == np_comp && wk.vector.data != NULL) {
+    PRINTF("Hello!\n");
+    print_vec(((WLayeredHStructure *)((WMosaicHStructure *)myStruct)->myStripe[0])->myInvSqrtWeights);
+  }*/
 
   if (myStruct != NULL) {
     delete myStruct;
   }
   
+  
+  
+  print_vec(&p_out.vector);
+
   gsl_set_error_handler(old_gsl_error_handler);
 
   if (was_error) {
