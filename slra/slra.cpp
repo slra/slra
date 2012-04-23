@@ -279,11 +279,7 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
           gsl_vector_memcpy(p_out, p_in);
         }
       }
-      PRINTF("Before correction\n");
-      print_vec(p_out);
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
-      PRINTF("After correction\n");
-      print_vec(p_out);
     }
     if (rh != NULL) {
       myCostFun->computeR(gsl_matrix_const_submatrix(x, 0, 0, x->size1, x->size2), rh);

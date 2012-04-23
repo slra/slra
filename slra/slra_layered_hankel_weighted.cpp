@@ -44,7 +44,7 @@ void WLayeredHStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector
       inv_w_chunk = gsl_vector_subvector(myInvSqrtWeights, k + sum_np, 
                                          getLayerLag(l));
 
-      gsl_vector_memcpy(&p_chunk_sub.vector, &inv_w_chunk.vector);
+//      gsl_vector_memcpy(&p_chunk_sub.vector, &inv_w_chunk.vector);
 //      print_arr(inv_w_chunk.vector.data, inv_w_chunk.vector.size);
      
       yr_matr_row = gsl_matrix_row(&yr_matr.matrix, k); 
