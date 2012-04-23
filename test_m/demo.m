@@ -104,12 +104,22 @@ norm(p_slra - p_slra2)
 pause
 
 %% Sylvester low-rank approximation 
-opt =  rmfield(opt, 'phi');
-a = conv([4 2 1], [5 2]) + [0.05 0.03 0.04 0];
-b = conv([4 2 1], [5 2]) + [0.04 0.02 0.01 0];
-s.m = [2 2];
-s.n = 5;
-opt.w = [Inf ones(1,length(a)) Inf Inf ones(1,length(a)) Inf];
-[ph, info] = slra([0 a 0 0 b 0], s, 3, opt)
+% Example 1
+clear all;
+opt.disp = 'iter';
+a = conv([4 2 1], [5 2]) + [0.05 0.03 0.04 0]
+b = conv([4 2 1], [5 1]) + [0.04 0.02 0.01 0]
+opt.w = [Inf ones(1,length(a)) Inf Inf ones(1,length(b)) Inf];
+[ph, info] = slra([0 a 0 0 b 0], struct('m', [2 2], 'n', 5), 3, opt)
 
-[toeplitz([a(1) 0], [a 0]) ; toeplitz([b(1) 0], [b 0])]
+
+% Example 2
+opt.disp = 'iter';
+a2 = conv([-1 1], [-5 1])
+b2 = conv([-1.1 1], [-5.2 1])
+opt.w = [Inf ones(1,length(a2)) Inf Inf ones(1,length(b2)) Inf];
+[ph, info] = slra([0 a2 0 0 b2 0], struct('m', [2 2], 'n', 4), 3, opt)
+
+
+
+

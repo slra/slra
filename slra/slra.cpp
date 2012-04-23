@@ -257,15 +257,6 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
 
     R_2_x(R, myCostFun->getPerm(), x);
 
-
-  } catch ( slraException *e ) {
-    res = GSL_EINVAL;
-    PRINTF(e->getMessage());
-    delete e;
-  }
-
-
-
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
     int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
@@ -284,7 +275,19 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
     if (rh != NULL) {
       myCostFun->computeR(gsl_matrix_const_submatrix(x, 0, 0, x->size1, x->size2), rh);
     }
-  
+  } catch ( slraException *e ) {
+    if (myCostFun != NULL) {
+      delete myCostFun;
+    }
+    if (x != NULL) {
+      gsl_matrix_free(x);
+    }
+    if (R != NULL) {
+      gsl_matrix_free(R);
+    }
+    
+    throw; 
+  }
 
   if (myCostFun != NULL) {
     delete myCostFun;
@@ -296,7 +299,6 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
   if (R != NULL) {
     gsl_matrix_free(R);
   }
-
 
   return res;
 }

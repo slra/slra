@@ -48,8 +48,6 @@ void StripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *
   
   for (int k = 0; k < getBlocksN(); 
        sum_np += myStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
-    PRINTF("Computing correction:\n");
-
     sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
     sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
     myStripe[k]->correctVector(&sub_p.vector, R, &sub_yr.vector);

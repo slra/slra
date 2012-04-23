@@ -38,17 +38,17 @@ slraCostFunction::slraCostFunction( slraStructure *s,
   myTmpGrad = gsl_matrix_alloc(myRank, getD());
   
   if (myStruct->getNp() != p->size) {
-    throw slraException("Inconsistent parameter vector\n");
+    throw new slraException("Inconsistent parameter vector\n");
   }
 
   myTmpCorr = gsl_vector_alloc(getNp());
   
-  if (getM() <= getNplusD()) {
-    throw slraException("Number of rows %d is less than the number of columns %d: ",
+  if (getM() < getNplusD()) {
+    throw new slraException("Number of rows %d is less than the number of columns %d: ",
               getM(), getNplusD());
   }
   if (myStruct->getNp() < getM() * getD()) {
-    throw slraException("The inner minimization problem is overdetermined: " 
+    throw new slraException("The inner minimization problem is overdetermined: " 
                         "m * (n-r) = %d, n_p = %d.\n", getM() * getD(), myStruct->getNp());
   }
     
@@ -56,7 +56,7 @@ slraCostFunction::slraCostFunction( slraStructure *s,
     gsl_matrix_set_identity(myPerm);
   } else {
     if (perm->size1 != getNplusD() || perm->size2 != getNplusD()) {
-      throw slraException("Incorrect sizes of permutation matrix.\n");   
+      throw new slraException("Incorrect sizes of permutation matrix.\n");   
     }
 
     gsl_matrix_memcpy(myPerm, perm);

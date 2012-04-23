@@ -87,7 +87,7 @@ void slraGammaCholeskyBBanded::computeGammaUpperPart( gsl_matrix *R ) {
       for (size_t j = 0; (j <= getS()) && (j < getM() - i); j++) {
         gamma_ij = gsl_matrix_submatrix(&blk_row, j * getD(), 0, getD(), getD()).matrix;
         if (j < getS()) {
-          myW->AtWijB(myTempGammaij, j + i, i, R, R, myTempWktR);  
+          myW->AtWijB(myTempGammaij, i+j, i, R, R, myTempWktR);  
         } else {
           gsl_matrix_set_zero(myTempGammaij);
         }
