@@ -93,16 +93,18 @@ void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j,
 void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j, 
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWijB, double beta ) const {
   gsl_matrix_scale(res, beta);
-  size_t sum_np, sum_nl = 0, l, k;
+  size_t sum_np, sum_nl = 0;
+  int l, k;
   double inv_w;
 
   if (i > j) {
     int tmp;
     const gsl_matrix* C;
     tmp = i; i = j; j = tmp;
+
     C = A; A = B; B = C;  
   }
-  
+
   int diff = j - i;
   sum_nl = 0;
   for (l = 0, sum_np = j; l < getQ(); 
@@ -121,7 +123,8 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
                      gsl_vector *tmpWijV, double beta ) const {
   gsl_vector_scale(res, beta);
   
-  size_t sum_np, sum_nl = 0, l, k;
+  size_t sum_np, sum_nl = 0;
+  int l, k;
   double inv_w;
 
   if (j >= i) {

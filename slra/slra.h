@@ -144,7 +144,7 @@ typedef struct {
 #include "slra_dgamma_btbanded.h"
 
 
-#include "slra_func.h"
+#include "slra_computation.h"
 
 
 #include "slra_common.h"

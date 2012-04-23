@@ -113,7 +113,7 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
 }
 
 
-static void compute_lra_R( const gsl_matrix *c, const gsl_matrix *perm, gsl_matrix * R, bool isgcd = false ) {
+static void compute_lra_R( const gsl_matrix *c, gsl_matrix * R, bool isgcd = false ) {
   size_t status = 0;
   size_t minus1 = -1;
   double temp;
@@ -242,21 +242,23 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
   }
 
   try { 
+
     myCostFun =  new CostFunction(s, r, p_in, opt, perm);
-    x = gsl_matrix_alloc(myCostFun->getN(), myCostFun->getD());
+    x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());
     R = gsl_matrix_alloc(myCostFun->getNplusD(), myCostFun->getD());
     
+
     if (r_ini == NULL) {  /* compute default initial approximation */
       if (opt->disp == SLRA_OPT_DISP_ITER) {
         PRINTF("X not given, computing TLS initial approximation.\n");
       }
-      compute_lra_R(myCostFun->getSMatr(), myCostFun->getPerm(), R, opt->gcd);
+      compute_lra_R(myCostFun->getSMatr(), R, opt->gcd);
     } else {
       gsl_matrix_memcpy(R, r_ini);
     }
-
+    
     R_2_x(R, myCostFun->getPerm(), x);
-
+  
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
     int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);

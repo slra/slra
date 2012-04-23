@@ -51,43 +51,46 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
       opt->ls_correction ? &(F->_f_cor) : &(F->_f_ls), 
       opt->ls_correction ? &(F->_df_cor) : &(F->_df_ls), 
       opt->ls_correction ? &(F->_fdf_cor) : &(F->_fdf_ls), 
-      ls_nfun, F->getN() * F->getD(), F };
+      ls_nfun, F->getRank() * F->getD(), F };
   gsl_vector *g;
 
   /* QN */
   double stepqn = opt->step; 
   gsl_multimin_fdfminimizer* solverqn;
   gsl_multimin_function_fdf fdfqn = { 
-    &(F->_f), &(F->_df), &(F->_fdf), F->getN() * F->getD(), F };
-
+    &(F->_f), &(F->_df), &(F->_fdf), F->getRank() * F->getD(), F };
 
   /* NM */
   double size;
   gsl_vector *stepnm;
   gsl_multimin_fminimizer* solvernm;
-  gsl_multimin_function fnm = {&(CostFunction::_f), F->getN() * F->getD(), F };
+  gsl_multimin_function fnm = {&(CostFunction::_f), F->getRank() * F->getD(), F };
 
   /* initialize the optimization method */
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
-    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], ls_nfun, F->getN() * F->getD());
+    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], ls_nfun, 
+                   F->getRank() * F->getD());
     gsl_multifit_fdfsolver_set(solverlm, &fdflm, x_vec);
-    g = gsl_vector_alloc(F->getN() * F->getD());
+    g = gsl_vector_alloc(F->getRank() * F->getD());
     break;
   case SLRA_OPT_METHOD_QN: /* QN */
     solverqn = gsl_multimin_fdfminimizer_alloc( Tqn[opt->submethod], 
-						F->getN() * F->getD() );
+						F->getRank() * F->getD() );
     gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, x_vec, 
 				  stepqn, opt->tol); 
     status_dx = GSL_CONTINUE;  
     break;
   case SLRA_OPT_METHOD_NM: /* NM */
-    solvernm = gsl_multimin_fminimizer_alloc( Tnm[opt->submethod], F->getN() * F->getD() );
-    stepnm = gsl_vector_alloc( F->getN() * F->getD() );
+    solvernm = gsl_multimin_fminimizer_alloc( Tnm[opt->submethod], 
+                                              F->getRank() * F->getD() );
+    stepnm = gsl_vector_alloc( F->getRank() * F->getD() );
     gsl_vector_set_all(stepnm, opt->step); 
     gsl_multimin_fminimizer_set( solvernm, &fnm, x_vec, stepnm );
     break;
   }
+
+   
 
   /* optimization loop */
   if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {

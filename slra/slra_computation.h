@@ -1,6 +1,8 @@
 class CostFunction {
   Structure *myStruct;
   int myRank;
+//  int myD;
+
   Cholesky *myGam;
   DGamma *myDeriv;
   gsl_matrix *myMatr;
@@ -9,6 +11,8 @@ class CostFunction {
   gsl_matrix *myMatrMulPerm;
   
   /* Helper computation variables */
+  gsl_matrix *myTmpThetaExt;
+
   gsl_matrix *myTmpGradR;
   gsl_matrix *myTmpGradR2;
   gsl_matrix *myTmpR;  
@@ -31,9 +35,9 @@ public:
                     opt_and_info *opt, gsl_matrix *perm  );
   virtual ~CostFunction();
   
-  int getD() { return myStruct->getNplusD() - myRank; }
+  int getD() { return myPerm->size2 - myRank; }
   int getNplusD() { return myStruct->getNplusD(); }
-  int getN() { return myRank; }
+  int getRank() { return myRank; }
   int getM() { return myStruct->getM(); }
   int getNp() { return myStruct->getNp(); }
 
@@ -46,11 +50,7 @@ public:
   void computeSr( gsl_matrix *R, gsl_vector *Sr );
 
 
-  void computeRGammaSr( const gsl_vector *x, gsl_matrix *R, gsl_vector *Sr ) {
-    computeR(x, myTmpR);
-    myGam->calcGammaCholesky(myTmpR);
-    computeSr(myTmpR, Sr);
-  } 
+  void computeRGammaSr( const gsl_vector *x, gsl_matrix *R, gsl_vector *Sr ) ;
 
   void computeJacobianZij( gsl_vector *res, int i, int j,
                            gsl_vector* yr, gsl_matrix *R, double factor = 0.5 );

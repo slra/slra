@@ -113,12 +113,25 @@ opt.w = [Inf ones(1,length(a)) Inf Inf ones(1,length(b)) Inf];
 [ph, info] = slra([0 a 0 0 b 0], struct('m', [2 2], 'n', 5), 3, opt)
 
 
-% Example 2
+% Example 2 (from book)
 opt.disp = 'iter';
 a2 = conv([-1 1], [-5 1])
 b2 = conv([-1.1 1], [-5.2 1])
 opt.w = [Inf ones(1,length(a2)) Inf Inf ones(1,length(b2)) Inf];
 [ph, info] = slra([0 a2 0 0 b2 0], struct('m', [2 2], 'n', 4), 3, opt)
+
+pause
+% Example 3 (3 polynomials)
+
+
+opt.disp = 'iter';
+a3 = conv([-1 1], [-5 1])
+b3 = conv([-1.2 1], [-5 1])
+c3 = conv([-1 1], [-5.2 1])
+opt.w = [Inf ones(1,length(a3)) Inf ones(1,length(b3)) Inf Inf * ones(1, 5) ones(1,length(c3)) Inf * ones(1, 5)]
+p = [0 a3 0 b3 0 zeros(1,5) c3 zeros(1,5)]
+opt.phi = [eye(2) zeros(2,6); zeros(2,2) eye(2) zeros(2,4); zeros(2,6) eye(2)];
+[ph, info] = slra(p, struct('m', [2 6], 'n', 8), 5, opt)
 
 
 

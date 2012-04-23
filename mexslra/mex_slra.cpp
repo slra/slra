@@ -223,11 +223,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     } else {
       throw new Exception("Incorrect weight specification\n");   
     }
+    
   
-    m = myStruct->getNplusD();
+    m = perm.matrix.data == NULL ? myStruct->getNplusD() : perm.matrix.size2;
+    size_t m2 = myStruct->getNplusD();
     if (rank <= 0 || rank >= m) {
       throw new Exception("Incorrect rank\n");   
     }
+
     
     /* output info */
     plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
@@ -238,7 +241,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       const char *field_names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
       plhs[1] = mxCreateStructArray(1, &l, 5, field_names);
     
-      mxArray *rh = mxCreateDoubleMatrix((m-rank), m, mxREAL);
+      mxArray *rh = mxCreateDoubleMatrix((m - rank), m2, mxREAL);
       mxArray *vh = mxCreateDoubleMatrix((m - rank) * rank, (m - rank) * rank, mxREAL);
       rh_view = MAT_to_trmatview(rh);
       vh_view = MAT_to_trmatview(vh);
@@ -246,6 +249,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxSetField(plhs[1], 0, RH_STR, rh);
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
+
 
     slra(view_to_vec(p_in), myStruct, rank, &opt, 
          view_to_mat(rini), view_to_mat(perm),
@@ -269,8 +273,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (myStruct != NULL) {
     delete myStruct;
   }
-  
-  
 
 
   if (was_error) {
