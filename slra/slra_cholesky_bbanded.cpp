@@ -1,5 +1,3 @@
-#include <memory.h>
-#include <cstdarg>
 extern "C" {
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
@@ -72,7 +70,6 @@ void slraGammaCholeskyBBanded::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_m
 
 void slraGammaCholeskyBBanded::computeCholeskyOfGamma( gsl_matrix *R ) {
   size_t info = 0;
-
   computeGammaUpperPart(R);
   dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, &d_times_s, &info);
   if (info) { 
@@ -87,7 +84,6 @@ void slraGammaCholeskyBBanded::computeGammaUpperPart( gsl_matrix *R ) {
     if (getS() > 1) {
       gsl_matrix blk_row = gsl_matrix_view_array_with_tda(diagPtr + d_times_s_minus_1, 
           (getS() + 1) * getD(), getD(), d_times_s_minus_1).matrix;
-
       for (size_t j = 0; (j <= getS()) && (j < getM() - i); j++) {
         gamma_ij = gsl_matrix_submatrix(&blk_row, j * getD(), 0, getD(), getD()).matrix;
         if (j < getS()) {
@@ -103,7 +99,6 @@ void slraGammaCholeskyBBanded::computeGammaUpperPart( gsl_matrix *R ) {
       }
     } else {
       myW->AtWijB(myTempGammaij, i, i, R, R, myTempWktR);  
-      
       gamma_ij = gsl_matrix_view_array(diagPtr, getD(), getD()).matrix;
       shiftLowerTrg(&gamma_ij, myTempGammaij);
     }

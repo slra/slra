@@ -12,6 +12,7 @@ extern "C" {
 
 WLayeredHStructure::WLayeredHStructure( const double *oldNk, size_t q, int M, 
     const double *weights ) : myBase(oldNk, q, M, NULL) {
+    
   myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
   if (weights != NULL) {
     for (size_t l = 0; l < myInvSqrtWeights->size; l++) {
@@ -23,9 +24,6 @@ WLayeredHStructure::WLayeredHStructure( const double *oldNk, size_t q, int M,
   } else {
     gsl_vector_set_all(myInvSqrtWeights, 1);
   }
-  
-  print_vec(myInvSqrtWeights);
-
 }
 
 WLayeredHStructure::~WLayeredHStructure() {
@@ -47,8 +45,7 @@ void WLayeredHStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector
                                          getLayerLag(l));
 
       gsl_vector_memcpy(&p_chunk_sub.vector, &inv_w_chunk.vector);
-/*      PRINTF("Hello!\n");
-      print_arr(inv_w_chunk.vector.data, inv_w_chunk.vector.size);*/
+//      print_arr(inv_w_chunk.vector.data, inv_w_chunk.vector.size);
      
       yr_matr_row = gsl_matrix_row(&yr_matr.matrix, k); 
       gsl_blas_dgemv(CblasNoTrans, 1.0, &b_xext.matrix, 
@@ -59,6 +56,8 @@ void WLayeredHStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector
   }
   
 //  gsl_vector_memcpy(p, myInvSqrtWeights);
+//  PRINTF("InvWeights\n");
+//  print_vec(myInvSqrtWeights);
 
   gsl_vector_free(res);
 }

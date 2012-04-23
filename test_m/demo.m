@@ -2,6 +2,7 @@
 clear all, rand('state', 0), randn('state', 0), addpath '..';
 
 opt.disp = 'iter';
+
 %% Least squares problem
 
 % Define dimensions and generate random data

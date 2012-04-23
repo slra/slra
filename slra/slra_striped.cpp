@@ -9,9 +9,10 @@ extern "C" {
 /* Structure striped classes */
 StripedStructure::StripedStructure( size_t N, slraStructure **stripe  ): myN(N), myStripe(stripe) {
   size_t k;  
-
+  
   for (k = 0, myM = 0, myNp = 0, myMaxMlInd = 0; k < myN; 
        myM += myStripe[k]->getM(), myNp += myStripe[k]->getNp(), k++) {
+
     if (myStripe[k]->getM() > myStripe[myMaxMlInd]->getM()) {
       myMaxMlInd = k;
     }
@@ -44,10 +45,14 @@ void StripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *
   size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector_view sub_p, sub_yr;
   
+  
   for (int k = 0; k < getBlocksN(); 
        sum_np += myStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
+    PRINTF("Computing correction:\n");
+
     sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
     sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
+    DEBUGINT(myStripe[k]);
     myStripe[k]->correctVector(&sub_p.vector, R, &sub_yr.vector);
   }
 }

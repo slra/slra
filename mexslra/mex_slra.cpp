@@ -226,9 +226,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       throw new slraException("Incorrect weight specification\n");   
     }
   
-  
-    myStruct = new MosaicHStructure(vec_ml.vector.size, vec_nk.vector.size, 
-                     vec_ml.vector.data, vec_nk.vector.data, wk.vector.data);
     m = myStruct->getNplusD();
     if (rank <= 0 || rank >= m) {
       throw new slraException("Incorrect rank\n");   
@@ -252,15 +249,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
 
-    slra(view_to_vec(p_in), myStruct, rank, &opt, 
-         view_to_mat(rini), view_to_mat(perm),
-         view_to_vec(p_out), view_to_mat(rh_view), view_to_mat(vh_view));
 
-    if (nlhs > 1) {
-      mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
-      mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
-      mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
-    }
   } catch (slraException *e) {
     strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
     str_buf[STR_MAX_LEN - 1] = 0;
@@ -268,7 +257,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     delete e;
   } 
 
+  gsl_set_error_handler(old_gsl_error_handler);
 
+    slra(view_to_vec(p_in), myStruct, rank, &opt, 
+         view_to_mat(rini), view_to_mat(perm),
+         view_to_vec(p_out), view_to_mat(rh_view), view_to_mat(vh_view));
+
+
+
+    if (nlhs > 1) {
+      mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
+      mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
+      mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
+    }
   /*if (wk.vector.size == np_comp && wk.vector.data != NULL) {
     PRINTF("Hello!\n");
     print_vec(((WLayeredHStructure *)((WMosaicHStructure *)myStruct)->myStripe[0])->myInvSqrtWeights);
@@ -279,10 +280,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
   
   
-  
-  print_vec(&p_out.vector);
 
-  gsl_set_error_handler(old_gsl_error_handler);
 
   if (was_error) {
     mexErrMsgTxt(str_buf);
