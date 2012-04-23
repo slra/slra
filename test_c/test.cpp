@@ -54,18 +54,18 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   double *w_k = NULL;
   
   
-  slraStructure *myStruct = NULL;
+  Structure *myStruct = NULL;
   
 //  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
 
   int s_k,  s_q;
   opt_and_info opt;
   
-  slraAssignDefOptValues(opt);
+  AssignDefOptValues(opt);
 //  opt.maxiter = 500;
   opt.maxiter = 500;
   opt.disp = SLRA_OPT_DISP_ITER;
-  slraString2Method(method, &opt);
+  String2Method(method, &opt);
 //  opt.use_slicot = use_slicot;
   opt.ls_correction = use_slicot;
   

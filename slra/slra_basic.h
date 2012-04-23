@@ -1,17 +1,17 @@
-class slraException {
+class Exception {
   static const int MSG_MAX = 200;
 
   char myMsg[MSG_MAX];
 public:
-  slraException( const char *msg, ... );
+  Exception( const char *msg, ... );
   const char *getMessage()  { return myMsg; }
 };
 
 
-class slraGammaCholesky {
+class Cholesky {
 public:  
-  virtual  ~slraGammaCholesky() {}
-  virtual void computeCholeskyOfGamma( gsl_matrix *R ) = 0;
+  virtual  ~Cholesky() {}
+  virtual void calcGammaCholesky( gsl_matrix *R ) = 0;
 
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
   virtual void multiplyInvGammaVector( gsl_vector * yr ) = 0;                
@@ -23,9 +23,9 @@ public:
   }
 };
 
-class slraDGamma {
+class DGamma {
 public:  
-  virtual ~slraDGamma() {}
+  virtual ~DGamma() {}
   virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
                    gsl_vector *yr ) = 0;
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
@@ -33,23 +33,23 @@ public:
 };
 
 
-class slraStructure {
+class Structure {
 public:
-  virtual ~slraStructure() {}
+  virtual ~Structure() {}
   virtual int getNp() const = 0;
   virtual int getNplusD() const = 0;
   virtual int getM() const = 0;
   
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
   
-  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const = 0;
-  virtual slraDGamma *createDerivativeComputations( int r ) const = 0;
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
+  virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
+  virtual DGamma *createDGamma( int D ) const = 0;
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
 };
 
 
 
-class slraSDependentStructure : public slraStructure {
+class SDependentStructure : public Structure {
 public:
   virtual int getS() const = 0;
   virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const = 0;
@@ -59,13 +59,10 @@ public:
   virtual void AtWijV( gsl_vector *res, int i, int j,
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWijV, double beta = 0 ) const = 0;
-                      
-
-
 };
 
 
-class slraStationaryStructure : public slraSDependentStructure {
+class StationaryStructure : public SDependentStructure {
 
 public:
   virtual void WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const = 0;

@@ -138,7 +138,7 @@ static void compute_lra_R( const gsl_matrix *c, const gsl_matrix *perm, gsl_matr
     gsl_matrix_free(tempc);
     gsl_matrix_free(tempu);
 
-    throw new slraException("Error computing initial approximation: DGESVD didn't converge\n");
+    throw new Exception("Error computing initial approximation: DGESVD didn't converge\n");
   }
 
   gsl_matrix_transpose(tempu);
@@ -225,10 +225,10 @@ static void checkAndComputeX( slraCostFunction * F, gsl_matrix *x, opt_and_info*
   }
 }*/
 
-int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
+int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
          gsl_matrix *r_ini, gsl_matrix *perm, 
          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh ) { 
-  slraCostFunction * myCostFun = NULL;
+  CostFunction * myCostFun = NULL;
   gsl_matrix *x = NULL;
   gsl_matrix *R = NULL;
   int res = GSL_SUCCESS;
@@ -242,7 +242,7 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
   }
 
   try { 
-    myCostFun =  new slraCostFunction(s, r, p_in, opt, perm);
+    myCostFun =  new CostFunction(s, r, p_in, opt, perm);
     x = gsl_matrix_alloc(myCostFun->getN(), myCostFun->getD());
     R = gsl_matrix_alloc(myCostFun->getNplusD(), myCostFun->getD());
     
@@ -259,7 +259,7 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
 
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
-    int status = slra_gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
+    int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
     if (p_out != NULL) {
@@ -275,7 +275,7 @@ int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
     if (rh != NULL) {
       myCostFun->computeR(gsl_matrix_const_submatrix(x, 0, 0, x->size1, x->size2), rh);
     }
-  } catch ( slraException *e ) {
+  } catch ( Exception *e ) {
     if (myCostFun != NULL) {
       delete myCostFun;
     }

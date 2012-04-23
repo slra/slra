@@ -11,7 +11,7 @@
 #include "slra.h"
 
 
-int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v ) {
+int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     {gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder};
 
@@ -41,16 +41,16 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
       opt->method > sizeof(gsl_submethod_max) / sizeof(gsl_submethod_max[0]) || 
       opt->submethod < 0 || 
       opt->submethod > gsl_submethod_max[opt->method]) {
-    throw new slraException("Unknown optimization method.\n");   
+    throw new Exception("Unknown optimization method.\n");   
   }
   
   /* LM */
   int ls_nfun = opt->ls_correction ? F->getNp() : F->getM() * F->getD();
   gsl_multifit_fdfsolver* solverlm;
   gsl_multifit_function_fdf fdflm = { 
-      opt->ls_correction ? &(F->slra_f_cor) : &(F->slra_f_ls), 
-      opt->ls_correction ? &(F->slra_df_cor) : &(F->slra_df_ls), 
-      opt->ls_correction ? &(F->slra_fdf_cor) : &(F->slra_fdf_ls), 
+      opt->ls_correction ? &(F->_f_cor) : &(F->_f_ls), 
+      opt->ls_correction ? &(F->_df_cor) : &(F->_df_ls), 
+      opt->ls_correction ? &(F->_fdf_cor) : &(F->_fdf_ls), 
       ls_nfun, F->getN() * F->getD(), F };
   gsl_vector *g;
 
@@ -58,14 +58,14 @@ int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, gsl_vector* x_vec
   double stepqn = opt->step; 
   gsl_multimin_fdfminimizer* solverqn;
   gsl_multimin_function_fdf fdfqn = { 
-    &(F->slra_f), &(F->slra_df), &(F->slra_fdf), F->getN() * F->getD(), F };
+    &(F->_f), &(F->_df), &(F->_fdf), F->getN() * F->getD(), F };
 
 
   /* NM */
   double size;
   gsl_vector *stepnm;
   gsl_multimin_fminimizer* solvernm;
-  gsl_multimin_function fnm = {&(slraCostFunction::slra_f), F->getN() * F->getD(), F };
+  gsl_multimin_function fnm = {&(CostFunction::_f), F->getN() * F->getD(), F };
 
   /* initialize the optimization method */
   switch (opt->method) {

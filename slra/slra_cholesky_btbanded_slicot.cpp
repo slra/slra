@@ -10,9 +10,9 @@ extern "C" {
 #include "slra.h"
 
 #ifdef USE_SLICOT
-slraGammaCholeskyBTBandedSlicot::slraGammaCholeskyBTBandedSlicot( const slraStationaryStructure *s,
-    int r, double reg_gamma  ) : 
-    slraGammaCholeskyBTBanded(s, r, reg_gamma)  {
+GammaCholeskyBTBandedSlicot::GammaCholeskyBTBandedSlicot( const StationaryStructure *s,
+    int D, double reg_gamma  ) : 
+    GammaCholeskyBTBanded(s, D, reg_gamma)  {
   myGammaVec = (double*) malloc(getD() * getD() * (getS() + 1) * sizeof(double));
   myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 
                        3 * getD() + /* 3 * K */
@@ -20,12 +20,12 @@ slraGammaCholeskyBTBandedSlicot::slraGammaCholeskyBTBandedSlicot( const slraStat
   myCholeskyWork = (double *)malloc(myCholeskyWorkSize * sizeof(double));                       
 }
 
-slraGammaCholeskyBTBandedSlicot::~slraGammaCholeskyBTBandedSlicot() {
+GammaCholeskyBTBandedSlicot::~GammaCholeskyBTBandedSlicot() {
   free(myGammaVec);
   free(myCholeskyWork);
 }
 
-void slraGammaCholeskyBTBandedSlicot::computeCholeskyOfGamma( gsl_matrix *R )  {
+void GammaCholeskyBTBandedSlicot::calcGammaCholesky( gsl_matrix *R )  {
   size_t info = 0;
   const size_t zero = 0;
 

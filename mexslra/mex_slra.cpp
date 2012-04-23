@@ -41,7 +41,7 @@
 void SLRA_mex_error_handler(const char * reason, const char * file, int line, int gsl_errno) {
   char err_msg[250];
   
-  throw new slraException("GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
+  throw new Exception("GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
 }
 
 void tolowerstr( char * str ) {
@@ -122,7 +122,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   gsl_matrix_view rini = { { 0, 0, 0, 0, 0, 0 } }, perm = { { 0, 0, 0, 0, 0, 0 } }, 
                   rh_view = { { 0, 0, 0, 0, 0, 0 } }, vh_view = { { 0, 0, 0, 0, 0, 0 } };
   
-  slraStructure *myStruct;
+  Structure *myStruct;
   int  m, rank;
   int was_error = 0;
   opt_and_info opt;
@@ -131,7 +131,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (nrhs < 3) {
     mexErrMsgTxt("Error: at least two parameters (p, s, r) are needed.");
   }
-
 
   /* check p */
   gsl_vector_const_view p_in = MAT_to_vecview(prhs[0]);
@@ -155,7 +154,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   rank = mxGetScalar(prhs[2]);
   
   /* user supplied options */
-  slraAssignDefOptValues(opt);
+  AssignDefOptValues(opt);
   if (nrhs > 3) {
     if (! mxIsStruct(prhs[3])) {
       mexWarnMsgTxt("Ignoring 'opt'. The optimization options "
@@ -180,12 +179,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
  	  mxGetString(mxGetFieldByNumber(prhs[3], 0, l), str_buf, 
 		      STR_MAX_LEN); 
 	  tolowerstr(str_buf);
-	  opt.disp = slraString2Disp(str_buf);  
+	  opt.disp = String2Disp(str_buf);  
  	} else if (! strcmp(field_name, METHOD_STR)) {
           mxGetString(mxGetFieldByNumber(prhs[3], 0, l), str_buf, 
                STR_MAX_LEN); 
           tolowerstr(str_buf);
-          slraString2Method(str_buf, &opt);
+          String2Method(str_buf, &opt);
         } else {
           IfCheckAndStoreFieldBoundL(maxiter, 0)  
           else IfCheckAndStoreFieldBoundLU(epsabs, 0, 1) 
@@ -222,12 +221,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       myStruct = new MosaicHStructure(vec_ml.vector.size, vec_nk.vector.size, 
                      vec_ml.vector.data, vec_nk.vector.data, wk.vector.data, true);
     } else {
-      throw new slraException("Incorrect weight specification\n");   
+      throw new Exception("Incorrect weight specification\n");   
     }
   
     m = myStruct->getNplusD();
     if (rank <= 0 || rank >= m) {
-      throw new slraException("Incorrect rank\n");   
+      throw new Exception("Incorrect rank\n");   
     }
     
     /* output info */
@@ -258,7 +257,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
     }
 
-  } catch (slraException *e) {
+  } catch (Exception *e) {
     strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
     str_buf[STR_MAX_LEN - 1] = 0;
     was_error = 1;

@@ -26,7 +26,7 @@ void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl);
 /* Convert double matrix to structure */
 /*int slraMatrix2Struct( data_struct *s, double *s_matr, 
                        int q, int s_matr_cols );*/
-void slraString2Method( const char *str_buf, opt_and_info *popt );
-int slraString2Disp( const char *str_value );
+void String2Method( const char *str_buf, opt_and_info *popt );
+int String2Disp( const char *str_value );
 
 

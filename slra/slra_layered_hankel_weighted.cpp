@@ -17,7 +17,7 @@ WLayeredHStructure::WLayeredHStructure( const double *oldNk, size_t q, int M,
   if (weights != NULL) {
     for (size_t l = 0; l < myInvSqrtWeights->size; l++) {
       if (!(weights[l] > 0)) {
-        throw new slraException("Value of weight not supported: %lf\n", weights[l]);
+        throw new Exception("Value of weight not supported: %lf\n", weights[l]);
       }
       gsl_vector_set(myInvSqrtWeights, l, sqrt(1 / weights[l]));
     }
@@ -30,7 +30,7 @@ WLayeredHStructure::~WLayeredHStructure() {
   gsl_vector_free(myInvSqrtWeights);
 }
 
-void WLayeredHStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
+void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getM(), R->size2), b_xext;
   gsl_vector_view yr_matr_row, res_sub, p_chunk_sub, inv_w_chunk;
@@ -93,33 +93,25 @@ void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j,
 void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j, 
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWijB, double beta ) const {
   gsl_matrix_scale(res, beta);
-  
   size_t sum_np, sum_nl = 0, l, k;
   double inv_w;
 
-  if (j >= i) {
-    int diff = j - i;
-    sum_nl = 0;
-    for (l = 0, sum_np = j; l < getQ(); 
-         sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-      for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
-        const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl + k + diff).vector;
-        const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl + k).vector;
-        inv_w = getInvSqrtWeights(sum_np + k);
-        gsl_blas_dger(inv_w * inv_w, &A_row, &B_row, res);
-      }
-    }
-  } else {
-    sum_nl = 0;
-    int diff = i - j; 
-    for (l = 0, sum_np = i; l < getQ(); 
-         sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-      for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
-        const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl + k).vector;
-        const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl + k + diff).vector;
-        inv_w = getInvSqrtWeights(sum_np + k);
-        gsl_blas_dger(inv_w * inv_w, &A_row, &B_row, res);
-      }
+  if (i > j) {
+    int tmp;
+    const gsl_matrix* C;
+    tmp = i; i = j; j = tmp;
+    C = A; A = B; B = C;  
+  }
+  
+  int diff = j - i;
+  sum_nl = 0;
+  for (l = 0, sum_np = j; l < getQ(); 
+       sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
+    for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
+      const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl + k + diff).vector;
+      const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl + k).vector;
+      inv_w = getInvSqrtWeights(sum_np + k);
+      gsl_blas_dger(inv_w * inv_w, &A_row, &B_row, res);
     }
   }
 }   
@@ -157,23 +149,21 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
   }
 }   
 
-slraGammaCholesky *WLayeredHStructure::
-                       createGammaComputations( int r, double reg_gamma ) const {
-  return new slraGammaCholeskyBBanded(this, r, reg_gamma);
+Cholesky *WLayeredHStructure::createCholesky( int D, double reg_gamma ) const {
+  return new SDependentCholesky(this, D, reg_gamma);
 }
 
 
-slraDGamma *WLayeredHStructure::
-                createDerivativeComputations( int r ) const {
-  return new slraDGammaBBanded(this, r);
+DGamma *WLayeredHStructure::createDGamma( int D ) const {
+  return new SDependentDGamma(this, D);
 }
 
 
-typedef slraStructure* pslraStructure;
+typedef Structure* pStructure;
 
-pslraStructure *WMosaicHStructure::allocStripe( size_t q, size_t N, 
+pStructure *WMosaicHStructure::allocStripe( size_t q, size_t N, 
      double *oldNk,  double *oldMl, double *Wk )  {
-  pslraStructure *res = new pslraStructure[N];
+  pStructure *res = new pStructure[N];
 
   for (size_t k = 0; k < N; k++) {
     res[k] = new WLayeredHStructure(oldNk, q, oldMl[k], Wk);

@@ -1,5 +1,5 @@
-class slraDGammaBTBanded : public slraDGamma {
-  const slraStationaryStructure *myW;
+class StationaryDGamma : public DGamma {
+  const StationaryStructure *myW;
   size_t  myD;
   
   gsl_vector *myTempWkColRow;
@@ -13,8 +13,8 @@ class slraDGammaBTBanded : public slraDGamma {
   gsl_matrix *myN_k;
 
 public:
-  slraDGammaBTBanded( const slraStationaryStructure *s, int r );
-  virtual ~slraDGammaBTBanded();
+  StationaryDGamma( const StationaryStructure *s, int D );
+  virtual ~StationaryDGamma();
   int getD() const { return myD; }
 
   
@@ -25,14 +25,14 @@ public:
 };
 
 
-class slraDGammaBBanded : public slraDGamma {
-  const slraSDependentStructure *myW;
+class SDependentDGamma : public DGamma {
+  const SDependentStructure *myW;
   size_t myD;
   gsl_vector *myTmp1, *myTmp2;
   gsl_vector *myYrR;
 public:  
-  slraDGammaBBanded( const slraSDependentStructure *s, int r );
-  virtual ~slraDGammaBBanded();
+  SDependentDGamma( const SDependentStructure *s, int D );
+  virtual ~SDependentDGamma();
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr );
   virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 

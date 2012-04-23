@@ -1,35 +1,35 @@
-class slraLayeredHankelStructure : public slraStationaryStructure {
+class LayeredHStructure : public StationaryStructure {
   typedef struct {
     size_t blocks_in_row;       /* Number of blocks in a row of Ci */
     double inv_w;            /* Square root of inverse of the weight */
-  } slraLayer;
+  } Layer;
 
   int myQ;	                /* number of layers */
   size_t myM;
   size_t myNplusD;
   size_t myMaxLag;
   gsl_matrix **myA;
-  slraLayer *mySA;	/* q-element array describing C1,...,Cq; */  
+  Layer *mySA;	/* q-element array describing C1,...,Cq; */  
 
   void computeStats();
   void computeWkParams(); 
 protected:
   int nvGetNp() const { return (myM - 1) * myQ + myNplusD; }  
 public:
-  slraLayeredHankelStructure( const double *oldNk, size_t q, int M, 
+  LayeredHStructure( const double *oldNk, size_t q, int M, 
                      const double *layer_w = NULL );
-  virtual ~slraLayeredHankelStructure();
+  virtual ~LayeredHStructure();
 
-  /* slraStructure methods */
+  /* Structure methods */
   virtual int getNplusD() const { return myNplusD; }
   virtual int getM() const { return myM; }
   virtual int getNp() const { return nvGetNp(); }
-  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
-  virtual slraDGamma *createDerivativeComputations( int r ) const;
+  virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
+  virtual DGamma *createDGamma( int D ) const;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 
-  /* slraStationaryStructure methods */
+  /* StationaryStructure methods */
   virtual int getS() const { return myMaxLag; }
   virtual void WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const;
   virtual void AtWkB( gsl_matrix *res, int k, 
@@ -53,13 +53,13 @@ public:
 class MosaicHStructure : public StripedStructure {
   bool myWkIsCol;
 protected:
-  static slraStructure **allocStripe( size_t q, size_t N, double *oldNk,
+  static Structure **allocStripe( size_t q, size_t N, double *oldNk,
                                       double *oldMl, double *Wk, bool wkIsCol = true );
 public:
   MosaicHStructure( size_t q, size_t N, double *oldNk, double *oldMl,
                    double *Wk, bool wkIsCol = false );
   virtual ~MosaicHStructure() {}
-  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
+  virtual Cholesky *createCholesky( int r, double reg_gamma ) const;
 };
 
 

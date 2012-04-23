@@ -7,7 +7,7 @@ extern "C" {
 }
 
 /* Structure striped classes */
-StripedStructure::StripedStructure( size_t N, slraStructure **stripe  ): myN(N), myStripe(stripe) {
+StripedStructure::StripedStructure( size_t N, Structure **stripe  ): myN(N), myStripe(stripe) {
   size_t k;  
   
   for (k = 0, myM = 0, myNp = 0, myMaxMlInd = 0; k < myN; 
@@ -41,7 +41,7 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
   }
 }
 
-void StripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
+void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
   size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector_view sub_p, sub_yr;
   
@@ -50,27 +50,27 @@ void StripedStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *
        sum_np += myStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
     sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
     sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
-    myStripe[k]->correctVector(&sub_p.vector, R, &sub_yr.vector);
+    myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector);
   }
 }
 
-slraGammaCholesky *StripedStructure::createGammaComputations( int r, double reg_gamma ) const {
-  return new StripedCholesky(this, r, reg_gamma);
+Cholesky *StripedStructure::createCholesky( int D, double reg_gamma ) const {
+  return new StripedCholesky(this, D, reg_gamma);
 }
 
-slraDGamma *StripedStructure::createDerivativeComputations( int r ) const {
-  return new StripedDGamma(this, r);
+DGamma *StripedStructure::createDGamma( int D ) const {
+  return new StripedDGamma(this, D);
 }
 
 /* Cholesky striped classes */
-typedef slraGammaCholesky* pslraGammaCholesky;
+typedef Cholesky* pGammaCholesky;
 
-StripedCholesky::StripedCholesky( const StripedStructure *s, int r, double reg_gamma  ) :
+StripedCholesky::StripedCholesky( const StripedStructure *s, int D, double reg_gamma  ) :
     myStruct(s) {
-  myD = s->getNplusD() - r;
-  myGamma = new pslraGammaCholesky[myStruct->getBlocksN()];
+  myD = D;
+  myGamma = new pGammaCholesky[myStruct->getBlocksN()];
   for (int k = 0; k < myStruct->getBlocksN(); k++) {
-    myGamma[k] = myStruct->getBlock(k)->createGammaComputations(r, reg_gamma);
+    myGamma[k] = myStruct->getBlock(k)->createCholesky(D, reg_gamma);
   }
 }    
 
@@ -105,21 +105,21 @@ void StripedCholesky::multiplyInvGammaVector( gsl_vector * yr ) {
   }
 }
 
-void StripedCholesky::computeCholeskyOfGamma( gsl_matrix *R ) {
+void StripedCholesky::calcGammaCholesky( gsl_matrix *R ) {
   for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
-    myGamma[k]->computeCholeskyOfGamma(R);  
+    myGamma[k]->calcGammaCholesky(R);  
   }
 }
 
 /* DGamma striped classes */
-typedef slraDGamma* pslraDGamma;
+typedef DGamma* pDGamma;
 
-StripedDGamma::StripedDGamma( const StripedStructure *s, int r  ) : 
+StripedDGamma::StripedDGamma( const StripedStructure *s, int D  ) : 
     myStruct(s) {
-  myTmpGrad = gsl_matrix_alloc(myStruct->getNplusD(), myStruct->getNplusD() - r);  
-  myLHDGamma = new pslraDGamma[myStruct->getBlocksN()];
+  myTmpGrad = gsl_matrix_alloc(myStruct->getNplusD(), D);  
+  myLHDGamma = new pDGamma[myStruct->getBlocksN()];
   for (int k = 0; k < myStruct->getBlocksN(); k++) {
-    myLHDGamma[k] = myStruct->getBlock(k)->createDerivativeComputations(r);
+    myLHDGamma[k] = myStruct->getBlock(k)->createDGamma(D);
   }
 }    
 

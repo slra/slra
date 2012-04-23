@@ -1,8 +1,8 @@
-class slraCostFunction {
-  slraStructure *myStruct;
+class CostFunction {
+  Structure *myStruct;
   int myRank;
-  slraGammaCholesky *myGam;
-  slraDGamma *myDeriv;
+  Cholesky *myGam;
+  DGamma *myDeriv;
   gsl_matrix *myMatr;
   gsl_matrix *myPerm;
   
@@ -27,9 +27,9 @@ class slraCostFunction {
 
 public:
 
-  slraCostFunction( slraStructure *s, int r, const gsl_vector *p, 
+  CostFunction( Structure *s, int r, const gsl_vector *p, 
                     opt_and_info *opt, gsl_matrix *perm  );
-  virtual ~slraCostFunction();
+  virtual ~CostFunction();
   
   int getD() { return myStruct->getNplusD() - myRank; }
   int getNplusD() { return myStruct->getNplusD(); }
@@ -48,7 +48,7 @@ public:
 
   void computeRGammaSr( const gsl_vector *x, gsl_matrix *R, gsl_vector *Sr ) {
     computeR(x, myTmpR);
-    myGam->computeCholeskyOfGamma(myTmpR);
+    myGam->calcGammaCholesky(myTmpR);
     computeSr(myTmpR, Sr);
   } 
 
@@ -68,43 +68,43 @@ public:
   
   void  computeCorrection( gsl_vector* p, const gsl_vector* x );
   
-  static int slra_f_ls( const gsl_vector* x, void* params, gsl_vector *res ) {
-    ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, NULL);
+  static int _f_ls( const gsl_vector* x, void* params, gsl_vector *res ) {
+    ((CostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, NULL);
     return GSL_SUCCESS;
   }
-  static int slra_df_ls( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
-    ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, NULL, jac);
+  static int _df_ls( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
+    ((CostFunction *)params)->computeFuncAndPseudoJacobianLs(x, NULL, jac);
     return GSL_SUCCESS;
   }
-  static int slra_fdf_ls( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
-    ((slraCostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, jac);
-    return GSL_SUCCESS;
-  }
-
-
-  static int slra_f_cor( const gsl_vector* x, void* params, gsl_vector *res ) {
-    ((slraCostFunction *)params)->computeCorrectionAndJacobian(x, res, NULL);
-    return GSL_SUCCESS;
-  }
-  static int slra_df_cor( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
-    ((slraCostFunction *)params)->computeCorrectionAndJacobian(x, NULL, jac);
-    return GSL_SUCCESS;
-  }
-  static int slra_fdf_cor( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
-    ((slraCostFunction *)params)->computeCorrectionAndJacobian(x, res, jac);
+  static int _fdf_ls( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
+    ((CostFunction *)params)->computeFuncAndPseudoJacobianLs(x, res, jac);
     return GSL_SUCCESS;
   }
 
 
-  static double slra_f( const gsl_vector* x, void* params ) {
+  static int _f_cor( const gsl_vector* x, void* params, gsl_vector *res ) {
+    ((CostFunction *)params)->computeCorrectionAndJacobian(x, res, NULL);
+    return GSL_SUCCESS;
+  }
+  static int _df_cor( const gsl_vector* x,  void* params, gsl_matrix *jac ) {
+    ((CostFunction *)params)->computeCorrectionAndJacobian(x, NULL, jac);
+    return GSL_SUCCESS;
+  }
+  static int _fdf_cor( const gsl_vector* x,  void* params, gsl_vector *res, gsl_matrix *jac ) {
+    ((CostFunction *)params)->computeCorrectionAndJacobian(x, res, jac);
+    return GSL_SUCCESS;
+  }
+
+
+  static double _f( const gsl_vector* x, void* params ) {
     double f;
-    ((slraCostFunction *)params)->computeFuncAndGrad(x, &f, NULL);
+    ((CostFunction *)params)->computeFuncAndGrad(x, &f, NULL);
     return f;
   }
-  static void  slra_df( const gsl_vector* x, void* params, gsl_vector *grad ) {
-    ((slraCostFunction *)params)->computeFuncAndGrad(x, NULL, grad);
+  static void  _df( const gsl_vector* x, void* params, gsl_vector *grad ) {
+    ((CostFunction *)params)->computeFuncAndGrad(x, NULL, grad);
   }
-  static void  slra_fdf( const gsl_vector* x, void* params, double *f, gsl_vector *grad ) {
-    ((slraCostFunction *)params)->computeFuncAndGrad(x, f, grad);
+  static void  _fdf( const gsl_vector* x, void* params, double *f, gsl_vector *grad ) {
+    ((CostFunction *)params)->computeFuncAndGrad(x, f, grad);
   }
 };

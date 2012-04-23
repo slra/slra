@@ -109,24 +109,24 @@ typedef struct {
 #define SLRA_DEF_ls_correction 0
 #define SLRA_DEF_gcd          0
 
-#define slraAssignDefOptValue(opt, field) \
+#define AssignDefOptValue(opt, field) \
   do { opt.field = SLRA_DEF_##field; } while(0)
 
-#define slraAssignDefOptValues(opt) do {  \
-            slraAssignDefOptValue(opt, disp); \
-            slraAssignDefOptValue(opt, method); \
-            slraAssignDefOptValue(opt, submethod);   \
-            slraAssignDefOptValue(opt, maxiter); \
-            slraAssignDefOptValue(opt, epsabs); \
-            slraAssignDefOptValue(opt, epsrel); \
-            slraAssignDefOptValue(opt, epsgrad); \
-            slraAssignDefOptValue(opt, epsx); \
-            slraAssignDefOptValue(opt, step); \
-            slraAssignDefOptValue(opt, tol); \
-            slraAssignDefOptValue(opt, reggamma); \
-            slraAssignDefOptValue(opt, use_slicot); \
-            slraAssignDefOptValue(opt, ls_correction); \
-            slraAssignDefOptValue(opt, gcd); \
+#define AssignDefOptValues(opt) do {  \
+            AssignDefOptValue(opt, disp); \
+            AssignDefOptValue(opt, method); \
+            AssignDefOptValue(opt, submethod);   \
+            AssignDefOptValue(opt, maxiter); \
+            AssignDefOptValue(opt, epsabs); \
+            AssignDefOptValue(opt, epsrel); \
+            AssignDefOptValue(opt, epsgrad); \
+            AssignDefOptValue(opt, epsx); \
+            AssignDefOptValue(opt, step); \
+            AssignDefOptValue(opt, tol); \
+            AssignDefOptValue(opt, reggamma); \
+            AssignDefOptValue(opt, use_slicot); \
+            AssignDefOptValue(opt, ls_correction); \
+            AssignDefOptValue(opt, gcd); \
           } while(0)
           
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
@@ -151,11 +151,11 @@ typedef struct {
 #include "slralapack.h"
 
 
-int slra_gsl_optimize( slraCostFunction *F, opt_and_info *opt, 
+int gsl_optimize( CostFunction *F, opt_and_info *opt, 
                        gsl_vector* x_vec, gsl_matrix *v );
 
 /* Prototypes of functions */
-int slra( const gsl_vector *p_in, slraStructure* s, int r, opt_and_info* opt,
+int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
           gsl_matrix *r_ini, gsl_matrix *perm, 
           gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
 

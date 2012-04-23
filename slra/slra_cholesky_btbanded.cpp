@@ -9,18 +9,18 @@ extern "C" {
 }
 #include "slra.h"
 
-slraGammaCholeskyBTBanded::slraGammaCholeskyBTBanded( const slraStationaryStructure *s, 
-    int r, double reg_gamma  ) :  slraGammaCholeskyBBanded(s, r, reg_gamma), myWs(s)  {
+StationaryCholesky::StationaryCholesky( const StationaryStructure *s, 
+    int D, double reg_gamma  ) :  SDependentCholesky(s, D, reg_gamma), myWs(s)  {
   myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
   myWkTmp = gsl_matrix_alloc(getNplusD(), getD());
 }  
   
-slraGammaCholeskyBTBanded::~slraGammaCholeskyBTBanded() {
+StationaryCholesky::~StationaryCholesky() {
   gsl_matrix_free(myGamma);
   gsl_matrix_free(myWkTmp);
 }
 
-void slraGammaCholeskyBTBanded::computeGammak( gsl_matrix *R ) {
+void StationaryCholesky::computeGammak( gsl_matrix *R ) {
   size_t k;
   gsl_matrix_view submat;
   
@@ -32,7 +32,7 @@ void slraGammaCholeskyBTBanded::computeGammak( gsl_matrix *R ) {
   gsl_matrix_set_zero(&submat.matrix);
 }
   
-void slraGammaCholeskyBTBanded::computeGammaUpperPart( gsl_matrix *R ) {
+void StationaryCholesky::computeGammaUpperPart( gsl_matrix *R ) {
   computeGammak(R);
   
   int row_gam, col_gam, icor;
@@ -51,21 +51,21 @@ void slraGammaCholeskyBTBanded::computeGammaUpperPart( gsl_matrix *R ) {
   }
 }
 
-slraGammaCholeskySameDiagBTBanded::
-    slraGammaCholeskySameDiagBTBanded( const MosaicHStructure *s, 
-         int r, int use_slicot, double reg_gamma  ) :  myStruct(s) {
-  myBase = (slraGammaCholeskyBTBanded *)myStruct->getMaxBlock()->createGammaComputations(r, reg_gamma);  
+SameStripedStationaryCholesky::
+    SameStripedStationaryCholesky( const MosaicHStructure *s, 
+         int D, int use_slicot, double reg_gamma  ) :  myStruct(s) {
+  myBase = (StationaryCholesky *)myStruct->getMaxBlock()->createCholesky(D, reg_gamma);  
 }
-slraGammaCholeskySameDiagBTBanded::~slraGammaCholeskySameDiagBTBanded() {
+SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
   delete myBase;
 }
   
-void slraGammaCholeskySameDiagBTBanded::computeCholeskyOfGamma( gsl_matrix *R ) {
-  myBase->computeCholeskyOfGamma(R);
+void SameStripedStationaryCholesky::calcGammaCholesky( gsl_matrix *R ) {
+  myBase->calcGammaCholesky(R);
 }
 
   
-void slraGammaCholeskySameDiagBTBanded::
+void SameStripedStationaryCholesky::
          multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
@@ -79,7 +79,7 @@ void slraGammaCholeskySameDiagBTBanded::
   }
 }
 
-void slraGammaCholeskySameDiagBTBanded::multiplyInvGammaVector( gsl_vector * yr ) {
+void SameStripedStationaryCholesky::multiplyInvGammaVector( gsl_vector * yr ) {
   int n_row = 0;
   gsl_vector_view sub_yr;
   

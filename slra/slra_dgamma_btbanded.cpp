@@ -8,8 +8,8 @@ extern "C" {
 }
 #include "slra.h"
 
-slraDGammaBTBanded::slraDGammaBTBanded( const slraStationaryStructure *s, int r ) :
-    myD(s->getNplusD() - r), myW(s) {
+StationaryDGamma::StationaryDGamma( const StationaryStructure *s, int D ) :
+    myD(D), myW(s) {
   
   myTempWkColRow = gsl_vector_alloc(myW->getNplusD());
   myDGammaVec = gsl_vector_alloc(myD * (2 * myW->getS() - 1));
@@ -21,7 +21,7 @@ slraDGammaBTBanded::slraDGammaBTBanded( const slraStationaryStructure *s, int r 
   myN_k = gsl_matrix_alloc(myD, myD);
 }
 
-slraDGammaBTBanded::~slraDGammaBTBanded() {
+StationaryDGamma::~StationaryDGamma() {
   gsl_vector_free(myTempWkColRow);
   gsl_vector_free(myTmpCol);
   gsl_vector_free(myDGammaVec);
@@ -32,7 +32,7 @@ slraDGammaBTBanded::~slraDGammaBTBanded() {
   gsl_matrix_free(myN_k);
 }
 
-void slraDGammaBTBanded::calcYrtDgammaYr( gsl_matrix *mgrad_r, 
+void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r, 
          gsl_matrix *R, gsl_vector *yr ) {
   int m = yr->size / myD;
   gsl_matrix Yr = gsl_matrix_view_vector(yr, m, myD).matrix, YrL, YrR;
@@ -53,7 +53,7 @@ void slraDGammaBTBanded::calcYrtDgammaYr( gsl_matrix *mgrad_r,
   }       
 }
 
-void slraDGammaBTBanded::calcDijGammaYr( gsl_vector *res, 
+void StationaryDGamma::calcDijGammaYr( gsl_vector *res, 
          gsl_matrix *R, gsl_matrix *perm, int i, int j,  gsl_vector *yr ) {
   gsl_vector gv_sub, perm_col = gsl_matrix_column(perm, i).vector, dgamma_j_row;
 
@@ -80,20 +80,20 @@ void slraDGammaBTBanded::calcDijGammaYr( gsl_vector *res,
   }
 }
 
-slraDGammaBBanded::slraDGammaBBanded( const slraSDependentStructure *s, int r ) :
-   myD(s->getNplusD() - r), myW(s) {
+SDependentDGamma::SDependentDGamma( const SDependentStructure *s, int D ) :
+   myD(D), myW(s) {
   myTmp1 = gsl_vector_alloc(myD);  
   myTmp2 = gsl_vector_alloc(myW->getNplusD());  
 //  myYrR = gsl_vector_alloc((myW->getNplusD()) * myW->getM());  
 }
 
-slraDGammaBBanded::~slraDGammaBBanded(){
+SDependentDGamma::~SDependentDGamma(){
 //  gsl_vector_free(myYrR);
   gsl_vector_free(myTmp1);
   gsl_vector_free(myTmp2);
 }
 
-void slraDGammaBBanded::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
+void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr ) {
   gsl_vector perm_col = gsl_matrix_column(perm, i).vector, yr_sub, res_sub;
   int k, l, S = myW->getS(), M = Yr->size / myD;

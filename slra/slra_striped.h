@@ -1,4 +1,4 @@
-class StripedStructure : public slraStructure {
+class StripedStructure : public Structure {
   size_t myN;
 
   /* Helper variables */
@@ -7,10 +7,10 @@ class StripedStructure : public slraStructure {
 
   size_t myMaxMlInd;
 protected:
-  StripedStructure( size_t N, slraStructure **stripe );
+  StripedStructure( size_t N, Structure **stripe );
 
 public:
-  slraStructure **myStripe;
+  Structure **myStripe;
   virtual ~StripedStructure();
 
   virtual int getM() const { return myM; }
@@ -20,43 +20,43 @@ public:
   int getBlocksN() const { return myN; }
 
   int getMl( int k ) const { return myStripe[k]->getM(); }
-  const slraStructure *getBlock( size_t k ) const { 
+  const Structure *getBlock( size_t k ) const { 
     return myStripe[k]; 
   }
 
   int getMaxMl() const { return getMl(myMaxMlInd); }
-  const slraStructure *getMaxBlock() const { 
+  const Structure *getMaxBlock() const { 
     return getBlock(myMaxMlInd); 
   }
 
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 
-  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
-  virtual slraDGamma *createDerivativeComputations( int r ) const;
+  virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
+  virtual DGamma *createDGamma( int D ) const;
 };
 
-class StripedCholesky : virtual public slraGammaCholesky {
-  slraGammaCholesky **myGamma;
+class StripedCholesky : virtual public Cholesky {
+  Cholesky **myGamma;
   int myD;
   const StripedStructure *myStruct;
 public:  
-  StripedCholesky( const StripedStructure *s, int r, double reg_gamma );
+  StripedCholesky( const StripedStructure *s, int D, double reg_gamma );
   virtual ~StripedCholesky();
 
   
-  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+  virtual void calcGammaCholesky( gsl_matrix *R );
 
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multiplyInvGammaVector( gsl_vector * yr );                
 };
 
-class StripedDGamma : virtual public slraDGamma {
-  slraDGamma **myLHDGamma;
+class StripedDGamma : virtual public DGamma {
+  DGamma **myLHDGamma;
   const StripedStructure *myStruct;
   gsl_matrix *myTmpGrad;
 public:  
-  StripedDGamma( const StripedStructure *s, int r  ) ;
+  StripedDGamma( const StripedStructure *s, int D  ) ;
   virtual ~StripedDGamma();
 
   virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );

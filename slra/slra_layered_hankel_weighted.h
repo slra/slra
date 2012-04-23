@@ -1,12 +1,12 @@
-class WLayeredHStructure : public slraSDependentStructure {
-  slraLayeredHankelStructure myBase;
-public:
+class WLayeredHStructure : public SDependentStructure {
+  LayeredHStructure myBase;
   gsl_vector *myInvSqrtWeights;
+public:  
   WLayeredHStructure( const double *oldNk, size_t q, int M, 
                      const double *weights = NULL );
   virtual ~WLayeredHStructure();
 
-  /* slraLayeredHankelStructure delegated methods */
+  /* LayeredHankelStructure delegated methods */
   virtual int getNplusD() const { return myBase.getNplusD(); }
   virtual int getM() const { return myBase.getM(); }
   virtual int getNp() const { return myBase.getNp(); }
@@ -20,12 +20,12 @@ public:
     myBase.fillMatrixFromP(c, p); 
   }
 
-  /* slraStructure methods */
-  virtual slraGammaCholesky *createGammaComputations( int r, double reg_gamma ) const;
-  virtual slraDGamma *createDerivativeComputations( int r ) const;
-  virtual void correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  /* Structure methods */
+  virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
+  virtual DGamma *createDGamma( int D ) const;
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
 
-  /* slraSDependentStructure methods */
+  /* SDependentStructure methods */
   virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const;
   virtual void AtWijB( gsl_matrix *res, int i, int j, 
                       const gsl_matrix *A, const gsl_matrix *B, 
@@ -41,7 +41,7 @@ public:
 
 class WMosaicHStructure : public StripedStructure {
 protected:
-  static slraStructure **allocStripe( size_t q, size_t N, double *Nk,
+  static Structure **allocStripe( size_t q, size_t N, double *Nk,
                                       double *Ml, double *Wk );
 public:
   WMosaicHStructure( size_t q, size_t N, double *Nk, double *Ml, double *Wk );

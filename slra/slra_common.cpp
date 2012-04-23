@@ -6,7 +6,7 @@
 #include "slra.h"
 
 
-slraException::slraException( const char *format, ... ) { 
+Exception::Exception( const char *format, ... ) { 
   va_list vl;
   va_start(vl, format);  
   myMsg[MSG_MAX-1] = 0;
@@ -19,7 +19,7 @@ char submeth_codes_qn[] = "b2pf";
 char submeth_codes_nm[] = "n2r";
 char *submeth_codes[] = {submeth_codes_lm, submeth_codes_qn,submeth_codes_nm};
 
-void slraString2Method( const char *str_buf, opt_and_info *popt )  {
+void String2Method( const char *str_buf, opt_and_info *popt )  {
   int submeth_codes_max[] = { 
     sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) - 1, 
     sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) - 1, 
@@ -38,8 +38,8 @@ void slraString2Method( const char *str_buf, opt_and_info *popt )  {
 	  
   if (i < 0)  {
     WARNING("Ignoring optimization option 'method'. Unrecognized value.");
-    slraAssignDefOptValue((*popt), method);
-    slraAssignDefOptValue((*popt), submethod);
+    AssignDefOptValue((*popt), method);
+    AssignDefOptValue((*popt), submethod);
   }
 
   for (i = submeth_codes_max[(*popt).method] - 1; i >= 0; i--)  {
@@ -50,11 +50,11 @@ void slraString2Method( const char *str_buf, opt_and_info *popt )  {
   } 
   if (i < 0 && str_buf[1] != 0)  {
     WARNING("Unrecognized submethod - using default.");
-    slraAssignDefOptValue((*popt), submethod);
+    AssignDefOptValue((*popt), submethod);
   }
 }
 
-int slraString2Disp( const char *str_value )  {
+int String2Disp( const char *str_value )  {
   char *str_disp[] = {"notify", "final", "iter", "off" };
   int i;
 

@@ -10,14 +10,14 @@ extern "C" {
 }
 #include "slra.h"
 
-slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk, 
+LayeredHStructure::LayeredHStructure( const double *oldNk, 
     size_t q, int M, const double *layer_w  ) :
                                       myQ(q), myM(M), mySA(NULL)  {
-  mySA = new slraLayer[myQ];
+  mySA = new Layer[myQ];
   for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = oldNk[l];
     if (layer_w != NULL && !(layer_w[l] > 0)) {
-      throw new slraException("This value of weight is not supported: %lf\n", layer_w[l]);
+      throw new Exception("This value of weight is not supported: %lf\n", layer_w[l]);
     }
     mySA[l].inv_w = (layer_w != NULL) ? (1 / layer_w[l]) : 1;
   }    
@@ -26,7 +26,7 @@ slraLayeredHankelStructure::slraLayeredHankelStructure( const double *oldNk,
   computeWkParams();
 }
 
-slraLayeredHankelStructure::~slraLayeredHankelStructure() {
+LayeredHStructure::~LayeredHStructure() {
   if (mySA != NULL) {
     delete[] mySA;
   }
@@ -38,7 +38,7 @@ slraLayeredHankelStructure::~slraLayeredHankelStructure() {
   }
 }
 
-void slraLayeredHankelStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
+void LayeredHStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  {
   size_t sum_np = 0, sum_nl = 0, l, j;
   gsl_matrix_view c_chunk, c_chunk_sub;
  
@@ -51,7 +51,7 @@ void slraLayeredHankelStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vecto
   }
 }
 
-void slraLayeredHankelStructure::computeWkParams() {
+void LayeredHStructure::computeWkParams() {
   int k, l, i, imax, sum_nl, rep;
   gsl_matrix *zk;
   gsl_matrix_view wi, zkl;
@@ -73,7 +73,7 @@ void slraLayeredHankelStructure::computeWkParams() {
   }
 }
 
-void slraLayeredHankelStructure::computeStats() {
+void LayeredHStructure::computeStats() {
   int l;
   for (l = 0, myNplusD = 0, myMaxLag = 1; l < myQ; myNplusD += getLayerLag(l), ++l) {
     if ((!isLayerExact(l)) && getLayerLag(l) > myMaxLag) {
@@ -82,7 +82,7 @@ void slraLayeredHankelStructure::computeStats() {
   }
 }
 
-void slraLayeredHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
+void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getM(), R->size2), b_xext;
   gsl_vector_view yr_matr_row, res_sub, p_chunk_sub;
@@ -105,59 +105,58 @@ void slraLayeredHankelStructure::correctVector( gsl_vector* p, gsl_matrix *R, gs
   gsl_vector_free(res);
 }
 
-slraGammaCholesky *slraLayeredHankelStructure::createGammaComputations( int r, double reg_gamma ) const {
+Cholesky *LayeredHStructure::createCholesky( int D, double reg_gamma ) const {
 #ifdef USE_SLICOT 
-  return new slraGammaCholeskyBTBandedSlicot(this, r, reg_gamma);
+  return new StationaryCholeskySlicot(this, D, reg_gamma);
 #else  /* USE_SLICOT */
-  return new slraGammaCholeskyBTBanded(this, r, reg_gamma);
+  return new StationaryCholesky(this, D, reg_gamma);
 #endif /* USE_SLICOT */
 }
 
-slraDGamma *slraLayeredHankelStructure::createDerivativeComputations( int r ) const {
-  return new slraDGammaBTBanded(this, r);
+DGamma *LayeredHStructure::createDGamma( int D ) const {
+  return new StationaryDGamma(this, D);
 }
 
 
-void slraLayeredHankelStructure::setM( int m ) {
+void LayeredHStructure::setM( int m ) {
   myM = m <= 0 ? 1 : m;
 }
 
-void slraLayeredHankelStructure::WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const {
+void LayeredHStructure::WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const {
 
   gsl_matrix_memcpy(res, B);
   gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, 1.0, getWk(abs(k)), res);
 }
 
-void slraLayeredHankelStructure::AtWkB( gsl_matrix *res, int k,
+void LayeredHStructure::AtWkB( gsl_matrix *res, int k,
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWkB, double beta ) const {
   WkB(tmpWkB, k, B);
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpWkB, beta, res);       
 }
 
-void slraLayeredHankelStructure::AtWkV( gsl_vector *res, int k, 
+void LayeredHStructure::AtWkV( gsl_vector *res, int k, 
          const gsl_matrix *A, const gsl_vector *V, gsl_vector *tmpWkV, double beta ) const {
   gsl_blas_dcopy(V, tmpWkV);
   gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), CblasNonUnit, getWk(abs(k)), tmpWkV);
   gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
 }
 
-slraGammaCholesky *MosaicHStructure::createGammaComputations( int r, 
-    double reg_gamma ) const {
+Cholesky *MosaicHStructure::createCholesky( int D, double reg_gamma ) const {
   if (myWkIsCol) {
-    return new slraGammaCholeskySameDiagBTBanded(this, r, 1, reg_gamma);
+    return new SameStripedStationaryCholesky(this, D, 1, reg_gamma);
   } else {
-    return new StripedCholesky(this, r, reg_gamma);
+    return new StripedCholesky(this, D, reg_gamma);
   }
 }
 
-typedef slraStructure* pslraStructure;
+typedef Structure* pStructure;
 
-pslraStructure * MosaicHStructure::allocStripe( size_t q, size_t N, 
+pStructure * MosaicHStructure::allocStripe( size_t q, size_t N, 
      double *oldNk,  double *oldMl, double *Wk, bool wkIsCol )  {
-  pslraStructure *res = new pslraStructure[N];
+  pStructure *res = new pStructure[N];
 
   for (size_t k = 0; k < N; k++) {
-    res[k] = new slraLayeredHankelStructure(oldNk, q, oldMl[k], Wk);
+    res[k] = new LayeredHStructure(oldNk, q, oldMl[k], Wk);
     if (Wk != NULL && wkIsCol) {
       Wk += q;
     }
