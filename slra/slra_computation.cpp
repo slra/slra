@@ -54,10 +54,10 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
     throw new Exception("Number of rows %d is less than the number of columns %d: ",
               getM(), getNplusD());
   }
-  if (myStruct->getNp() < getM() * getD()) {
+ /* if (myStruct->getNp() < getM() * getD()) {
     throw new Exception("The inner minimization problem is overdetermined: " 
         "m * (n-r) = %d, n_p = %d.\n", getM() * getD(), myStruct->getNp());
-  }
+  }*/
     
   if (perm == NULL) {
     gsl_matrix_set_identity(myPerm);
@@ -101,19 +101,23 @@ void CostFunction::computeRGammaSr( const gsl_vector *x, gsl_matrix *R,
   computeSr(myTmpR, Sr);
 } 
 
-
-void CostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R ) { 
+void CostFunction::computeRTheta(gsl_matrix_const_view x_mat, gsl_matrix *RTheta ) { 
   gsl_vector_view diag;
   gsl_matrix_view submat;
   int n = x_mat.matrix.size1, d = x_mat.matrix.size2;
 
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
-  submat = gsl_matrix_submatrix(myTmpThetaExt, 0, 0, n, d); /* select x in (1,1) */
+  submat = gsl_matrix_submatrix(RTheta, 0, 0, n, d); /* select x in (1,1) */
   gsl_matrix_memcpy(&submat.matrix, &x_mat.matrix); /* assign x */
-  submat = gsl_matrix_submatrix(myTmpThetaExt, n, 0, d, d); /* select -I in (1,1)*/
+  submat = gsl_matrix_submatrix(RTheta, n, 0, d, d); /* select -I in (1,1)*/
   gsl_matrix_set_all(&submat.matrix, 0);
   diag   = gsl_matrix_diagonal(&submat.matrix);     /* assign -I */
   gsl_vector_set_all(&diag.vector, -1);
+}
+
+
+void CostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R ) { 
+  computeRTheta(x_mat, myTmpThetaExt);
 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myPerm, myTmpThetaExt, 0.0, R);
 }
@@ -155,19 +159,12 @@ void CostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, gsl_vect
 
 void CostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, 
          gsl_vector *res, gsl_matrix *jac ) {
-
-  PRINTF("Hello1!\n");
-
   computeRGammaSr(x, myTmpR, myTmpYr);
-
-  PRINTF("Hello2!\n");
 
   if (res != NULL) {
     myGam->multiplyInvCholeskyVector(myTmpYr, 1);
     gsl_vector_memcpy(res, myTmpYr);
   }
-  
-  PRINTF("Hello3!\n");
 
   if (jac != NULL) {  
     if (res != NULL) {
@@ -177,8 +174,6 @@ void CostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x,
     }
     computePseudoJacobianLsFromYr(myTmpYr, myTmpR, jac);
   } 
-  PRINTF("Hello4!\n");
-
 }
 
 

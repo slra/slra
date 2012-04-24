@@ -70,14 +70,22 @@ void SDependentCholesky::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr,
 
 void SDependentCholesky::calcGammaCholesky( gsl_matrix *R ) {
   size_t info = 0;
-  PRINTF("HelloC1!\n");
   computeGammaUpperPart(R);
-  PRINTF("HelloC2!\n");
-
   dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, &d_times_s, &info);
-  PRINTF("HelloC3!\n");
   if (info) { 
-    PRINTF("Error: info = %d", info); /* TODO: add regularization */
+    PRINTF("Gamma matrix is close to singular, adding regularization.\n");
+    computeGammaUpperPart(R);
+    
+    gsl_vector v = gsl_vector_view_array_with_stride(&myPackedCholesky[d_times_s_minus_1], 
+                       d_times_s, d_times_Mg).vector;
+                       
+    for (int j = 0; j < v.size; j++) {
+      gsl_vector_set(&v, j, gsl_vector_get(&v, j) + my_reg_gamma);
+    }                       
+    
+    if (info) {
+      PRINTF("Error: info = %d\n", info); /* TODO: add regularization */
+    }
   }
 }
 
@@ -85,24 +93,14 @@ void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R ) {
   gsl_matrix gamma_ij;
   double *diagPtr =  myPackedCholesky;
   
-  DEBUGINT(getM());
-  DEBUGINT(getD());
-  DEBUGINT(getS());
-  DEBUGINT(R->size1);
-  DEBUGINT(R->size2);
-  
   for (size_t i = 0; i < getM(); ++i, diagPtr += getS() * getD() * getD()) {
-    DEBUGINT(i);
     if (getS() > 1) {
       gsl_matrix blk_row = gsl_matrix_view_array_with_tda(diagPtr + d_times_s_minus_1, 
           (getS() + 1) * getD(), getD(), d_times_s_minus_1).matrix;
       for (size_t j = 0; (j <= getS()) && (j < getM() - i); j++) {
-        DEBUGINT(j);
         gamma_ij = gsl_matrix_submatrix(&blk_row, j * getD(), 0, getD(), getD()).matrix;
         if (j < getS()) {
-          PRINTF("Hello1\n");
           myW->AtWijB(myTempGammaij, i, i+j, R, R, myTempWktR);  
-          PRINTF("Hello12\n");
         } else {
           gsl_matrix_set_zero(myTempGammaij);
         }
@@ -117,6 +115,5 @@ void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R ) {
       gamma_ij = gsl_matrix_view_array(diagPtr, getD(), getD()).matrix;
       shiftLowerTrg(&gamma_ij, myTempGammaij);
     }
-    DEBUGINT(i);
   }
 }

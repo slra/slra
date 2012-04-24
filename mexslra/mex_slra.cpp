@@ -142,6 +142,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
   gsl_vector_view vec_ml = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ARRAY_ML));
   gsl_vector_view vec_nk = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ARRAY_NK));
+  
+  if (mxGetField(prhs[1], 0, PERM_STR) != NULL) {
+    perm = MAT_to_trmatview(mxGetField(prhs[1], 0, PERM_STR));
+  }
  
   int np_comp = compute_np(&vec_ml.vector, &vec_nk.vector);
   
@@ -171,8 +175,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 	/* which option */
 	if (!strcmp(field_name, RINI_STR)) {
  	  rini = MAT_to_trmatview(mxGetFieldByNumber(prhs[3], 0, l));
- 	} else if (!strcmp(field_name, PERM_STR)) {
- 	  perm = MAT_to_trmatview(mxGetFieldByNumber(prhs[3], 0, l));
  	} else if (!strcmp(field_name, WK_STR)) {
  	  wk = MAT_to_vecview(mxGetFieldByNumber(prhs[3], 0, l));
  	} else if (!strcmp(field_name, DISP_STR)) {
@@ -226,7 +228,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     
   
     m = perm.matrix.data == NULL ? myStruct->getNplusD() : perm.matrix.size2;
-    size_t m2 = myStruct->getNplusD();
     if (rank <= 0 || rank >= m) {
       throw new Exception("Incorrect rank\n");   
     }
@@ -241,7 +242,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       const char *field_names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
       plhs[1] = mxCreateStructArray(1, &l, 5, field_names);
     
-      mxArray *rh = mxCreateDoubleMatrix((m - rank), m2, mxREAL);
+      mxArray *rh = mxCreateDoubleMatrix((m - rank), m, mxREAL);
       mxArray *vh = mxCreateDoubleMatrix((m - rank) * rank, (m - rank) * rank, mxREAL);
       rh_view = MAT_to_trmatview(rh);
       vh_view = MAT_to_trmatview(vh);

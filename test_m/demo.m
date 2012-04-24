@@ -64,8 +64,8 @@ tic, xh_tls = tls(a, b); t_tls = toc
 % Solve the deconvolution problem via SLRA
 s.m = [n 1];
 s.n = 200;
+s.phi = [0 1 0; 1 0 0; 0 0 1];
 opt =  rmfield(opt, 'Rini');
-opt.phi = [0 1 0; 1 0 0; 0 0 1];
 tic, [p_slra, i_slra] = slra([p_a; b], s, n, opt); t_slra = toc
 
 % Compare the relative errors of estimation 
@@ -87,14 +87,14 @@ a = c(:, 1:n); b = c(:, n + 1);
 % Define the structure and solve the problem via SLRA 
 s.m = n+1;
 s.n = np-n;
-opt.phi = eye(n+1);
+s.phi = eye(n+1);
 tic, [p_slra, i_slra] = slra(p, s, n, opt); t_slra = toc
 error_data = norm(p - p0)
 error = norm(p_slra - p0)
 
 % Make the same with a permutation matrix
 I = eye(n + 1); perm = randperm(n + 1); 
-opt.phi = I(perm, :);
+s.phi = I(perm, :);
 tic, [p_slra2, i_slra] = slra(p, s, n, opt); t_slra = toc
 error_data = norm(p - p0)
 error = norm(p_slra2 - p0)
@@ -125,13 +125,16 @@ pause
 
 
 opt.disp = 'iter';
-a3 = conv([-1 1], [-5 1])
-b3 = conv([-1.2 1], [-5 1])
+a3 = conv([-1 1], [-5.1 1])
+b3 = conv([-1.1 1], [-5 1])
 c3 = conv([-1 1], [-5.2 1])
 opt.w = [Inf ones(1,length(a3)) Inf ones(1,length(b3)) Inf Inf * ones(1, 5) ones(1,length(c3)) Inf * ones(1, 5)]
 p = [0 a3 0 b3 0 zeros(1,5) c3 zeros(1,5)]
-opt.phi = [eye(2) zeros(2,6); zeros(2,2) eye(2) zeros(2,4); zeros(2,6) eye(2)];
+s.phi = [eye(2) zeros(2,6); zeros(2,2) eye(2) zeros(2,4); zeros(2,6) eye(2)];
+%opt.reggamma = 1;
+opt.reggamma = 10000;
 [ph, info] = slra(p, struct('m', [2 6], 'n', 8), 5, opt)
+
 
 
 

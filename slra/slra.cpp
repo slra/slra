@@ -45,49 +45,12 @@ static int compute_tls( const gsl_matrix *c, const gsl_matrix *perm, gsl_matrix 
 }*/
 
 
-static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x ) {
-  gsl_matrix * tempphi = gsl_matrix_alloc(perm->size1, perm->size2);
-  gsl_matrix *tempR = gsl_matrix_alloc(R->size1, R->size2);
-  size_t minus1 = -1;
-  double one = 1;
-  double temp;
-    
-  double *tau = new double[perm->size2];
+static void R_2_x( const gsl_matrix *R, gsl_matrix * x ) {
   size_t status = 0;
-  
-  gsl_matrix_memcpy(tempphi, perm);
+  gsl_matrix *tempR = gsl_matrix_alloc(R->size1, R->size2);
   gsl_matrix_memcpy(tempR, R);
- 
-  /* Compute LQ factorization of Phi */
-  size_t lwork;
-  dgelqf_(&(tempphi->size2), &(tempphi->size1), tempphi->data, &(tempphi->tda), 
-         tau, &temp, &minus1, &status);
-  double *work = new double[(lwork=temp)];
-  dgelqf_(&(tempphi->size2), &(tempphi->size1), tempphi->data, &(tempphi->tda), 
-         tau, work, &lwork, &status);
+  gsl_matrix_view RQt = gsl_matrix_submatrix(tempR, 0, 0, tempR->size1, tempR->size2);
   
-  delete [] work;
-
-
-  
-  /* Compute R Q^T */
-  dormlq_("R", "T", &(tempR->size2), &(tempR->size1), &(tempphi->size2),
-         tempphi->data, &(tempphi->size2), tau, tempR->data, &(tempR->tda), 
-         &temp, &minus1, &status);
-           
-  work = new double[(lwork = temp)];
-  dormlq_("R", "T", &(tempR->size2), &(tempR->size1), &(tempphi->size2), 
-         tempphi->data, &(tempphi->size2), tau, tempR->data, &(tempR->tda), 
-         work, &lwork, &status);
-  
-  gsl_matrix_view RQt = gsl_matrix_submatrix(tempR, 0, 0, tempphi->size2, tempR->size2);
-  
-  /* solve R_theta L = RQ^T */
-  dtrsm_("R", "L", "N", "N", &(RQt.matrix.size2), &(RQt.matrix.size1), &one, 
-        tempphi->data,  &(tempphi->tda), RQt.matrix.data, &(RQt.matrix.tda));
-
-
-
   /* Solve AX = B, where  R_theta = [B A] */
   gsl_matrix_view B =  gsl_matrix_submatrix(&(RQt.matrix), 0, 0, 
                            RQt.matrix.size1 - RQt.matrix.size2, RQt.matrix.size2);
@@ -95,20 +58,15 @@ static void R_2_x( const gsl_matrix *R, const gsl_matrix *perm, gsl_matrix * x )
                            RQt.matrix.size2, RQt.matrix.size2);
 
   size_t *pivot = new size_t[A.matrix.size2];
-
   /* TODO: Check for singularity of A */
   dgesv_(&(A.matrix.size2), &(B.matrix.size1), A.matrix.data, &(A.matrix.tda), 
          pivot,  B.matrix.data, &(B.matrix.tda), &status);  
+  delete [] pivot;
          
   gsl_matrix_memcpy(x, &(B.matrix));
   gsl_matrix_scale(x, -1.0);
   
-  
-  delete [] work;
-  delete [] pivot;
-  delete [] tau;
-  
-  gsl_matrix_free(tempphi);
+
   gsl_matrix_free(tempR);
 }
 
@@ -245,19 +203,22 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
 
     myCostFun =  new CostFunction(s, r, p_in, opt, perm);
     x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());
-    R = gsl_matrix_alloc(myCostFun->getNplusD(), myCostFun->getD());
+    R = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
     
 
     if (r_ini == NULL) {  /* compute default initial approximation */
       if (opt->disp == SLRA_OPT_DISP_ITER) {
         PRINTF("X not given, computing TLS initial approximation.\n");
       }
-      compute_lra_R(myCostFun->getSMatr(), R, opt->gcd);
+      compute_lra_R(myCostFun->getPhiSMatr(), R, opt->gcd);
     } else {
+      if (R->size1 !=  r_ini->size1 || R->size2 !=  r_ini->size2) {
+        throw new Exception("Incompatible initial approximation given.\n");
+      }
       gsl_matrix_memcpy(R, r_ini);
     }
     
-    R_2_x(R, myCostFun->getPerm(), x);
+    R_2_x(R, x);
   
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1 * x->size2);
@@ -275,7 +236,7 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }
     if (rh != NULL) {
-      myCostFun->computeR(gsl_matrix_const_submatrix(x, 0, 0, x->size1, x->size2), rh);
+      myCostFun->computeRTheta(gsl_matrix_const_submatrix(x, 0, 0, x->size1, x->size2), rh);
     }
   } catch ( Exception *e ) {
     if (myCostFun != NULL) {

@@ -104,7 +104,7 @@ typedef struct {
 #define SLRA_DEF_epsx     1e-5
 #define SLRA_DEF_step     0.001
 #define SLRA_DEF_tol      1e-6
-#define SLRA_DEF_reggamma 0.001
+#define SLRA_DEF_reggamma 0.01
 #define SLRA_DEF_use_slicot 1
 #define SLRA_DEF_ls_correction 0
 #define SLRA_DEF_gcd          0

@@ -38,11 +38,17 @@ public:
   int getD() { return myPerm->size2 - myRank; }
   int getNplusD() { return myStruct->getNplusD(); }
   int getRank() { return myRank; }
+  int getRsize() { return myPerm->size2; }
+
   int getM() { return myStruct->getM(); }
   int getNp() { return myStruct->getNp(); }
 
   const gsl_matrix * getPerm() { return myPerm; }
-  const gsl_matrix * getSMatr() { return myMatr; }
+  const gsl_matrix * getSMart() { return myMatr; }
+  const gsl_matrix * getPhiSMatr() { return myMatrMulPerm; }
+
+
+  void computeRTheta( gsl_matrix_const_view x_mat, gsl_matrix *RTheta ); 
   
   
   void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 
