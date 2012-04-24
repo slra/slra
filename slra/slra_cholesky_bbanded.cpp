@@ -82,6 +82,9 @@ void SDependentCholesky::calcGammaCholesky( gsl_matrix *R ) {
     for (int j = 0; j < v.size; j++) {
       gsl_vector_set(&v, j, gsl_vector_get(&v, j) + my_reg_gamma);
     }                       
+
+    dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, &d_times_s, &info);
+
     
     if (info) {
       PRINTF("Error: info = %d\n", info); /* TODO: add regularization */
