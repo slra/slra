@@ -176,3 +176,13 @@ void print_vec(const gsl_vector* a)
     PRINTF("%f ",gsl_vector_get(a, i));
   PRINTF("\n");
 }
+
+
+
+
+void Cholesky::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
+  for (int i = 0; i < yr_matr->size1; i++) {
+    gsl_vector_view row = gsl_matrix_row(yr_matr, i);
+    multiplyInvCholeskyVector(&row.vector, trans);
+  }
+}

@@ -15,12 +15,7 @@ public:
 
   virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
   virtual void multiplyInvGammaVector( gsl_vector * yr ) = 0;                
-  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { /* Default implementation */
-    for (int i = 0; i < yr_matr->size1; i++) {
-      gsl_vector_view row = gsl_matrix_row(yr_matr, i);
-      multiplyInvCholeskyVector(&row.vector, trans);
-    }
-  }
+  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
 };
 
 class DGamma {
