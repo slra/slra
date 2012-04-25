@@ -50,7 +50,7 @@ for popular Linux distributions.
 1.1) Get source
   Download from <http://github.com/slra/slra/> and unpack to a directory
 1.2) Compile
-  Type
+  Type in the directory with source files
     make <target> 
   this compiles an interface file for a specific environment:
     "make mex"			produces MEX binary file for MATLAB
@@ -98,6 +98,4 @@ Use targets "xxx-slicot-xxx".
 Depending on the version of MATLAB, static binding to non-default 
 BLAS and LAPACK (for example, ATLAS) can be faster. Use "xxx-static" target as
 a base for your compilation instructions.
-
-
 
