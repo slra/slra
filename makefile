@@ -30,6 +30,7 @@ R:
 	mkdir -p Rslra/src/slra
 	cp slra/*.cpp Rslra/src/slra
 	cp slra/*.h Rslra/src/slra
+	cp SLRAOBJ.txt Rslra/src/SLRAOBJ.txt
 	R CMD check Rslra
 	R CMD build Rslra
 	R CMD INSTALL Rslra
