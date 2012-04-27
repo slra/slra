@@ -101,29 +101,31 @@ void CostFunction::computeRGammaSr( const gsl_vector *x, gsl_matrix *R,
   computeSr(myTmpR, Sr);
 } 
 
-void CostFunction::computeRTheta(gsl_matrix_const_view x_mat, gsl_matrix *RTheta ) { 
-  gsl_vector_view diag;
-  gsl_matrix_view submat;
-  int n = x_mat.matrix.size1, d = x_mat.matrix.size2;
+void CostFunction::computeRTheta( const gsl_matrix *x, gsl_matrix *RTheta ) { 
+  gsl_vector diag;
+  gsl_matrix submat;
+  int n = x->size1, d = x->size2;
 
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
-  submat = gsl_matrix_submatrix(RTheta, 0, 0, n, d); /* select x in (1,1) */
-  gsl_matrix_memcpy(&submat.matrix, &x_mat.matrix); /* assign x */
-  submat = gsl_matrix_submatrix(RTheta, n, 0, d, d); /* select -I in (1,1)*/
-  gsl_matrix_set_all(&submat.matrix, 0);
-  diag   = gsl_matrix_diagonal(&submat.matrix);     /* assign -I */
-  gsl_vector_set_all(&diag.vector, -1);
+  submat = gsl_matrix_submatrix(RTheta, 0, 0, n, d).matrix;
+  gsl_matrix_memcpy(&submat, x); 
+  submat = gsl_matrix_submatrix(RTheta, n, 0, d, d).matrix;
+  gsl_matrix_set_all(&submat, 0);
+  diag   = gsl_matrix_diagonal(&submat).vector;    
+  gsl_vector_set_all(&diag, -1);
 }
 
 
 void CostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R ) { 
-  computeRTheta(x_mat, myTmpThetaExt);
+  computeRTheta(&x_mat.matrix, myTmpThetaExt);
 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myPerm, myTmpThetaExt, 0.0, R);
 }
 
 void CostFunction::computeR( const gsl_vector * x, gsl_matrix *R ) { 
-  computeR(gsl_matrix_const_view_vector(x, getRank(), getD()), R);
+  gsl_matrix_const_view x_mat = 
+      gsl_matrix_const_view_vector(x, getRank(), getD());
+  computeR(/*&x_mat.matrix*/gsl_matrix_const_view_vector(x, getRank(), getD()), R);
 }
 
 

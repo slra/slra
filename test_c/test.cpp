@@ -51,7 +51,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
                char * method = "l", int use_slicot = 0, bool silent = false ) {
   gsl_matrix *Rt = NULL, *R = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
-  double *w_k = NULL;
+  gsl_vector *w_k = NULL;
  
   Structure *myStruct = NULL;
   
@@ -103,36 +103,35 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 
     fscanf(file, "%d %d %d", &s_k, &s_q, &n); 
 
-    double *m_k = new double[s_k];
-    double *L_q = new double[s_q];
+    gsl_vector *m_k = gsl_vector_alloc(s_k);
+    gsl_vector *L_q = gsl_vector_alloc(s_q);
       
     for (i = 0; i < s_k; i++)  {
-      fscanf(file, "%lf", &(m_k[i]));
+      fscanf(file, "%lf", &(m_k->data[i]));
     }
 
     for (i = 0; i < s_q; i++)  {
-      fscanf(file, "%lf", &(L_q[i]));
+      fscanf(file, "%lf", &(L_q->data[i]));
     }
 
 
     double w0;
     if (fscanf(file, "%lf", &w0) == 1) {
-       w_k = new double[s_q];
-       w_k[0] = w0;
+       w_k = gsl_vector_alloc(s_q);
+       w_k->data[0] = w0;
          
       for (i = 1; i < s_q; i++)  {
-        fscanf(file, "%lf", &(w_k[i]));
+        fscanf(file, "%lf", &(w_k->data[i]));
       }
     }
       
-    myStruct = new MosaicHStructure(s_q, s_k, L_q, m_k, w_k);
+    myStruct = new MosaicHStructure(L_q, m_k, w_k);
     m = myStruct->getM();
       
-    delete [] m_k; 
-    delete [] L_q;
+    gsl_vector_free(m_k);  
+    gsl_vector_free(L_q);  
 
 
-    
     fclose(file);
 
 
@@ -250,7 +249,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       gsl_matrix_free(perm);
     }
     if (w_k != NULL) {
-      delete [] w_k;
+      gsl_vector_free(w_k);
     }
     
     if (myStruct != NULL) {

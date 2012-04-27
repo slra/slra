@@ -61,7 +61,149 @@ static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
   }
 }
 
-typedef struct  {
+
+gsl_vector SEXP2vec( SEXP p ) {
+  
+
+  return  gsl_vector_view_array(REAL(p), LENGTH(p)).vector;
+}
+
+gsl_matrix SEXP2mat( SEXP A ) {
+  int *dim_A = INTEGER(getAttrib(A, R_DimSymbol));
+  
+  return  gsl_matrix_view_array(REAL(A), dim_A[1], dim_A[0]).matrix;
+}
+
+
+
+
+SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt, 
+         SEXP _compute_dp, SEXP _compute_Rh ) {
+  gsl_vector vec_ml = SEXP2vec(getListElement(s, "m")), p_in = SEXP2vec(_p),
+      vec_nk = SEXP2vec(getListElement(_s, "m")),
+      vec_wk = SEXP2vec(getListElement(_s, "w"));
+  gsl_matrix phi = SEXP2mat(getListElement(_s, "phi"));
+  int np = compute_np(&vec_ml, &vec_nk);
+  int r = INTEGER(_r), compute_dp = INTEGER(_compute_dp),
+    compute_Rh = INTEGER(_compute_Rh), compute_vh = 1;
+  
+  if (p_in.size < np) {
+    warning("Size of vector p less that the structure requires");   
+  } else if (p_in.size > np) {
+    error("Size of vector p more that the structure requires");   
+  } 
+  opt_and_info opt;
+  opt.disp = getRSLRADispOption(_opt);
+  slraAssignDefOptValue(opt,method);
+  slraAssignDefOptValue(opt,submethod);
+  getRSLRAOption(opt, _opt, maxiter, asInteger);
+  getRSLRAOption(opt, _opt, epsabs, asReal);
+  getRSLRAOption(opt, _opt, epsrel, asReal);
+  getRSLRAOption(opt, _opt, epsgrad, asReal);
+  getRSLRAOption(opt, _opt, epsx, asReal);
+  getRSLRAOption(opt, _opt, step, asReal);
+  getRSLRAOption(opt, _opt, tol, asReal);
+  getRSLRAOption(opt, _opt, reggamma, asReal);
+  getRSLRAMethodOption(&opt, _opt);
+  SEXP _r_ini = getListElement(list, str);
+  gsl_matrix r_ini;
+  if (_r_ini != R_NilValue) {
+    r_ini = SEXP2mat(_r_ini);
+  }
+  //TODO : Rini
+  
+  
+  SEXP _p_out, _r_out, _v_out, 
+  Structure myStruct = NULL;
+  int was_error = 0l
+  try {
+    myStruct = createMosaicStructure(&vec_ml, &vec_nk, view_to_vec(wk), np);  
+    int m = perm.size2;
+    
+    if (compute_dp) {
+      compute_dp = 1;
+      PROTECT(_p_out = allocVector(REALSXP, np));
+      p_out = SEXP2vec(_p_out);
+    }
+    if (compute_Rh) {
+      compute_Rh = 1;
+      PROTECT(_r_out = allocMatrix(REALSXP, (m - r), m));
+      r_out = SEXP2mat(_r_out);
+    }
+    if (compute_vh) {
+      compute_vh = 1;
+      PROTECT(_v_out = allocMatrix(REALSXP, (m - r) * r, (m - r) * r));
+      v_out = SEXP2mat(_v_out);
+    }
+ 
+    slra(&p_in, myStruct, r, &opt, _r_ini != R_NilValue ? &r_ini : NULL, perm, 
+         _compute_dp ? &p_out : NULL, 
+         _compute_Rh ? &r_out : NULL, 
+         _compute_vh ? &v_out : NULL);
+  } catch (Exception *e) {
+    strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
+    str_buf[STR_MAX_LEN - 1] = 0;
+    was_error = 1;
+    delete e;
+  }   
+  
+  
+  if (myStruct != NULL) {
+    delete myStruct;
+  }
+  
+  if (was_error) {
+    error(str_buf);
+  }
+
+  SEXP _info, _res;
+  PROTECT(_info = list5(ScalarInteger(opt.iter), ScalarReal(opt.time), 
+                        ScalarReal(opt.fmin)));
+  SET_TAG(_info, install("iter"));
+  SET_TAG(CDR(_info), install("time"));
+  SET_TAG(CDDR(_info), install("fmin"));
+  
+                          
+  PROTECT(_res = list2(_p_out, _info));
+  SET_TAG(res, install("ph"));
+  SET_TAG(CDR(res), install("info"));
+
+
+  
+  if (compute_dp) {
+    UNPROTECT(1);
+  } 
+  if (compute_Rh) {
+    UNPROTECT(1);
+  } 
+  if (compute_vh) {
+    UNPROTECT(1);
+  } 
+
+
+
+ /* PROTECT(INFO = list3(ScalarInteger(pSO->opt.iter), ScalarReal(pSO->opt.time), 
+                         ScalarReal(pSO->opt.fmin)));
+  SET_TAG(INFO, install("iter"));
+  SET_TAG(CDR(INFO), install("time"));
+  SET_TAG(CDDR(INFO), install("fmin"));
+  PROTECT(XH = allocMatrix(REALSXP, pSO->x->size1, pSO->x->size2));
+  PROTECT(VXH = allocMatrix(REALSXP, pSO->v->size1, pSO->v->size2));
+  gsl_to_m_matrix(REAL(XH), pSO->x); 
+  gsl_to_m_matrix(REAL(VXH), pSO->v); 
+
+  PROTECT(res = list3(XH, INFO, VXH));
+  SET_TAG(res, install("xh"));
+  SET_TAG(CDR(res), install("info"));
+  SET_TAG(CDDR(res), install("vxh"));
+
+    UNPROTECT(4);*/
+
+
+}
+
+
+/* typedef struct  {
   gsl_matrix *x;
   gsl_matrix *v;
   gsl_vector *p;
@@ -81,16 +223,16 @@ SEXP is_slra_object(SEXP ptr) {
   PROTECT(ans = allocVector(LGLSXP, 1));
   LOGICAL(ans)[0] = 1;
 
-  /* object is an external pointer */
+  /* object is an external pointer * /
   if (TYPEOF(ptr) != EXTPTRSXP)
     LOGICAL(ans)[0] = 0;
 
-  /* tag should be 'external matrix' */
+  /* tag should be 'external matrix' * /
   if (LOGICAL(ans)[0] &&
       R_ExternalPtrTag(ptr) != install("SLRA object"))
     LOGICAL(ans)[0] = 0;
 
-  /* pointer itself should not be null */
+  /* pointer itself should not be null * /  
   if (LOGICAL(ans)[0]) {
     pSO = R_ExternalPtrAddr(ptr);
     if (!pSO)
@@ -120,8 +262,9 @@ static void slra_object_finalizer(SEXP ptr) {
   
   Free(pSO);
   R_ClearExternalPtr(ptr);
-}
+} */
 
+/*
 SEXP create_slra_object(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP CDP) {
   slra_r_object *pSO = Calloc(1, slra_r_object);
 
@@ -136,12 +279,12 @@ SEXP create_slra_object(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP 
   pSO->compdp =  *pcompdp;
   pSO->given_x = 0;   
   
-  /* Variables for input into stls */
+  /* Variables for input into stls * /
   pSO->x = NULL;
   pSO->p = NULL;
   pSO->perm = NULL;
     
-  /* Check X */
+  /* Check X * /
   pSO->x = gsl_matrix_alloc(n, d);
   if (TYPEOF(X) != NILSXP) {
     pSO->given_x = 1;
@@ -150,17 +293,17 @@ SEXP create_slra_object(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP 
   pSO->v = gsl_matrix_calloc(n * d, n * d);
   pSO->perm = gsl_matrix_alloc(n + d, n + d);
 
-  /* Copy P vector */
+  /* Copy P vector * /
   np = length(P);
   p_vec = gsl_vector_view_array(REAL(P), np);
   pSO->p = gsl_vector_alloc(np);
   gsl_vector_memcpy(pSO->p, &p_vec.vector);
 
-  /* Convert structure specification */
+  /* Convert structure specification * /
   getScalarListElement(pSO->s.k, S, "k", asInteger, 1);
   slraMatrix2Struct(&pSO->s, s_m, dimS_A[0], dimS_A[1]);
 
-  /* Convert options */
+  /* Convert options * /
   pSO->opt.disp = getRSLRADispOption(OPTS);
   slraAssignDefOptValue(pSO->opt,method);
   slraAssignDefOptValue(pSO->opt,submethod);
@@ -175,7 +318,7 @@ SEXP create_slra_object(SEXP N, SEXP D, SEXP P, SEXP S, SEXP X, SEXP OPTS, SEXP 
   getRSLRAMethodOption(&pSO->opt, OPTS);
   
   
-  /* Make an external pointer envelope */
+  /* Make an external pointer envelope * /
   SEXP sobj = R_MakeExternalPtr(pSO, install("SLRA object"), R_NilValue);
   R_RegisterCFinalizer(sobj, slra_object_finalizer);
 
@@ -332,7 +475,7 @@ SEXP rtls(SEXP A, SEXP B) {
   int *dimB = INTEGER(getAttrib(B, R_DimSymbol));
   SEXP X;
 
-  /* Variables for input into stls */
+  /* Variables for input into stls * /
   gsl_matrix *a, *b, *x;
   
   m_to_gsl_matrix(a = gsl_matrix_alloc(dimA[0], dimA[1]), REAL(A));
@@ -353,6 +496,6 @@ SEXP rtls(SEXP A, SEXP B) {
 
   return X;
 }
-
+*/
 
 

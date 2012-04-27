@@ -13,6 +13,18 @@ Exception::Exception( const char *format, ... ) {
   vsnprintf(myMsg, MSG_MAX-1, format, vl); 
 }
 
+Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
+               gsl_vector * wk, int np_comp ) {
+  if (wk == NULL || wk->size == ml->size * nk->size) {
+    return new MosaicHStructure(ml, nk, wk);
+  } else if (wk->size == np_comp) {
+    return new WMosaicHStructure(ml, nk, wk);
+  } else if (wk->size == ml->size) {
+    return new MosaicHStructure(ml, nk, wk, true); 
+  } 
+  throw new Exception("Incorrect weight specification\n");   
+}
+
 char meth_codes[] = "lqn";
 char submeth_codes_lm[] = "ls";
 char submeth_codes_qn[] = "b2pf";
@@ -177,6 +189,18 @@ void print_vec(const gsl_vector* a)
   PRINTF("\n");
 }
 
+int compute_np( gsl_vector* ml, gsl_vector *nk ) {
+  int np = 0;
+  int i;
+  
+  for (i = 0; i < ml->size; i++) {
+    np += ((int)gsl_vector_get(ml, i) - 1) * nk->size; 
+  }
+  for (i = 0; i < nk->size; i++) {
+    np += ((int)gsl_vector_get(nk, i)) * ml->size; 
+  }
+  return np;
+}
 
 
 

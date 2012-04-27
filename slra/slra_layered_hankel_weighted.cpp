@@ -164,24 +164,23 @@ DGamma *WLayeredHStructure::createDGamma( int D ) const {
 
 typedef Structure* pStructure;
 
-pStructure *WMosaicHStructure::allocStripe( size_t q, size_t N, 
-     double *oldNk,  double *oldMl, double *Wk )  {
-  pStructure *res = new pStructure[N];
+pStructure *WMosaicHStructure::allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
+                gsl_vector *Wk )  {
+  pStructure *res = new pStructure[oldMl->size];
 
-  for (size_t k = 0; k < N; k++) {
-    res[k] = new WLayeredHStructure(oldNk, q, oldMl[k], Wk);
+  for (size_t k = 0; k < oldMl->size; k++) {
+    res[k] = new WLayeredHStructure(oldNk->data, oldNk->size, oldMl->data[k], Wk->data);
     if (Wk != NULL) {
-//      print_arr(Wk, res[k]->getNp());
-      Wk += res[k]->getNp();
+      Wk->data += res[k]->getNp();
     }
   }
 
   return res;
 }
 
-WMosaicHStructure::WMosaicHStructure( size_t q, size_t N,
-    double *oldNk, double *oldMl, double *Wk ) :
-        StripedStructure(N, allocStripe(q, N, oldNk, oldMl, Wk)) {
+WMosaicHStructure::WMosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
+                gsl_vector *Wk ) :
+        StripedStructure(oldMl->size, allocStripe(oldNk, oldMl, Wk)) {
 }
 
 

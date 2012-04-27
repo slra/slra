@@ -53,11 +53,11 @@ public:
 class MosaicHStructure : public StripedStructure {
   bool myWkIsCol;
 protected:
-  static Structure **allocStripe( size_t q, size_t N, double *oldNk,
-                                      double *oldMl, double *Wk, bool wkIsCol = true );
+  static Structure **allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
+                                  gsl_vector *Wk, bool wkIsCol = true );
 public:
-  MosaicHStructure( size_t q, size_t N, double *oldNk, double *oldMl,
-                   double *Wk, bool wkIsCol = false );
+  MosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
+                    gsl_vector *Wk, bool wkIsCol = false );
   virtual ~MosaicHStructure() {}
   virtual Cholesky *createCholesky( int r, double reg_gamma ) const;
 };

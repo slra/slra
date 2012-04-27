@@ -48,7 +48,7 @@ public:
   const gsl_matrix * getPhiSMatr() { return myMatrMulPerm; }
 
 
-  void computeRTheta( gsl_matrix_const_view x_mat, gsl_matrix *RTheta ); 
+  void computeRTheta( const gsl_matrix * x_mat, gsl_matrix *RTheta ); 
   void computeDefaultRTheta( gsl_matrix *RTheta ); 
   
   static void R_2_x( const gsl_matrix *R, gsl_matrix * x );

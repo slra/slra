@@ -29,4 +29,8 @@ void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl);
 void String2Method( const char *str_buf, opt_and_info *popt );
 int String2Disp( const char *str_value );
 
+Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
+               gsl_vector * wk, int np_comp );
+               
+int compute_np( gsl_vector* ml, gsl_vector *nk );               
 

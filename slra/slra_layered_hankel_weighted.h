@@ -41,10 +41,10 @@ public:
 
 class WMosaicHStructure : public StripedStructure {
 protected:
-  static Structure **allocStripe( size_t q, size_t N, double *Nk,
-                                      double *Ml, double *Wk );
+  static Structure **allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
+                gsl_vector *Wk );
 public:
-  WMosaicHStructure( size_t q, size_t N, double *Nk, double *Ml, double *Wk );
+  WMosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl, gsl_vector *Wk );
   virtual ~WMosaicHStructure() {}
 };
 

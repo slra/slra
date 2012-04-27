@@ -32,14 +32,8 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
     R = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
     
     if (r_ini == NULL) {  /* compute default initial approximation */
-      if (opt->disp == SLRA_OPT_DISP_ITER) {
-        PRINTF("X not given, computing TLS initial approximation.\n");
-      }
       myCostFun->computeDefaultRTheta(R);
     } else {
-      if (R->size1 !=  r_ini->size1 || R->size2 !=  r_ini->size2) {
-        throw new Exception("Incompatible initial approximation given.\n");
-      }
       gsl_matrix_memcpy(R, r_ini);
     }
 
@@ -49,8 +43,7 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
     int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
-    myCostFun->computeRTheta(gsl_matrix_const_submatrix(x, 0, 0, 
-                                 x->size1, x->size2), R);
+    myCostFun->computeRTheta(x, R);
     if (p_out != NULL) {
       if (opt->gcd) {
         gsl_vector_set_zero(p_out);

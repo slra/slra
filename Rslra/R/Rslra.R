@@ -26,8 +26,8 @@
 #}
 
 
-slra <- function(p, s, r = sum(S$m) - 1, 
-            opt = list(), compute.dp = FALSE, ret.obj=FALSE) {
+slra <- function(p, s, r = dim(phi)[1] - 1, 
+            opt = list(), compute.dp = FALSE, compute.Rh = TRUE, ret.obj=FALSE) {
   # Check necessary parameters            
   if (!is.list(s) || is.null(s$m) || is.null(s$n)) {
     stop ('Structure must be a list with "m" and "n" elements');
@@ -35,18 +35,37 @@ slra <- function(p, s, r = sum(S$m) - 1,
   storage.mode(s$m) <- storage.mode(s$n) <- 'integer';
   storage.mode(s$m) <- storage.mode(s$n) <- 'double';
   if (!prod(s$m > 0) || !prod(s$n > 0)) {
-    stop ('"m" and "n" elements should be ');
+    stop ('s$m and s$n elements should be positive vectors');
+  }
+  if (sum(s$m) > sum(s$n)) {
+    stop('Matrix should be fat');
+  }
+  if (is.null(s$phi)) {
+    s$phi <- diag(sum(s$m));
+  } else{
+    
+    if (dim(phi)[1] > dim(phi)[2] || dim(phi)[2] != sum(s$m)) {
+      stop ('s$phi should be a full row rank matrix compatible with s');
+    }
+  }
+  storage.mode(s$phi) <- 'double';
+
+  if (!is.null(s$w)) {
+    if (!prod(s$w > 0)) {
+      stop('Weights can be positive or infinite');
+    }
+  } else {
+    s$w <- rep(1, length(s$m));
+  }
+  storage.mode(s$w) <- 'double';
+
+  storage.mode(r) <- 'integer';
+  if (r < 0 || r >= sum(s$m)) {
+    stop ('Incorrect r value');
   }
   
-  
-  
-  
-  storage.mode(r) <- 'integer';
-  storage.mode(compute.dp) <- 'integer';
-
-  res <- .Call("call_slra", p, s, r, opt, compute.dp);
-
-  res;    
+  storage.mode(compute.dp) <- storage.mode(compute.Rh) <- 'integer';
+  res <- .Call("call_slra", p, s, r, opt, compute.dp, , compute.Rh);
 }
 
 
