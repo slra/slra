@@ -26,24 +26,24 @@ United Kingdom
 
 The package is primarily distributed in the form of source code and is hosted 
 at <http://github.com/slra/slra/>. The precompiled binary versions 
-(usually for Windows) are avaliable at the same address.
+(32bit and 64bit Linux) are avaliable at the same address.
 
 0) Prerequisites
 
 GSL library should be installed. To use MATLAB/Octave or R interfaces,
 the corresponding environments should also be installed.
 
-SLRA package uses LAPACK and BLAS libraries, which are typically included in 
-MATLAB, Octave and R installations, so you usually don't need to install them.
-The package has an optional binding to SLICOT library, which can speedup 
-computations in some exotic cases.
+SLRA package uses LAPACK and BLAS libraries, which are included in 
+MATLAB, Octave and R installations, so if you have MATLAB, Octave or R installed, 
+you don't need to install seperately LAPACK and BLAS libraries. The package has 
+an optional binding to SLICOT library, which can speedup computations in some cases.
 
 The libraries can be obtained at
 - GSL: <http://www.gnu.org/software/gsl/>
 - BLAS, LAPACK: <http://www.netlib.org/>
 - SLICOT: <http://www.slicot.org/>
-GSL, BLAS and LAPACK libraries are usually included in repositories 
-for popular Linux distributions.
+GSL, BLAS and LAPACK libraries are included in repositories for popular 
+Linux distributions.
 
 1) Installation instructions
 
@@ -63,22 +63,24 @@ for popular Linux distributions.
   R standalone packages (including precompiled Windows versions) can be
   included by running
     install.packages(repos=NULL, pkgs="Rslra_x.x.xxx"); 
-  in R console launched in the same directory where the package is.
+  in the R console launched in the same directory where the package is.
   
 2) Using the package
 
-MATLAB/R interfaces are documented in the supplied manual (xxx.pdf),
-with examples of usage. The manual is also available in the following article.
+MATLAB/R interfaces are documented in the supplied manual (manual.pdf),
+with examples of usage. 
 
-@article{Fine:01,
+If you use the package in your research, please cite the above reference:
+
+The manual is also available in the following article.
+
+@article{slra-package,
   author      = {Markovsky, I. and Usevich, K.},
-  title       = {...},
-  journal     = xxx,
+  title       = {Software for weighted structured low-rank approximation},
+  journal     = ??,
   year        = {2012}
 }
 
-If you use the package in your research, we encourage you to cite the above 
-reference.
 
 R version has also standard R help (type "library(Rslra)" and "?slra" in R). 
 Demo m and R scripts are available in "test_m" and "test_r" directories.
@@ -86,7 +88,7 @@ Demo m and R scripts are available in "test_m" and "test_r" directories.
 3) Notes for advanced users
 
 The package contains a demo C++ program, which gives an example of using 
-C++ interface and tests various exaples of SLRA problems (target "testc").
+C++ interface and tests various examples of SLRA problems (target "testc").
 
 Advanced compilation options can be found in other targets of makefile, but
 not all of targets may run on your machine "as is".
