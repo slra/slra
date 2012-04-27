@@ -146,6 +146,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (mxGetField(prhs[1], 0, PERM_STR) != NULL) {
     perm = MAT_to_trmatview(mxGetField(prhs[1], 0, PERM_STR));
   }
+  
+  if (mxGetField(prhs[1], 0, WK_STR) != NULL) {
+    wk = MAT_to_vecview(mxGetField(prhs[1], 0, WK_STR));
+  }
  
   int np_comp = compute_np(&vec_ml.vector, &vec_nk.vector);
   
@@ -153,7 +157,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     mexErrMsgTxt("Size of vector p less that the structure requires");   
   } else if (p_in.vector.size > np_comp) {
     mexWarnMsgTxt("Size of vector p more that the structure requires");   
-  }
+  } 
   
   rank = mxGetScalar(prhs[2]);
   
@@ -175,8 +179,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 	/* which option */
 	if (!strcmp(field_name, RINI_STR)) {
  	  rini = MAT_to_trmatview(mxGetFieldByNumber(prhs[3], 0, l));
- 	} else if (!strcmp(field_name, WK_STR)) {
- 	  wk = MAT_to_vecview(mxGetFieldByNumber(prhs[3], 0, l));
  	} else if (!strcmp(field_name, DISP_STR)) {
  	  mxGetString(mxGetFieldByNumber(prhs[3], 0, l), str_buf, 
 		      STR_MAX_LEN); 

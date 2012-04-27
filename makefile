@@ -21,7 +21,7 @@ mex: $(MEX_SRC_FILES)
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -llapack -lblas -o slra
 
-mex-octave: SLICOT.a $(MEX_SRC_FILES)
+mex-octave: $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -llapack -lblas -o slra.mex
 
@@ -36,8 +36,8 @@ R:
 	R CMD INSTALL Rslra
 
 testc : test_c/test.o $(SLRA_OBJ_FILES) 
-	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o $(SLRA_OBJ_FILES)   \
-	-lgsl -lcblas -llapack -latlas -lblas -lm
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o \
+	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm
 
 # Targets with SLICOT
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  \
@@ -55,8 +55,9 @@ mex-slicot: $(MEX_SRC_FILES) SLICOT.a
 
 testc-slicot : BUILD_MODE=USE_SLICOT
 testc-slicot : test_c/test.o $(SLRA_OBJ_FILES) SLICOT.a
-	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -DUSE_SLICOT -o test_c/test test.o \ 
-	$(SLRA_OBJ_FILES) SLICOT.a -lgsl -lcblas -llapack -latlas -lblas -lm -lgfortran
+	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -DUSE_SLICOT -o test_c/test test.o \
+	$(SLRA_OBJ_FILES) SLICOT.a -lgsl -lcblas -llapack \
+	-latlas -lblas -lm -lgfortran
 
 # Advanced targets for static compilation
 mex-static : SLICOT.a $(MEX_SRC_FILES)
