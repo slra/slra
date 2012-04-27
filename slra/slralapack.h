@@ -28,15 +28,19 @@ void dgelqf_(const size_t *m, const size_t *n, double *a, const  size_t *lda,
 void dormlq_(const char *side, const char *trans, const size_t *m, const size_t *n, const size_t *k,
              double *a, const size_t *lda, double *tau, double *c, const size_t *ldc, 
              double *work, const size_t *lwork, size_t *info);
-void dtrsm_(const char* side, const char *uplo, const char *transa, const char *diag,
-            const size_t *m, const size_t *n, const double *alpha, const double *a, const size_t *lda,
-            double *b, const size_t *ldb);
 
 
 void dgesv_(const size_t* n, const size_t* nrhs, double* a, const size_t* lda, 
             const size_t* ipiv, double* b, const size_t* ldb, size_t* info);
             
 void dgesvd_(const char* jobu, const char* jobvt, const size_t* m, const size_t* n, double* a, const size_t* lda, double* s, const double* u, const size_t* ldu, const double* vt, const size_t* ldvt, double* work, const size_t* lwork, size_t * info);              
+
+#ifndef BUILD_R_PACKAGE 
+void dtrsm_(const char* side, const char *uplo, const char *transa, const char *diag,
+            const size_t *m, const size_t *n, const double *alpha, const double *a, const size_t *lda,
+            double *b, const size_t *ldb);
+#endif /* BUILD_R_PACKAGE */            
+
 
 
 #ifdef __cplusplus

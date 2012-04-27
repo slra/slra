@@ -16,8 +16,8 @@ tic, x_ls = (a \ b)'; t_ls = toc
 % Define and solve the LS problem as a (very special) SLRA problem
 s_ls.m = ones(1, n+d);
 s_ls.n = m; 
+s_ls.w = diag([Inf Inf Inf Inf Inf 1 1]) * ones(n+d, m);
 p = [a b];
-opt.w = diag([Inf Inf Inf Inf Inf 1 1]) * ones(n+d, m)
 tic, [p_slra, i_slra] = slra(p, s_ls, n, opt); t_slra = toc
 error = i_slra.Rh(:,1:end-d) - x_ls
 
@@ -34,7 +34,6 @@ tic, x_lra = tls(D(:, 1:n), D(:, n + 1:end))'; t_lra = toc,
 % Define and solve the LRA problem as an SLRA problem
 s_lra.m = ones(1, n+d);
 s_lra.n = m; p = D(:);
-opt =  rmfield(opt, 'w');
 opt.Rini = i_slra.Rh;
 tic, [p_slra, i_slra] = slra(p, s_lra, n, opt); t_slra = toc
 error = i_slra.Rh(:,1:end-d) - x_lra
@@ -109,21 +108,23 @@ clear all;
 opt.disp = 'iter';
 a = conv([4 2 1], [5 2]) + [0.05 0.03 0.04 0]
 b = conv([4 2 1], [5 1]) + [0.04 0.02 0.01 0]
-opt.w = [Inf ones(1,length(a)) Inf Inf ones(1,length(b)) Inf];
-[ph, info] = slra([0 a 0 0 b 0], struct('m', [2 2], 'n', 5), 3, opt)
+s.m = [2 2];
+s.n = 5;
+s.w = [Inf ones(1,length(a)) Inf Inf ones(1,length(b)) Inf];
+[ph, info] = slra([0 a 0 0 b 0], s, 3, opt)
 
 
 % Example 2 (from book)
 opt.disp = 'iter';
 a2 = conv([-1 1], [-5 1])
 b2 = conv([-1.1 1], [-5.2 1])
-opt.w = [Inf ones(1,length(a2)) Inf Inf ones(1,length(b2)) Inf];
-[ph, info] = slra([0 a2 0 0 b2 0], struct('m', [2 2], 'n', 4), 3, opt)
+s.m = [2 2];
+s.n = 4;
+s.w = [Inf ones(1,length(a2)) Inf Inf ones(1,length(b2)) Inf];
+[ph, info] = slra([0 a2 0 0 b2 0], s, 3, opt)
 
 pause
 % Example 3 (3 polynomials)
-
-
 opt.disp = 'iter';
 a3 = conv([-1 1], [-5.1 1])
 b3 = conv([-1.1 1], [-5 1])

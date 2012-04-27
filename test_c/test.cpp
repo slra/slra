@@ -52,8 +52,7 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   gsl_matrix *Rt = NULL, *R = NULL, *a = NULL, *b = NULL, *v = NULL, *perm = NULL;
   gsl_vector *p = NULL, * p2 = NULL;
   double *w_k = NULL;
-  
-  
+ 
   Structure *myStruct = NULL;
   
 //  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
@@ -68,7 +67,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   String2Method(method, &opt);
 //  opt.use_slicot = use_slicot;
   opt.ls_correction = use_slicot;
-  
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
   int R_given, perm_given, w_given;
@@ -89,7 +87,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
   sprintf(fpermname,"phi%s.txt",testname);
 
   try {
-
     if (!silent) {
       fprintf(log, "Running test %s\n", testname);  
     }
