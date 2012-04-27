@@ -273,4 +273,70 @@ void CostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   myStruct->correctP(p, myTmpR, myTmpYr);
 }
 
+void CostFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
+  const gsl_matrix *c = getPhiSMatr();
+  size_t status = 0;
+  size_t minus1 = -1;
+  double tmp;
+
+  gsl_matrix * tempc = gsl_matrix_alloc(c->size1, c->size2);
+  gsl_matrix_memcpy(tempc, c);
+  gsl_matrix * tempu = gsl_matrix_alloc(c->size2, c->size2);
+  double *s = new double[mymin(c->size1, c->size2)];
+  
+  /* Determine optimal work */
+  size_t lwork;
+  dgesvd_("A", "N", &tempc->size2, &tempc->size1, tempc->data, &tempc->tda, s,
+     tempu->data, &tempu->size2, NULL, &tempc->size1, &tmp, &minus1, &status);
+  double *work = new double[(lwork = tmp)];
+  /* Compute low-rank approximation */ 
+  dgesvd_("A", "N", &tempc->size2, &tempc->size1, tempc->data, &tempc->tda, s,
+     tempu->data, &tempu->size2, NULL, &tempc->size1, work, &lwork, &status);
+
+  if (status) {
+    delete [] s;  
+    delete [] work;  
+    gsl_matrix_free(tempc);
+    gsl_matrix_free(tempu);
+    throw new Exception("Error computing initial approximation: DGESVD didn't converge\n");
+  }
+
+  gsl_matrix_transpose(tempu);
+  gsl_matrix_view RlraT;
+  RlraT = gsl_matrix_submatrix(tempu, 0, tempu->size2 - RTheta->size2, 
+                               tempu->size1, RTheta->size2);
+  gsl_matrix_memcpy(RTheta, &(RlraT.matrix));
+    
+  delete [] s;  
+  delete [] work;  
+  gsl_matrix_free(tempc);
+  gsl_matrix_free(tempu);
+}
+
+void CostFunction::R_2_x( const gsl_matrix *R, gsl_matrix * x ) {
+  size_t status = 0;
+  gsl_matrix *tempR = gsl_matrix_alloc(R->size1, R->size2);
+  gsl_matrix_memcpy(tempR, R);
+  gsl_matrix_view RQt = gsl_matrix_submatrix(tempR, 0, 0, tempR->size1,
+                                                          tempR->size2);
+  
+  /* Solve AX = B, where  R_theta = [B A] */
+  gsl_matrix_view B =  gsl_matrix_submatrix(&(RQt.matrix), 0, 0, 
+        RQt.matrix.size1 - RQt.matrix.size2, RQt.matrix.size2);
+  gsl_matrix_view A =  gsl_matrix_submatrix(&(RQt.matrix), 
+        RQt.matrix.size1 - RQt.matrix.size2, 0, 
+        RQt.matrix.size2, RQt.matrix.size2);
+
+  size_t *pivot = new size_t[A.matrix.size2];
+  /* TODO: Check for singularity of A */
+  dgesv_(&(A.matrix.size2), &(B.matrix.size1), A.matrix.data, &(A.matrix.tda), 
+         pivot,  B.matrix.data, &(B.matrix.tda), &status);  
+  delete [] pivot;
+         
+  gsl_matrix_memcpy(x, &(B.matrix));
+  gsl_matrix_scale(x, -1.0);
+  gsl_matrix_free(tempR);
+}
+
+
 

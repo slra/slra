@@ -49,6 +49,9 @@ public:
 
 
   void computeRTheta( gsl_matrix_const_view x_mat, gsl_matrix *RTheta ); 
+  void computeDefaultRTheta( gsl_matrix *RTheta ); 
+  
+  static void R_2_x( const gsl_matrix *R, gsl_matrix * x );
   
   
   void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 

@@ -71,7 +71,6 @@ typedef struct  {
   int compdp;
   int given_x;
   slra_opt_data_reshaped params;
-  
 } slra_r_object; 
 
 
@@ -98,9 +97,7 @@ SEXP is_slra_object(SEXP ptr) {
       LOGICAL(ans)[0] = 0;
   }
 
-
   UNPROTECT(1);
-
   return ans;
 }
 
