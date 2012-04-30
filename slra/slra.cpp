@@ -23,7 +23,8 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
   if (opt->gcd) { 
     opt->ls_correction = 1; /* Only correction LS is allowed here */
     if (r_ini == NULL) {
-      throw new Exception("GCD computation must have an initial approximation.\n");
+      throw new Exception("GCD computation must have "
+                          "an initial approximation.\n");
     }
   }
 

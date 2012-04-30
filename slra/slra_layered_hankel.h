@@ -54,7 +54,7 @@ class MosaicHStructure : public StripedStructure {
   bool myWkIsCol;
 protected:
   static Structure **allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
-                                  gsl_vector *Wk, bool wkIsCol = true );
+                                  gsl_vector *Wk, bool wkIsCol = false );
 public:
   MosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
                     gsl_vector *Wk, bool wkIsCol = false );

@@ -9,17 +9,17 @@ extern "C" {
 
 SDependentCholesky::SDependentCholesky( const SDependentStructure *s,
      int D, double reg_gamma ) : myW(s), myD(D), my_reg_gamma(reg_gamma) {
-  /* Preallocate arrays */
-  myPackedCholesky = (double *)malloc(myW->getM() * myD * myD * myW->getS() * sizeof(double));
-  myTempR = gsl_matrix_alloc(myW->getNplusD(), myD);
-  myTempWktR = gsl_matrix_alloc(myW->getNplusD(), myD);
-  myTempGammaij = gsl_matrix_alloc(myD, myD);
-
   /* Calculate variables for FORTRAN routines */     
   s_minus_1 =  myW->getS() - 1;
   d_times_s =  myD * myW->getS();
   d_times_Mg = myW->getM() * myD;
   d_times_s_minus_1 = myD * myW->getS() - 1;
+  
+  /* Preallocate arrays */
+  myPackedCholesky = (double*)malloc(d_times_Mg * d_times_s * sizeof(double));
+  myTempR = gsl_matrix_alloc(myW->getNplusD(), myD);
+  myTempWktR = gsl_matrix_alloc(myW->getNplusD(), myD);
+  myTempGammaij = gsl_matrix_alloc(myD, myD);
 }
   
 SDependentCholesky::~SDependentCholesky() {
@@ -29,7 +29,7 @@ SDependentCholesky::~SDependentCholesky() {
   gsl_matrix_free(myTempGammaij);
 }
 
-void SDependentCholesky::multiplyInvPartCholeskyArray( double * yr,
+void SDependentCholesky::multInvPartCholeskyArray( double * yr,
          int trans, size_t size, size_t chol_size ) {
   size_t info, total_cols = size / chol_size;
   dtbtrs_("U", (trans ? "T" : "N"), "N", 
@@ -37,33 +37,33 @@ void SDependentCholesky::multiplyInvPartCholeskyArray( double * yr,
 	  myPackedCholesky, &d_times_s, yr, &chol_size, &info);
 }
   
-void SDependentCholesky::multiplyInvPartGammaArray( double * yr, size_t size,
+void SDependentCholesky::multInvPartGammaArray( double * yr, size_t size,
          size_t chol_size ) {
   size_t info, total_cols = size / chol_size; 
   dpbtrs_("U", &chol_size, &d_times_s_minus_1, &total_cols, 
           myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
 }
 
-void SDependentCholesky::multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
+void SDependentCholesky::multInvCholeskyVector( gsl_vector * yr, int trans ) {
   if (yr->stride != 1) {
-    throw new Exception("Cannot multiply vectors with stride != 1\n");
+    throw new Exception("Cannot mult vectors with stride != 1\n");
   }
-  multiplyInvPartCholeskyArray(yr->data, trans, yr->size, d_times_Mg);
+  multInvPartCholeskyArray(yr->data, trans, yr->size, d_times_Mg);
 }
 
-void SDependentCholesky::multiplyInvGammaVector( gsl_vector * yr ) {
+void SDependentCholesky::multInvGammaVector( gsl_vector * yr ) {
   if (yr->stride != 1) {
-    throw new Exception("Cannot multiply vectors with stride != 1\n");
+    throw new Exception("Cannot mult vectors with stride != 1\n");
   }
-  multiplyInvPartGammaArray(yr->data, yr->size, d_times_Mg);
+  multInvPartGammaArray(yr->data, yr->size, d_times_Mg);
 }
 
-void SDependentCholesky::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr,
+void SDependentCholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr,
          int trans ) {
   if (yr_matr->size2 != yr_matr->tda) {
-    Cholesky::multiplyInvCholeskyTransMatrix(yr_matr, trans);
+    Cholesky::multInvCholeskyTransMatrix(yr_matr, trans);
   } else {
-    multiplyInvPartCholeskyArray(yr_matr->data, trans, 
+    multInvPartCholeskyArray(yr_matr->data, trans, 
         yr_matr->size1 * yr_matr->size2, d_times_Mg);
   }
 }
@@ -71,19 +71,27 @@ void SDependentCholesky::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr,
 void SDependentCholesky::calcGammaCholesky( gsl_matrix *R ) {
   size_t info = 0;
   computeGammaUpperPart(R);
-  dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, &d_times_s, &info);
+  
+  gsl_matrix m = gsl_matrix_view_array(myPackedCholesky, d_times_s, 
+                     d_times_Mg).matrix;
+  
+  dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, 
+          &d_times_s, &info);
   if (info) { 
     PRINTF("Gamma matrix is close to singular, adding regularization.\n");
     computeGammaUpperPart(R);
     
-    gsl_vector v = gsl_vector_view_array_with_stride(&myPackedCholesky[d_times_s_minus_1], 
-                       d_times_s, d_times_Mg).vector;
+    gsl_vector v;
+    v = gsl_vector_view_array_with_stride(
+            &myPackedCholesky[d_times_s_minus_1],  
+            d_times_s, d_times_Mg).vector;
                        
     for (int j = 0; j < v.size; j++) {
       gsl_vector_set(&v, j, gsl_vector_get(&v, j) + my_reg_gamma);
     }                       
 
-    dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1, myPackedCholesky, &d_times_s, &info);
+    dpbtrf_("U", &d_times_Mg, &d_times_s_minus_1,
+            myPackedCholesky, &d_times_s, &info);
 
     
     if (info) {
@@ -98,10 +106,12 @@ void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R ) {
   
   for (size_t i = 0; i < getM(); ++i, diagPtr += getS() * getD() * getD()) {
     if (getS() > 1) {
-      gsl_matrix blk_row = gsl_matrix_view_array_with_tda(diagPtr + d_times_s_minus_1, 
-          (getS() + 1) * getD(), getD(), d_times_s_minus_1).matrix;
+      gsl_matrix blk_row = 
+          gsl_matrix_view_array_with_tda(diagPtr + d_times_s_minus_1, 
+              (getS() + 1) * getD(), getD(), d_times_s_minus_1).matrix;
       for (size_t j = 0; (j <= getS()) && (j < getM() - i); j++) {
-        gamma_ij = gsl_matrix_submatrix(&blk_row, j * getD(), 0, getD(), getD()).matrix;
+        gamma_ij = gsl_matrix_submatrix(&blk_row, j * getD(), 0, 
+                                        getD(), getD()).matrix;
         if (j < getS()) {
           myW->AtWijB(myTempGammaij, i, i+j, R, R, myTempWktR);  
         } else {

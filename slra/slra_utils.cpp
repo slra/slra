@@ -79,7 +79,8 @@ void shiftLowerTrg( gsl_matrix * dest, const gsl_matrix *src  ) {
   gsl_matrix_set_zero(dest);
   for (int i = 0; i < dest->size1; i++) {
     for (int j = 0; (j < dest->size2) && (j <= i); j++) {
-      gsl_matrix_set(dest, i, (dest->size2 - 1 - i) + j, gsl_matrix_get(src, i, j));
+      gsl_matrix_set(dest, i, (dest->size2 - 1 - i) + j, 
+          gsl_matrix_get(src, i, j));
     }
   }
 }

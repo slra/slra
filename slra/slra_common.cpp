@@ -15,11 +15,17 @@ Exception::Exception( const char *format, ... ) {
 
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
                gsl_vector * wk, int np_comp ) {
-  if (wk == NULL || wk->size == ml->size * nk->size) {
+  if (wk == NULL) { 
+    PRINTF("OrdinaryHankel\n");
     return new MosaicHStructure(ml, nk, wk);
   } else if (wk->size == np_comp) {
+    PRINTF("WHankel\n");
     return new WMosaicHStructure(ml, nk, wk);
+  } else if (wk->size == ml->size * nk->size) { 
+    PRINTF("OrdinaryHankel\n");
+    return new MosaicHStructure(ml, nk, wk);
   } else if (wk->size == ml->size) {
+    PRINTF("OrdHankelMultCol\n");
     return new MosaicHStructure(ml, nk, wk, true); 
   } 
   throw new Exception("Incorrect weight specification\n");   
@@ -29,7 +35,7 @@ char meth_codes[] = "lqn";
 char submeth_codes_lm[] = "ls";
 char submeth_codes_qn[] = "b2pf";
 char submeth_codes_nm[] = "n2r";
-char *submeth_codes[] = {submeth_codes_lm, submeth_codes_qn,submeth_codes_nm};
+char *submeth_codes[] = {submeth_codes_lm,submeth_codes_qn,submeth_codes_nm};
 
 void String2Method( const char *str_buf, opt_and_info *popt )  {
   int submeth_codes_max[] = { 
@@ -167,7 +173,7 @@ void print_mat_tr(const gsl_matrix* m)
 
 
 /* print_arr: print array */
-void print_arr(double* a, int n)
+void print_arr(const double* a, int n)
 {
   int i;
 
@@ -204,9 +210,9 @@ int compute_np( gsl_vector* ml, gsl_vector *nk ) {
 
 
 
-void Cholesky::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
+void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
   for (int i = 0; i < yr_matr->size1; i++) {
     gsl_vector_view row = gsl_matrix_row(yr_matr, i);
-    multiplyInvCholeskyVector(&row.vector, trans);
+    multInvCholeskyVector(&row.vector, trans);
   }
 }

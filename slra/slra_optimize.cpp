@@ -3,32 +3,26 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_permutation.h>
-
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
 
-
 #include "slra.h"
 
-
-int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_matrix *v ) {
+int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, 
+                  gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     {gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder};
-
   const gsl_multimin_fdfminimizer_type *Tqn[] = 
     { gsl_multimin_fdfminimizer_vector_bfgs,
       gsl_multimin_fdfminimizer_vector_bfgs2, 
       gsl_multimin_fdfminimizer_conjugate_fr,
       gsl_multimin_fdfminimizer_conjugate_pr };
-               
   const gsl_multimin_fminimizer_type *Tnm[] = 
     { gsl_multimin_fminimizer_nmsimplex, gsl_multimin_fminimizer_nmsimplex2, 
       gsl_multimin_fminimizer_nmsimplex2rand };
-  
   int gsl_submethod_max[] = { sizeof(Tlm) / sizeof(Tlm[0]),
 			  sizeof(Tqn) / sizeof(Tqn[0]),
 			  sizeof(Tnm) / sizeof(Tnm[0]) };  
-			  
 			  
   int status, status_dx, status_grad, k;
   double g_norm, x_norm;
@@ -38,7 +32,7 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
   double max_val, min_val, abs_max_val = 0, abs_min_val;
   
   if (opt->method < 0 || 
-      opt->method > sizeof(gsl_submethod_max) / sizeof(gsl_submethod_max[0]) || 
+      opt->method > sizeof(gsl_submethod_max)/sizeof(gsl_submethod_max[0]) || 
       opt->submethod < 0 || 
       opt->submethod > gsl_submethod_max[opt->method]) {
     throw new Exception("Unknown optimization method.\n");   
@@ -64,7 +58,8 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
   double size;
   gsl_vector *stepnm;
   gsl_multimin_fminimizer* solvernm;
-  gsl_multimin_function fnm = {&(CostFunction::_f), F->getRank() * F->getD(), F };
+  gsl_multimin_function fnm = { &(CostFunction::_f), 
+      F->getRank() * F->getD(), F };
 
   /* initialize the optimization method */
   switch (opt->method) {
@@ -90,8 +85,6 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
     break;
   }
 
-   
-
   /* optimization loop */
   if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {
     PRINTF("STLS optimization:\n");
@@ -102,17 +95,15 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
   status_grad = GSL_CONTINUE;  
   opt->iter = 0;
   
-  
   if (opt->method == SLRA_OPT_METHOD_LM && opt->disp == SLRA_OPT_DISP_ITER) {
     gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
 
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
     x_norm = gsl_blas_dnrm2(solverlm->x);
     g_norm = gsl_blas_dnrm2(g);
-    PRINTF("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", opt->fmin, g_norm, x_norm);
+    PRINTF("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
+           opt->fmin, g_norm, x_norm);
   }
-  
-  
  
   while (status_dx == GSL_CONTINUE && 
 	 status_grad == GSL_CONTINUE &&
@@ -130,10 +121,8 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
 	break; /* <- THIS IS WRONG */
       }
       /* check the convergence criteria */
-      status_dx = gsl_multifit_test_delta(solverlm->dx, 
-					  solverlm->x, 
-					  opt->epsabs, 
-					  opt->epsrel);
+      status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, 
+					  opt->epsabs, opt->epsrel);
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
       status_grad = gsl_multifit_test_gradient(g, opt->epsgrad);
       /* print information */
@@ -155,13 +144,10 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
 
       /* check the convergence criteria */
       status_grad = gsl_multimin_test_gradient(
-		    gsl_multimin_fdfminimizer_gradient(solverqn), 
-		    opt->epsgrad );
+          gsl_multimin_fdfminimizer_gradient(solverqn), optt->epsgrad );
 		    
-     status_dx = gsl_multifit_test_delta(solverqn->dx, 
-                                         solverqn->x, 
-					 opt->epsabs, 
-					 opt->epsrel);  		    
+      status_dx = gsl_multifit_test_delta(solverqn->dx, solverqn->x, 
+	 				 opt->epsabs, opt->epsrel);  		    
       if (opt->disp == SLRA_OPT_DISP_ITER) {
 	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
 	x_norm = gsl_blas_dnrm2(solverqn->x);
@@ -202,7 +188,6 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
     break;
   case SLRA_OPT_METHOD_QN:
     gsl_vector_memcpy(x_vec, solverqn->x);
-
     opt->fmin = solverqn->f;
     break;
   case SLRA_OPT_METHOD_NM:
@@ -214,11 +199,6 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
     break;
   }
   
-/*  if (opt->disp == SLRA_OPT_DISP_ITER) {
-     opt->chol_time =  ((double)P->chol_time / CLOCKS_PER_SEC) / P->chol_count;
-  }*/
-
-  
   /* print exit information */  
   if (opt->disp != SLRA_OPT_DISP_OFF) { /* unless "off" */
     switch (status) {
@@ -227,7 +207,8 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
 	     "of iterations.\nThe result could be far from optimal.\n");
       break;
     case GSL_ETOLF:
-      PRINTF("Lack of convergence: progress in function value < machine EPS.\n");
+      PRINTF("Lack of convergence: "
+             "progress in function value < machine EPS.\n");
       break;
     case GSL_ETOLX:
       PRINTF("Lack of convergence: change in parameters < machine EPS.\n");
@@ -254,7 +235,6 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
     }
   }
 
-
   /* Cleanup  */
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
@@ -269,8 +249,6 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, gsl_mat
     gsl_vector_free(stepnm);
     break;
   }
-
-
 
   return GSL_SUCCESS; /* <- correct with status */
 }

@@ -39,10 +39,12 @@ using namespace std;
 #define METHOD_STR "method"
 
 
-void SLRA_mex_error_handler(const char * reason, const char * file, int line, int gsl_errno) {
+void SLRA_mex_error_handler( const char * reason, const char * file, int line, 
+         int gsl_errno) {
   char err_msg[250];
   
-  throw new Exception("GSL error #%d at %s:%d:  %s", file, line, gsl_errno, reason);
+  throw new Exception("GSL error #%d at %s:%d:  %s", file, line, gsl_errno, 
+                reason);
 }
 
 void tolowerstr( char * str ) {
@@ -53,7 +55,8 @@ void tolowerstr( char * str ) {
 } 
 
 const gsl_vector MAT_to_vecview( const mxArray * myMat ) {
-  return  gsl_vector_const_view_array(mxGetPr(myMat), mxGetN(myMat) * mxGetM(myMat)).vector;
+  return  gsl_vector_const_view_array(mxGetPr(myMat), 
+              mxGetN(myMat) * mxGetM(myMat)).vector;
 }
 
 gsl_matrix_view MAT_to_trmatview( mxArray * myMat ) {
@@ -67,20 +70,21 @@ gsl_matrix_view MAT_to_trmatview( mxArray * myMat ) {
 gsl_vector MAT_to_vecview( mxArray * myMat ) {
   gsl_vector res = { 0, 0, 0, 0, 0 };
   if (myMat != NULL) {
-    res = gsl_vector_view_array(mxGetPr(myMat), mxGetN(myMat) * mxGetM(myMat)).vector;
+    res = gsl_vector_view_array(mxGetPr(myMat), 
+              mxGetN(myMat) * mxGetM(myMat)).vector;
   }
   return res;
 }
 
-const gsl_vector *view_to_vec( const gsl_vector &vec ) {
+const gsl_vector *view2vec( const gsl_vector &vec ) {
   return  vec.data != NULL ? &vec : NULL; 
 }
 
-gsl_vector *view_to_vec( gsl_vector &vec  ) {
+gsl_vector *view2vec( gsl_vector &vec  ) {
   return  vec.data != NULL ? &vec : NULL; 
 }
 
-gsl_matrix *view_to_mat( gsl_matrix_view &mat_vw ) {
+gsl_matrix *view2mat( gsl_matrix_view &mat_vw ) {
   return  (mat_vw.matrix.data != NULL) ? &mat_vw.matrix : NULL; 
 }
 
@@ -102,7 +106,7 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
         opt.name = SLRA_DEF_##name;				\
         mexWarnMsgTxt("Ignoring optimization option '"#name"' "	\
                       "because '"#name"' < "#lvalue".");	\
-      } else if (opt.name > uvalue) {			                                        \
+      } else if (opt.name > uvalue) {			        \
         opt.name = SLRA_DEF_##name;				\
         mexWarnMsgTxt("Ignoring optimization option '"#name"' "	\
                       "because '"#name"' > "#uvalue".");	\
@@ -116,8 +120,8 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
-  gsl_error_handler_t *new_gsl_error_handler = SLRA_mex_error_handler;
-  gsl_error_handler_t *old_gsl_error_handler = gsl_set_error_handler(new_gsl_error_handler);
+  gsl_error_handler_t *new_gsl_err_h = SLRA_mex_error_handler;
+  gsl_error_handler_t *old_gsl_err_h = gsl_set_error_handler(new_gsl_err_h);
   char str_buf[STR_MAX_LEN];
   gsl_matrix_view rini = { { 0, 0, 0, 0, 0, 0 } }, 
                   rh_view = { { 0, 0, 0, 0, 0, 0 } },
@@ -137,9 +141,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxGetField(prhs[1], 0, STR_NK) == NULL) {
     mexErrMsgTxt("Structure specification must contain fields m and n");   
   }
-  gsl_vector vec_ml = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ML));
-  gsl_vector vec_nk = MAT_to_vecview(mxGetField(prhs[1], 0, STR_NK));
-  int np = compute_np(&vec_ml, &vec_nk);
+  gsl_vector ml = MAT_to_vecview(mxGetField(prhs[1], 0, STR_ML));
+  gsl_vector nk = MAT_to_vecview(mxGetField(prhs[1], 0, STR_NK));
+  int np = compute_np(&ml, &nk);
+  
   if (p_in.size < np) {
     mexErrMsgTxt("Size of vector p less that the structure requires");   
   } else if (p_in.size > np) {
@@ -158,8 +163,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 		    "should be passed in a structure.");
     } else {
       rini = MAT_to_trmatview(mxGetField(prhs[3], 0, RINI_STR));
-      opt.disp = String2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), str_buf, STR_MAX_LEN));
-      String2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), str_buf, STR_MAX_LEN), &opt);
+      opt.disp = String2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), 
+                                   str_buf, STR_MAX_LEN));
+      String2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), 
+                          str_buf, STR_MAX_LEN), &opt);
       MATStoreOption(prhs[3], opt, maxiter, 0, numeric_limits<int>::max());
       MATStoreOption(prhs[3], opt, epsabs, 0, 1);
       MATStoreOption(prhs[3], opt, epsrel, 0, 1);
@@ -167,14 +174,15 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       MATStoreOption(prhs[3], opt, epsx, 0, 1);
       MATStoreOption(prhs[3], opt, step, 0, 1);
       MATStoreOption(prhs[3], opt, tol, 0, 1);
-      MATStoreOption(prhs[3], opt, reggamma, 0, numeric_limits<double>::max());
+      MATStoreOption(prhs[3], opt, reggamma, 0, 
+                     numeric_limits<double>::max());
       MATStoreOption(prhs[3], opt, ls_correction, 0, 1);
       MATStoreOption(prhs[3], opt, gcd, 0, 1);
     }
   }
 
   try {
-    myStruct = createMosaicStructure(&vec_ml, &vec_nk, view_to_vec(wk), np);
+    myStruct = createMosaicStructure(&ml, &nk, view2vec(wk), p_in.size);
   
     m = perm.matrix.data == NULL ? myStruct->getNplusD() : perm.matrix.size2;
     if (r <= 0 || r >= m) {
@@ -186,7 +194,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     if (nlhs > 1) {
       int l = 1;
-      const char *field_names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
+      const char *field_names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, 
+                                    TIME_STR };
       plhs[1] = mxCreateStructArray(1, &l, 5, field_names);
     
       mxArray *rh = mxCreateDoubleMatrix((m - r), m, mxREAL);
@@ -197,9 +206,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
 
-    slra(view_to_vec(p_in), myStruct, r, &opt, view_to_mat(rini),
-         view_to_mat(perm), view_to_vec(p_out), view_to_mat(rh_view),
-         view_to_mat(vh_view));
+    slra(view2vec(p_in), myStruct, r, &opt, view2mat(rini), view2mat(perm), 
+         view2vec(p_out), view2mat(rh_view), view2mat(vh_view));
 
     if (nlhs > 1) {
       mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
@@ -213,7 +221,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     delete e;
   } 
 
-  gsl_set_error_handler(old_gsl_error_handler);
+  gsl_set_error_handler(old_gsl_err_h);
   if (myStruct != NULL) {
     delete myStruct;
   }

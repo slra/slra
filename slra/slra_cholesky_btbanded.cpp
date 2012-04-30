@@ -9,8 +9,8 @@ extern "C" {
 }
 #include "slra.h"
 
-StationaryCholesky::StationaryCholesky( const StationaryStructure *s, 
-    int D, double reg_gamma  ) :  SDependentCholesky(s, D, reg_gamma), myWs(s)  {
+StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  int D, 
+    double reg_gamma  ) :  SDependentCholesky(s, D, reg_gamma), myWs(s)  {
   myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
   myWkTmp = gsl_matrix_alloc(getNplusD(), getD());
 }  
@@ -54,7 +54,8 @@ void StationaryCholesky::computeGammaUpperPart( gsl_matrix *R ) {
 SameStripedStationaryCholesky::
     SameStripedStationaryCholesky( const MosaicHStructure *s, 
          int D, int use_slicot, double reg_gamma  ) :  myStruct(s) {
-  myBase = (StationaryCholesky *)myStruct->getMaxBlock()->createCholesky(D, reg_gamma);  
+  myBase = (StationaryCholesky *)myStruct->getMaxBlock()->createCholesky(D, 
+                                                              reg_gamma);  
 }
 SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
   delete myBase;
@@ -66,27 +67,27 @@ void SameStripedStationaryCholesky::calcGammaCholesky( gsl_matrix *R ) {
 
   
 void SameStripedStationaryCholesky::
-         multiplyInvCholeskyVector( gsl_vector * yr, int trans ) {
-  int n_row = 0;
+         multInvCholeskyVector( gsl_vector * yr, int trans ) {
+  int n_row = 0, k;
   gsl_vector_view sub_yr;
   
-  for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
+  for (k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), 
                  myStruct->getMl(k) * myBase->getD());    
   
-    myBase->multiplyInvPartCholeskyArray(sub_yr.vector.data, trans, 
+    myBase->multInvPartCholeskyArray(sub_yr.vector.data, trans, 
         sub_yr.vector.size, sub_yr.vector.size);
   }
 }
 
-void SameStripedStationaryCholesky::multiplyInvGammaVector( gsl_vector * yr ) {
-  int n_row = 0;
+void SameStripedStationaryCholesky::multInvGammaVector( gsl_vector * yr ) {
+  int n_row = 0, k;
   gsl_vector_view sub_yr;
   
-  for (int k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
+  for (k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), 
                  myStruct->getMl(k) * myBase->getD());    
-    myBase->multiplyInvPartGammaArray(sub_yr.vector.data, 
+    myBase->multInvPartGammaArray(sub_yr.vector.data, 
         sub_yr.vector.size, sub_yr.vector.size);
   }
 }
