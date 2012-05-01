@@ -30,7 +30,8 @@ public:
   }
 
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled );
 
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;

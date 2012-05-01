@@ -39,7 +39,8 @@ public:
   
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
   virtual DGamma *createDGamma( int D ) const = 0;
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled = true ) = 0;
 };
 
 

@@ -45,8 +45,8 @@ public:
 
   void computeJacobianZij( gsl_vector*res, int i, int j, gsl_vector* yr, 
                            gsl_matrix *R, double factor = 0.5 );
-  void computePseudoJacobianCorrectFromYr( gsl_vector* yr, gsl_matrix *R, 
-                                           gsl_matrix *jac );
+  void computeJacobianOfCorrection( gsl_vector* yr, gsl_matrix *R, 
+                                    gsl_matrix *jac );
   void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *R, 
                                       gsl_matrix *jac );
   void computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad );

@@ -13,13 +13,14 @@ extern "C" {
 LayeredHStructure::LayeredHStructure( const double *oldNk, 
     size_t q, int M, const double *layer_w  ) : myQ(q), myM(M), mySA(NULL)  {
   mySA = new Layer[myQ];
+ 
   for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = oldNk[l];
     if (layer_w != NULL && !(layer_w[l] > 0)) {
       throw new Exception("This value of weight is not supported: %lf\n", 
                           layer_w[l]);
     }
-    mySA[l].inv_w = (layer_w != NULL) ? (1 / layer_w[l]) : 1;
+    mySA[l].inv_w = (layer_w != NULL) ? (1 / layer_w[l]) : 1.0;
   }    
    
   computeStats(); 
@@ -39,7 +40,7 @@ LayeredHStructure::~LayeredHStructure() {
 }
 
 void LayeredHStructure::fillMatrixFromP( gsl_matrix* c, 
-                                         const gsl_vector* p )  {
+                                         const gsl_vector* p ) {
   size_t sum_np = 0, sum_nl = 0, l, j;
   gsl_matrix_view c_chunk, c_chunk_sub;
  
@@ -60,6 +61,7 @@ void LayeredHStructure::computeWkParams() {
   gsl_matrix_view wi, zkl;
 
   myA = (gsl_matrix**) malloc(getMaxLag() * sizeof(gsl_matrix *));
+  
   /* construct w */
   for (k = 0; k < getMaxLag(); k++) { 
     zk   = gsl_matrix_alloc(getNplusD(), getNplusD());
@@ -78,33 +80,36 @@ void LayeredHStructure::computeWkParams() {
 }
 
 void LayeredHStructure::computeStats() {
-  for (int l = 0, myNplusD = 0, myMaxLag = 1; l < myQ; 
+  int l;
+  for (l = 0, myNplusD = 0, myMaxLag = 1; l < myQ; 
        myNplusD += getLayerLag(l), ++l) {
     if ((!isLayerExact(l)) && getLayerLag(l) > myMaxLag) {
-      myMaxLag = mySA[l].blocks_in_row;
+      myMaxLag = getLayerLag(l);
     }
   }
 }
 
 void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                  gsl_vector *yr ) {
-  size_t l, k, sum_np = 0, sum_nl = 0, p_len;
-  gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getM(), R->size2),
-                                b_xext;
-  gsl_vector_view yr_matr_row, res_sub, p_chunk_sub;
+                                  gsl_vector *yr, bool scaled ) {
+  size_t l, k, sum_np = 0, sum_nl = 0, p_len, D = R->size2;
+  gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getM(), D).matrix, b_xext;
+  gsl_vector yr_matr_row, res_sub, p_chunk_sub;
   gsl_vector *res = gsl_vector_alloc(R->size1);
+  double w_scale;
 
   for (l = 0; l < getQ(); 
        sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-    b_xext = gsl_matrix_submatrix(R, sum_nl, 0, getLayerLag(l), R->size2); 
-    res_sub = gsl_vector_subvector(res, 0, getLayerLag(l));
+    b_xext = gsl_matrix_submatrix(R, sum_nl, 0, getLayerLag(l), D).matrix; 
+    res_sub = gsl_vector_subvector(res, 0, getLayerLag(l)).vector;
+    w_scale = scaled ? getLayerInvWeight(l) : sqrt(getLayerInvWeight(l));
     if (!isLayerExact(l)) {    /* Subtract correction if needed */
       for (k = 0; k < getM(); k++) {
-        p_chunk_sub =  gsl_vector_subvector(p, k + sum_np, getLayerLag(l));
-        yr_matr_row = gsl_matrix_row(&yr_matr.matrix, k); 
-        gsl_blas_dgemv(CblasNoTrans, getLayerInvWeight(l), &b_xext.matrix, 
-                        &yr_matr_row.vector, 0.0, &res_sub.vector); 
-        gsl_vector_sub(&p_chunk_sub.vector, &res_sub.vector); 
+        p_chunk_sub = gsl_vector_subvector(p, k + sum_np, 
+                                           getLayerLag(l)).vector;
+        yr_matr_row = gsl_matrix_row(&yr_matr, k).vector; 
+        gsl_blas_dgemv(CblasNoTrans, w_scale, &b_xext, &yr_matr_row, 0.0,
+            &res_sub); 
+        gsl_vector_sub(&p_chunk_sub, &res_sub); 
       }
     }
   }
@@ -166,7 +171,7 @@ pStructure * MosaicHStructure::allocStripe( gsl_vector *oldNk,
 
   for (size_t k = 0; k < oldMl->size; k++) {
     res[k] = new LayeredHStructure(oldNk->data, oldNk->size, oldMl->data[k], 
-      (Wk != NULL ? Wk->data : NULL) );
+                                   (Wk != NULL ? Wk->data : NULL));
     if (Wk != NULL && !wkIsCol) {
       Wk->data += oldNk->size;
     }

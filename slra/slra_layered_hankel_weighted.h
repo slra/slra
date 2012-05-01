@@ -1,6 +1,7 @@
 class WLayeredHStructure : public SDependentStructure {
   LayeredHStructure myBase;
   gsl_vector *myInvWeights;
+  gsl_vector *myInvSqrtWeights;
 public:  
   WLayeredHStructure( const double *oldNk, size_t q, int M, 
                      const gsl_vector *weights = NULL );
@@ -23,7 +24,8 @@ public:
   /* Structure methods */
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled = true );
 
   /* SDependentStructure methods */
   virtual void WijB( gsl_matrix *res, int i, int j, 

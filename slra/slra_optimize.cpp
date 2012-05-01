@@ -144,7 +144,7 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec,
 
       /* check the convergence criteria */
       status_grad = gsl_multimin_test_gradient(
-          gsl_multimin_fdfminimizer_gradient(solverqn), optt->epsgrad );
+          gsl_multimin_fdfminimizer_gradient(solverqn), opt->epsgrad );
 		    
       status_dx = gsl_multifit_test_delta(solverqn->dx, solverqn->x, 
 	 				 opt->epsabs, opt->epsrel);  		    

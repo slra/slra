@@ -13,6 +13,7 @@ extern "C" {
 WLayeredHStructure::WLayeredHStructure( const double *oldNk, size_t q, int M, 
     const gsl_vector *weights ) : myBase(oldNk, q, M, NULL) {
   myInvWeights = gsl_vector_alloc(myBase.getNp());
+  myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
 
   if (weights != NULL) {
     for (size_t l = 0; l < myInvWeights->size; l++) {
@@ -21,27 +22,28 @@ WLayeredHStructure::WLayeredHStructure( const double *oldNk, size_t q, int M,
                             gsl_vector_get(weights, l));
       }
       gsl_vector_set(myInvWeights, l, (1 / gsl_vector_get(weights, l)));
+      gsl_vector_set(myInvSqrtWeights, l, 
+          sqrt(gsl_vector_get(myInvWeights, l)));
     }
   } else {
     gsl_vector_set_all(myInvWeights, 1);
+    gsl_vector_set_all(myInvSqrtWeights, 1);
   }
-
-  print_vec(myInvWeights);
 }
 
 WLayeredHStructure::~WLayeredHStructure() {
   gsl_vector_free(myInvWeights);
+  gsl_vector_free(myInvSqrtWeights);
 }
 
 void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                   gsl_vector *yr ) {
+                                   gsl_vector *yr, bool scaled ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getM(), R->size2).matrix;
   gsl_vector yr_matr_row;
   gsl_vector_view res_sub, p_chunk_sub, inv_w_chunk;
-  gsl_vector *res = gsl_vector_alloc(R->size1);
-
-  print_vec(myInvWeights);
+  gsl_vector *res = gsl_vector_alloc(R->size1), 
+             *weights = scaled ? myInvWeights : myInvSqrtWeights;
 
   for (k = 0; k < getM(); k++) {
     yr_matr_row = gsl_matrix_row(&yr_matr, k).vector; 

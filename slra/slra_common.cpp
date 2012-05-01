@@ -15,17 +15,11 @@ Exception::Exception( const char *format, ... ) {
 
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
                gsl_vector * wk, int np_comp ) {
-  if (wk == NULL) { 
-    PRINTF("OrdinaryHankel\n");
+  if (wk == NULL || wk->size == ml->size * nk->size) { 
     return new MosaicHStructure(ml, nk, wk);
   } else if (wk->size == np_comp) {
-    PRINTF("WHankel\n");
     return new WMosaicHStructure(ml, nk, wk);
-  } else if (wk->size == ml->size * nk->size) { 
-    PRINTF("OrdinaryHankel\n");
-    return new MosaicHStructure(ml, nk, wk);
   } else if (wk->size == ml->size) {
-    PRINTF("OrdHankelMultCol\n");
     return new MosaicHStructure(ml, nk, wk, true); 
   } 
   throw new Exception("Incorrect weight specification\n");   

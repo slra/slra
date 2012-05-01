@@ -45,16 +45,15 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
 }
 
 void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                 gsl_vector *yr ) {
+                                 gsl_vector *yr, bool scaled ) {
   size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector_view sub_p, sub_yr;
-  
   
   for (int k = 0; k < getBlocksN(); 
        sum_np += myStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
     sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
     sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
-    myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector);
+    myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector, scaled);
   }
 }
 
@@ -111,7 +110,6 @@ void StripedCholesky::multInvGammaVector( gsl_vector * yr ) {
 }
 
 void StripedCholesky::calcGammaCholesky( gsl_matrix *R ) {
-  print_mat(R);
   for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
     myGamma[k]->calcGammaCholesky(R);  
   }
