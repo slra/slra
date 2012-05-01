@@ -154,7 +154,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   PROTECT(_info = list5(ScalarInteger(opt.iter), ScalarReal(opt.time), 
                         ScalarReal(opt.fmin), _r_out, _v_out));
   {
-    const char *names[] = { FMIN_STR, ITER_STR, TIME_STR, RH_STR, VH_STRplot };
+    const char *names[] = { FMIN_STR, ITER_STR, TIME_STR, RH_STR, VH_STR };
     for (int i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
       SET_TAG(nthcdr(_info, i), install(names[i]));
     }  

@@ -70,9 +70,11 @@ Linux distributions.
 MATLAB/R interfaces are documented in the supplied manual (manual.pdf),
 with examples of usage. 
 
-If you use the package in your research, please cite the above reference:
+There is also standard help: type "help slra" in Matlab and "library(Rslra)" 
+or "?slra" in R. Demo m and R scripts are available in the "test_m" and "test_r" 
+directories.
 
-The manual is also available in the following article.
+If you use the package in your research, please cite the following reference:
 
 @article{slra-package,
   author      = {Markovsky, I. and Usevich, K.},
@@ -80,10 +82,6 @@ The manual is also available in the following article.
   journal     = ??,
   year        = {2012}
 }
-
-
-R version has also standard R help (type "library(Rslra)" and "?slra" in R). 
-Demo m and R scripts are available in "test_m" and "test_r" directories.
 
 3) Notes for advanced users
 
