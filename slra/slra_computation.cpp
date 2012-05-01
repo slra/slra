@@ -39,7 +39,7 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
 
   myTmpGrad = gsl_matrix_alloc(myRank, getD());
   
-  if (myStruct->getNp() != p->size) {
+  if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
   }
   
@@ -47,7 +47,7 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   
   if (getM() < getNplusD()) {
     throw new Exception("Number of rows %d is less than "
-                        "the number of columns %d: ", getM(), getNplusD());
+                        "the number of columns %d.", getM(), getNplusD());
   }
  /* TODO:
  if (myStruct->getNp() < getM() * getD()) {

@@ -44,7 +44,7 @@ static int getRSLRADispOption( SEXP OPTS ) {
   SEXP str_value_sexp;
   
   if (TYPEOF((str_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
-    return slraString2Disp(CHAR(STRING_ELT(str_value_sexp, 0)));    
+    return String2Disp(CHAR(STRING_ELT(str_value_sexp, 0)));    
   }
   
   return SLRA_DEF_disp;
@@ -54,17 +54,15 @@ static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
   SEXP str_val_sexp;
 
   if (TYPEOF((str_val_sexp = getListElement(OPTS, "method"))) == STRSXP) {
-    slraString2Method(CHAR(STRING_ELT(str_val_sexp, 0)), popt);
+    String2Method(CHAR(STRING_ELT(str_val_sexp, 0)), popt);
   } else {
-    slraAssignDefOptValue((*popt), method);
-    slraAssignDefOptValue((*popt), submethod);
+    AssignDefOptValue((*popt), method);
+    AssignDefOptValue((*popt), submethod);
   }
 }
 
 
 gsl_vector SEXP2vec( SEXP p ) {
-  
-
   return  gsl_vector_view_array(REAL(p), LENGTH(p)).vector;
 }
 
@@ -76,16 +74,19 @@ gsl_matrix SEXP2mat( SEXP A ) {
 
 
 
+#define STR_MAX_LEN 200
+
 
 SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt, 
          SEXP _compute_dp, SEXP _compute_Rh ) {
-  gsl_vector vec_ml = SEXP2vec(getListElement(s, "m")), p_in = SEXP2vec(_p),
+  char str_buf[STR_MAX_LEN];
+  gsl_vector vec_ml = SEXP2vec(getListElement(_s, "m")), p_in = SEXP2vec(_p),
       vec_nk = SEXP2vec(getListElement(_s, "m")),
       vec_wk = SEXP2vec(getListElement(_s, "w"));
   gsl_matrix phi = SEXP2mat(getListElement(_s, "phi"));
   int np = compute_np(&vec_ml, &vec_nk);
-  int r = INTEGER(_r), compute_dp = INTEGER(_compute_dp),
-    compute_Rh = INTEGER(_compute_Rh), compute_vh = 1;
+  int r = *INTEGER(_r), compute_dp = *INTEGER(_compute_dp),
+    compute_Rh = *INTEGER(_compute_Rh), compute_vh = 1;
   
   if (p_in.size < np) {
     warning("Size of vector p less that the structure requires");   
@@ -94,8 +95,8 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   } 
   opt_and_info opt;
   opt.disp = getRSLRADispOption(_opt);
-  slraAssignDefOptValue(opt,method);
-  slraAssignDefOptValue(opt,submethod);
+  AssignDefOptValue(opt,method);
+  AssignDefOptValue(opt,submethod);
   getRSLRAOption(opt, _opt, maxiter, asInteger);
   getRSLRAOption(opt, _opt, epsabs, asReal);
   getRSLRAOption(opt, _opt, epsrel, asReal);
@@ -105,7 +106,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   getRSLRAOption(opt, _opt, tol, asReal);
   getRSLRAOption(opt, _opt, reggamma, asReal);
   getRSLRAMethodOption(&opt, _opt);
-  SEXP _r_ini = getListElement(list, str);
+  SEXP _r_ini = getListElement(_opt, str);
   gsl_matrix r_ini;
   if (_r_ini != R_NilValue) {
     r_ini = SEXP2mat(_r_ini);
@@ -113,11 +114,13 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   //TODO : Rini
   
   
-  SEXP _p_out, _r_out, _v_out, 
-  Structure myStruct = NULL;
-  int was_error = 0l
+  SEXP _p_out, _r_out, _v_out;
+  gsl_vector p_out;
+  gsl_matrix r_out, v_out;
+  Structure *myStruct = NULL;
+  int was_error = 0;
   try {
-    myStruct = createMosaicStructure(&vec_ml, &vec_nk, view_to_vec(wk), np);  
+    myStruct = createMosaicStructure(&vec_ml, &vec_nk, view2vec(vec_wk), np);  
     int m = perm.size2;
     
     if (compute_dp) {

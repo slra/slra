@@ -35,3 +35,9 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
                
 int compute_np( gsl_vector* ml, gsl_vector *nk );               
 
+
+const gsl_vector *vecCheckNULL( const gsl_vector &vec );
+gsl_vector *vecCheckNULL( gsl_vector &vec  );
+gsl_matrix *matCheckNULL( gsl_matrix &mat_vw );
+
+void tolowerstr( char * str );

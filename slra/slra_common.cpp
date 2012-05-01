@@ -60,7 +60,7 @@ void String2Method( const char *str_buf, opt_and_info *popt )  {
       break;
     }
   } 
-  if (i < 0 && str_buf[1] != 0)  {
+  if (i < 0 && str_buf[1] != 0 && str_buf[0] != 0)  {
     WARNING("Unrecognized submethod - using default.");
     AssignDefOptValue((*popt), submethod);
   }
@@ -177,8 +177,6 @@ void print_arr(const double* a, int n)
   PRINTF("\n");
 }
 
-
-
 void print_vec(const gsl_vector* a)
 {
   int i;
@@ -202,11 +200,29 @@ int compute_np( gsl_vector* ml, gsl_vector *nk ) {
   return np;
 }
 
-
-
 void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
   for (int i = 0; i < yr_matr->size1; i++) {
     gsl_vector_view row = gsl_matrix_row(yr_matr, i);
     multInvCholeskyVector(&row.vector, trans);
   }
 }
+
+const gsl_vector *vecCheckNULL( const gsl_vector &vec ) {
+  return  vec.data != NULL ? &vec : NULL; 
+}
+
+gsl_vector *vecCheckNULL( gsl_vector &vec  ) {
+  return  vec.data != NULL ? &vec : NULL; 
+}
+
+gsl_matrix *matCheckNULL( gsl_matrix &mat_vw ) {
+  return  mat_vw.data != NULL ? &mat_vw : NULL; 
+}
+
+void tolowerstr( char * str ) {
+  char *c;
+  for (c = str; *c != '\0'; c++) {
+    *c = tolower(*c);
+  }
+} 
+
