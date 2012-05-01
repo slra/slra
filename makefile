@@ -36,7 +36,7 @@ R:
 	R CMD INSTALL Rslra
 
 testc : test_c/test.o $(SLRA_OBJ_FILES) 
-	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test.o \
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test_c/test.o \
 	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm
 
 # Targets with SLICOT

@@ -1,9 +1,10 @@
 class WLayeredHStructure : public SDependentStructure {
   LayeredHStructure myBase;
+  gsl_vector *myInvWeights;
   gsl_vector *myInvSqrtWeights;
 public:  
   WLayeredHStructure( const double *oldNk, size_t q, int M, 
-                     const double *weights = NULL );
+                     const gsl_vector *weights = NULL );
   virtual ~WLayeredHStructure();
 
   /* LayeredHankelStructure delegated methods */
@@ -23,10 +24,12 @@ public:
   /* Structure methods */
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled = true );
 
   /* SDependentStructure methods */
-  virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const;
+  virtual void WijB( gsl_matrix *res, int i, int j, 
+                     const gsl_matrix *B ) const;
   virtual void AtWijB( gsl_matrix *res, int i, int j, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWjiB, double beta = 0 ) const;
@@ -35,16 +38,18 @@ public:
                       gsl_vector *tmpWijV, double beta = 0 ) const;
                       
   /* Structure-specific methods */
-  double getInvSqrtWeights( int i ) const { return gsl_vector_get(myInvSqrtWeights, i); }
+  double getInvWeights( int i ) const { 
+    return gsl_vector_get(myInvWeights, i); 
+  }
   void mulInvWij( gsl_matrix * res, int i ) const;
 };
 
 class WMosaicHStructure : public StripedStructure {
 protected:
-  static Structure **allocStripe( size_t q, size_t N, double *Nk,
-                                      double *Ml, double *Wk );
+  static Structure **allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
+                gsl_vector *Wk );
 public:
-  WMosaicHStructure( size_t q, size_t N, double *Nk, double *Ml, double *Wk );
+  WMosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl, gsl_vector *Wk );
   virtual ~WMosaicHStructure() {}
 };
 

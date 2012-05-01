@@ -13,11 +13,23 @@ Exception::Exception( const char *format, ... ) {
   vsnprintf(myMsg, MSG_MAX-1, format, vl); 
 }
 
+Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
+               gsl_vector * wk, int np_comp ) {
+  if (wk == NULL || wk->size == ml->size * nk->size) { 
+    return new MosaicHStructure(ml, nk, wk);
+  } else if (wk->size == np_comp) {
+    return new WMosaicHStructure(ml, nk, wk);
+  } else if (wk->size == ml->size) {
+    return new MosaicHStructure(ml, nk, wk, true); 
+  } 
+  throw new Exception("Incorrect weight specification\n");   
+}
+
 char meth_codes[] = "lqn";
 char submeth_codes_lm[] = "ls";
 char submeth_codes_qn[] = "b2pf";
 char submeth_codes_nm[] = "n2r";
-char *submeth_codes[] = {submeth_codes_lm, submeth_codes_qn,submeth_codes_nm};
+char *submeth_codes[] = {submeth_codes_lm,submeth_codes_qn,submeth_codes_nm};
 
 void String2Method( const char *str_buf, opt_and_info *popt )  {
   int submeth_codes_max[] = { 
@@ -48,7 +60,7 @@ void String2Method( const char *str_buf, opt_and_info *popt )  {
       break;
     }
   } 
-  if (i < 0 && str_buf[1] != 0)  {
+  if (i < 0 && str_buf[1] != 0 && str_buf[0] != 0)  {
     WARNING("Unrecognized submethod - using default.");
     AssignDefOptValue((*popt), submethod);
   }
@@ -155,7 +167,7 @@ void print_mat_tr(const gsl_matrix* m)
 
 
 /* print_arr: print array */
-void print_arr(double* a, int n)
+void print_arr(const double* a, int n)
 {
   int i;
 
@@ -164,8 +176,6 @@ void print_arr(double* a, int n)
     PRINTF("%f ",*(a+i));
   PRINTF("\n");
 }
-
-
 
 void print_vec(const gsl_vector* a)
 {
@@ -177,12 +187,42 @@ void print_vec(const gsl_vector* a)
   PRINTF("\n");
 }
 
+int compute_np( gsl_vector* ml, gsl_vector *nk ) {
+  int np = 0;
+  int i;
+  
+  for (i = 0; i < ml->size; i++) {
+    np += ((int)gsl_vector_get(ml, i) - 1) * nk->size; 
+  }
+  for (i = 0; i < nk->size; i++) {
+    np += ((int)gsl_vector_get(nk, i)) * ml->size; 
+  }
+  return np;
+}
 
-
-
-void Cholesky::multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
+void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
   for (int i = 0; i < yr_matr->size1; i++) {
     gsl_vector_view row = gsl_matrix_row(yr_matr, i);
-    multiplyInvCholeskyVector(&row.vector, trans);
+    multInvCholeskyVector(&row.vector, trans);
   }
 }
+
+const gsl_vector *vecCheckNULL( const gsl_vector &vec ) {
+  return  vec.data != NULL ? &vec : NULL; 
+}
+
+gsl_vector *vecCheckNULL( gsl_vector &vec  ) {
+  return  vec.data != NULL ? &vec : NULL; 
+}
+
+gsl_matrix *matCheckNULL( gsl_matrix &mat_vw ) {
+  return  mat_vw.data != NULL ? &mat_vw : NULL; 
+}
+
+void tolowerstr( char * str ) {
+  char *c;
+  for (c = str; *c != '\0'; c++) {
+    *c = tolower(*c);
+  }
+} 
+

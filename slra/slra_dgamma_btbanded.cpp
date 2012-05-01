@@ -10,7 +10,6 @@ extern "C" {
 
 StationaryDGamma::StationaryDGamma( const StationaryStructure *s, int D ) :
     myD(D), myW(s) {
-  
   myTempWkColRow = gsl_vector_alloc(myW->getNplusD());
   myDGammaVec = gsl_vector_alloc(myD * (2 * myW->getS() - 1));
   myDGammaTrMat = gsl_matrix_alloc(myD, 2 * myW->getS() - 1);
@@ -48,34 +47,38 @@ void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r,
 
     if (k > 0) {
       myW->WkB(myWk_R, -k, R);
-      gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myWkT_R, myN_k, 1.0, mgrad_r);
+      gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myWkT_R, myN_k, 1.0, 
+          mgrad_r);
     }
   }       
 }
 
-void StationaryDGamma::calcDijGammaYr( gsl_vector *res, 
-         gsl_matrix *R, gsl_matrix *perm, int i, int j,  gsl_vector *yr ) {
-  gsl_vector gv_sub, perm_col = gsl_matrix_column(perm, i).vector, dgamma_j_row;
+void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R, 
+        gsl_matrix *perm, int i, int j,  gsl_vector *yr ) {
+  gsl_vector gv_sub, perm_col = gsl_matrix_column(perm, i).vector, dgammajrow,
+             res_stride, yr_stride;
 
   for (int k = 1 - myW->getS(); k < myW->getS(); k++) {
-    gv_sub = gsl_vector_subvector(myDGammaVec, (k + myW->getS() - 1) * myD, myD).vector;
+    gv_sub = gsl_vector_subvector(myDGammaVec, (k + myW->getS() - 1) * myD, 
+              myD).vector;
     myW->AtWkV(&gv_sub, -k, R, &perm_col, myTempWkColRow);
     gsl_matrix_set_col(myDGammaTrMat, -k + myW->getS() - 1, &gv_sub);
   }
 
   int M = yr->size / myD;
   if (myD == 1) {
-    dgamma_j_row = gsl_matrix_row(myDGammaTrMat, 0).vector;
-    gsl_vector_add (myDGammaVec, &dgamma_j_row);
+    dgammajrow = gsl_matrix_row(myDGammaTrMat, 0).vector;
+    gsl_vector_add (myDGammaVec, &dgammajrow);
     tmv_prod_vector(myDGammaVec, myW->getS(), yr, M, res);  
   } else {
-    gsl_vector_view res_stride = gsl_vector_subvector_with_stride(res, j, myD, M);       
-    gsl_vector_view yr_stride = gsl_vector_subvector_with_stride(yr, j, myD, M);       
-    gsl_matrix_view gamma_vec_mat = gsl_matrix_view_vector(myDGammaVec, 1, myDGammaVec->size);
-    gsl_vector_memcpy(myTmpCol, &yr_stride.vector);
+    res_stride = gsl_vector_subvector_with_stride(res, j, myD, M).vector;       
+    yr_stride = gsl_vector_subvector_with_stride(yr, j, myD, M).vector;       
+    gsl_matrix_view gamma_vec_mat = gsl_matrix_view_vector(myDGammaVec, 1, 
+                                                           myDGammaVec->size);
+    gsl_vector_memcpy(myTmpCol, &yr_stride);
   
     gsl_vector_set_zero(res);
-    tmv_prod_vector(myDGammaVec, myW->getS(), yr, M, &res_stride.vector);  
+    tmv_prod_vector(myDGammaVec, myW->getS(), yr, M, &res_stride);  
     tmv_prod_new(myDGammaTrMat, myW->getS(), myTmpCol, M, res, 1.0);  
   }
 }
@@ -84,11 +87,9 @@ SDependentDGamma::SDependentDGamma( const SDependentStructure *s, int D ) :
    myD(D), myW(s) {
   myTmp1 = gsl_vector_alloc(myD);  
   myTmp2 = gsl_vector_alloc(myW->getNplusD());  
-//  myYrR = gsl_vector_alloc((myW->getNplusD()) * myW->getM());  
 }
 
 SDependentDGamma::~SDependentDGamma(){
-//  gsl_vector_free(myYrR);
   gsl_vector_free(myTmp1);
   gsl_vector_free(myTmp2);
 }
@@ -105,7 +106,6 @@ void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R,
     
     for (l = mymax(0, k - S + 1);  l < mymin(k + S, M); l++) {
       yr_sub = gsl_vector_subvector(Yr, l * myD, myD).vector;
-
       myW->AtWijV(myTmp1, k, l, R, &perm_col, myTmp2);
       gsl_blas_daxpy(gsl_vector_get(&yr_sub, j), myTmp1, &res_sub);
 

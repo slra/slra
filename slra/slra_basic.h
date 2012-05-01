@@ -13,9 +13,9 @@ public:
   virtual  ~Cholesky() {}
   virtual void calcGammaCholesky( gsl_matrix *R ) = 0;
 
-  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
-  virtual void multiplyInvGammaVector( gsl_vector * yr ) = 0;                
-  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
+  virtual void multInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
+  virtual void multInvGammaVector( gsl_vector * yr ) = 0;                
+  virtual void multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
 };
 
 class DGamma {
@@ -39,7 +39,8 @@ public:
   
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
   virtual DGamma *createDGamma( int D ) const = 0;
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr ) = 0;
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled = true ) = 0;
 };
 
 
@@ -47,7 +48,8 @@ public:
 class SDependentStructure : public Structure {
 public:
   virtual int getS() const = 0;
-  virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const = 0;
+  virtual void WijB( gsl_matrix *res, int i, int j, 
+                     const gsl_matrix *B ) const = 0;
   virtual void AtWijB( gsl_matrix *res, int i, int j, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWjiB, double beta = 0 ) const = 0;
@@ -68,7 +70,8 @@ public:
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWkV, double beta = 0 ) const = 0;
                       
-  virtual void WijB( gsl_matrix *res, int i, int j, const gsl_matrix *B ) const {
+  virtual void WijB( gsl_matrix *res, int i, int j, 
+                     const gsl_matrix *B ) const {
     WkB(res, j- i, B);
   }
   virtual void AtWijB( gsl_matrix *res, int i, int j, 

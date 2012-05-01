@@ -10,10 +10,10 @@ extern "C" {
 #include "slra.h"
 
 #ifdef USE_SLICOT
-GammaCholeskyBTBandedSlicot::GammaCholeskyBTBandedSlicot( const StationaryStructure *s,
-    int D, double reg_gamma  ) : 
-    GammaCholeskyBTBanded(s, D, reg_gamma)  {
-  myGammaVec = (double*) malloc(getD() * getD() * (getS() + 1) * sizeof(double));
+GammaCholeskyBTBandedSlicot::
+    GammaCholeskyBTBandedSlicot( const StationaryStructure *s, int D, 
+        double reg_gamma  ) :  GammaCholeskyBTBanded(s, D, reg_gamma)  {
+  myGammaVec = (double*)malloc(getD() * getD() * (getS()+1) * sizeof(double));
   myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 
                        3 * getD() + /* 3 * K */
                        mymax(getS(), getM() - getS()) * getD() * getD();

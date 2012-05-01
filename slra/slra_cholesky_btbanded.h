@@ -28,14 +28,14 @@ public:
   virtual void calcGammaCholesky( gsl_matrix *R );
 
   
-  virtual void multiplyInvPartCholeskyArray( double * yr, int trans, 
+  virtual void multInvPartCholeskyArray( double * yr, int trans, 
                    size_t size, size_t chol_size );
-  virtual void multiplyInvPartGammaArray( double * yr, size_t size, 
+  virtual void multInvPartGammaArray( double * yr, size_t size, 
                    size_t chol_size );
 
-  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );
-  virtual void multiplyInvGammaVector( gsl_vector * yr );
-  virtual void multiplyInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
+  virtual void multInvCholeskyVector( gsl_vector * yr, int trans );
+  virtual void multInvGammaVector( gsl_vector * yr );
+  virtual void multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
 };
 
 class StationaryCholesky : public SDependentCholesky {
@@ -60,7 +60,8 @@ class StationaryCholeskySlicot : public StationaryCholesky {
   double *myCholeskyWork;
   size_t myCholeskyWorkSize;
 public:
-  StationaryCholeskySlicot( const StationaryStructure *s, int D, double reg_gamma  );
+  StationaryCholeskySlicot( const StationaryStructure *s, int D, 
+                            double reg_gamma );
   virtual ~StationaryCholeskySlicot();
 
   virtual void computeCholeskyOfGamma( gsl_matrix *R );
@@ -77,8 +78,8 @@ public:
   virtual ~SameStripedStationaryCholesky();
 
   virtual void calcGammaCholesky( gsl_matrix *R );
-  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
-  virtual void multiplyInvGammaVector( gsl_vector * yr );                
+  virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
+  virtual void multInvGammaVector( gsl_vector * yr );                
 };
 
 

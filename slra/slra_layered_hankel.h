@@ -27,7 +27,8 @@ public:
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled = true );
 
   /* StationaryStructure methods */
   virtual int getS() const { return myMaxLag; }
@@ -53,11 +54,11 @@ public:
 class MosaicHStructure : public StripedStructure {
   bool myWkIsCol;
 protected:
-  static Structure **allocStripe( size_t q, size_t N, double *oldNk,
-                                      double *oldMl, double *Wk, bool wkIsCol = true );
+  static Structure **allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
+                                  gsl_vector *Wk, bool wkIsCol = false );
 public:
-  MosaicHStructure( size_t q, size_t N, double *oldNk, double *oldMl,
-                   double *Wk, bool wkIsCol = false );
+  MosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
+                    gsl_vector *Wk, bool wkIsCol = false );
   virtual ~MosaicHStructure() {}
   virtual Cholesky *createCholesky( int r, double reg_gamma ) const;
 };

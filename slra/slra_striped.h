@@ -30,7 +30,8 @@ public:
   }
 
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr );
+  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
+                         bool scaled );
 
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
@@ -47,8 +48,8 @@ public:
   
   virtual void calcGammaCholesky( gsl_matrix *R );
 
-  virtual void multiplyInvCholeskyVector( gsl_vector * yr, int trans );  
-  virtual void multiplyInvGammaVector( gsl_vector * yr );                
+  virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
+  virtual void multInvGammaVector( gsl_vector * yr );                
 };
 
 class StripedDGamma : virtual public DGamma {
@@ -59,7 +60,8 @@ public:
   StripedDGamma( const StripedStructure *s, int D  ) ;
   virtual ~StripedDGamma();
 
-  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, gsl_vector *yr );
+  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
+                   gsl_vector *yr );
 
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr );
