@@ -83,7 +83,6 @@ typedef struct {
   double tol;
   
   double reggamma; /* To be worked out */
-  int use_slicot;
   int ls_correction;  /* Use correction computation in nonlinear l.s. */
   int gcd;         /* Is gcd being computed? */
 
@@ -105,7 +104,6 @@ typedef struct {
 #define SLRA_DEF_step     0.001
 #define SLRA_DEF_tol      1e-6
 #define SLRA_DEF_reggamma 0.001
-#define SLRA_DEF_use_slicot 1
 #define SLRA_DEF_ls_correction 0
 #define SLRA_DEF_gcd          0
 
@@ -124,16 +122,35 @@ typedef struct {
             AssignDefOptValue(opt, step); \
             AssignDefOptValue(opt, tol); \
             AssignDefOptValue(opt, reggamma); \
-            AssignDefOptValue(opt, use_slicot); \
             AssignDefOptValue(opt, ls_correction); \
             AssignDefOptValue(opt, gcd); \
           } while(0)
           
+/* field names for s */
+#define ML_STR "m"
+#define NK_STR "n"
+#define PERM_STR "phi"
+#define WK_STR "w"
+
+/* field names for opt */
+#define RINI_STR "Rini"
+#define DISP_STR "disp"
+#define METHOD_STR "method"
+
+/* names for output */
+#define PH_STR "ph"
+#define INFO_STR "info"
+
+
+/* field names for info */
+#define RH_STR "Rh"
+#define VH_STR "Vh"
+#define FMIN_STR "fmin"
+#define ITER_STR "iter"
+#define TIME_STR "time"
+          
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
 #define mymin(a, b) ((a) < (b) ? (a) : (b))
-
-
-         
 
 #include "slra_basic.h"
 #include "slra_striped.h"
@@ -143,13 +160,10 @@ typedef struct {
 #include "slra_cholesky_btbanded.h"
 #include "slra_dgamma_btbanded.h"
 
-
 #include "slra_computation.h"
-
 
 #include "slra_common.h"
 #include "slralapack.h"
-
 
 int gsl_optimize( CostFunction *F, opt_and_info *opt, 
                        gsl_vector* x_vec, gsl_matrix *v );
@@ -158,8 +172,6 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt,
 int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
           gsl_matrix *r_ini, gsl_matrix *perm, 
           gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
-
-
 
 #endif /* _SLRA_H_ */
 

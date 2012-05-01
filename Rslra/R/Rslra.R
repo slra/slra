@@ -24,28 +24,33 @@
 #  }
 #  res;    
 #}
-
-
-slra <- function(p, s, r = dim(phi)[1] - 1, 
-            opt = list(), compute.dp = FALSE, compute.Rh = TRUE, ret.obj=FALSE) {
+slra <- function(p, s, r = dim(phi)[1] - 1, opt = list(), 
+            compute.ph = FALSE, compute.Rh = TRUE, ret.obj = FALSE) {
   # Check necessary parameters            
   if (!is.list(s) || is.null(s$m) || is.null(s$n)) {
-    stop ('Structure must be a list with "m" and "n" elements');
+    stop('Structure must be a list with "m" and "n" elements');
   } 
   storage.mode(s$m) <- storage.mode(s$n) <- 'integer';
   storage.mode(s$m) <- storage.mode(s$n) <- 'double';
   if (!prod(s$m > 0) || !prod(s$n > 0)) {
-    stop ('s$m and s$n elements should be positive vectors');
+    stop('s$m and s$n elements should be positive vectors');
   }
   if (sum(s$m) > sum(s$n)) {
     stop('Matrix should be fat');
   }
+  np <- sum(s$m - 1) * length(s$n) + length(s$m) * sum(s$n);
+  if (np > length(p)) {
+    stop('Vector p too short');  
+  } else if (np < length(p)) {
+    p <- p[1:np];
+    warning('Size of vector p exceeds structure requirements');  
+  }
+  
   if (is.null(s$phi)) {
     s$phi <- diag(sum(s$m));
   } else{
-    
     if (dim(phi)[1] > dim(phi)[2] || dim(phi)[2] != sum(s$m)) {
-      stop ('s$phi should be a full row rank matrix compatible with s');
+      stop('s$phi should be a full row rank matrix compatible with s');
     }
   }
   storage.mode(s$phi) <- 'double';
@@ -64,51 +69,29 @@ slra <- function(p, s, r = dim(phi)[1] - 1,
     stop ('Incorrect r value');
   }
   
-  storage.mode(compute.dp) <- storage.mode(compute.Rh) <- 'integer';
-  res <- .Call("call_slra", p, s, r, opt, compute.dp, , compute.Rh);
+  storage.mode(compute.ph) <- storage.mode(compute.Rh) <- 'integer';
+  res <- .Call("call_slra", p, s, r, opt, compute.ph, compute.Rh);
 }
 
 
-optimize_gsl <- function(sobj, ...) {
-  .Call("optimize_gsl", sobj, ...);
-}
+#optimize_gsl <- function(sobj, ...) {
+#  .Call("optimize_gsl", sobj, ...);
+#}
 
-evaluate_slra_f <- function(sobj, ...) {
-  .Call("evaluate_slra_f", sobj, ...);
-}
+#evaluate_slra_f <- function(sobj, ...) {
+#  .Call("evaluate_slra_f", sobj, ...);
+#}
 
-evaluate_slra_df <- function(sobj, ...) {
-  .Call("evaluate_slra_df", sobj, ...);
-}
+#evaluate_slra_df <- function(sobj, ...) {
+#  .Call("evaluate_slra_df", sobj, ...);
+#}
 
-return_slra_object <- function(sobj) {
-  .Call("return_slra_object", sobj);
-}
+#return_slra_object <- function(sobj) {
+#  .Call("return_slra_object", sobj);
+#}
 
-compute_slra_correction <- function(sobj) {
-  .Call("compute_slra_correction", sobj);
-}
-
-
-tls <- function(A, B) {
-  if (!is.matrix(A)) {
-    stop('A is not a matrix');
-  }
-
-  if (!is.matrix(B)) {
-     B <- matrix(B, length(B),1);
-  } 
-
-  if (nrow(A) != nrow(B)) {
-     stop('nrow(A) != nrow(B)');
-  }
-
-
-  storage.mode(A) <- storage.mode(B) <- 'double'
-
-  .Call("rtls", A, B);
-}
-
-
+#compute_slra_correction <- function(sobj) {
+#  .Call("compute_slra_correction", sobj);
+#}/*
 
 

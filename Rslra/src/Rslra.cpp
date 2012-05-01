@@ -63,40 +63,42 @@ static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
 
 
 gsl_vector SEXP2vec( SEXP p ) {
-  return  gsl_vector_view_array(REAL(p), LENGTH(p)).vector;
+  gsl_vector res = { 0, 0, 0, 0, 0 };
+  if (p != R_NilValue) {
+    res = gsl_vector_view_array(REAL(p), LENGTH(p)).vector;
+  }
+  return res;
 }
 
 gsl_matrix SEXP2mat( SEXP A ) {
-  int *dim_A = INTEGER(getAttrib(A, R_DimSymbol));
-  
-  return  gsl_matrix_view_array(REAL(A), dim_A[1], dim_A[0]).matrix;
+  gsl_matrix res =  { 0, 0, 0, 0, 0, 0 };
+  if (A != R_NilValue) {
+    int *dim_A = INTEGER(getAttrib(A, R_DimSymbol));
+    res = gsl_matrix_view_array(REAL(A), dim_A[1], dim_A[0]).matrix;
+  }
+  return res;
 }
-
-
 
 #define STR_MAX_LEN 200
 
+extern "C" {
 
 SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt, 
-         SEXP _compute_dp, SEXP _compute_Rh ) {
+                SEXP _compute_ph, SEXP _compute_Rh ) {
   char str_buf[STR_MAX_LEN];
-  gsl_vector vec_ml = SEXP2vec(getListElement(_s, "m")), p_in = SEXP2vec(_p),
-      vec_nk = SEXP2vec(getListElement(_s, "m")),
-      vec_wk = SEXP2vec(getListElement(_s, "w"));
-  gsl_matrix phi = SEXP2mat(getListElement(_s, "phi"));
-  int np = compute_np(&vec_ml, &vec_nk);
-  int r = *INTEGER(_r), compute_dp = *INTEGER(_compute_dp),
-    compute_Rh = *INTEGER(_compute_Rh), compute_vh = 1;
   
-  if (p_in.size < np) {
-    warning("Size of vector p less that the structure requires");   
-  } else if (p_in.size > np) {
-    error("Size of vector p more that the structure requires");   
-  } 
+  /* Required parameters */
+  gsl_vector vec_ml = SEXP2vec(getListElement(_s, ML_STR)), 
+      p_in = SEXP2vec(_p), vec_nk = SEXP2vec(getListElement(_s, NK_STR)),
+      vec_wk = SEXP2vec(getListElement(_s, WK_STR));
+  gsl_matrix phi = SEXP2mat(getListElement(_s, PERM_STR));
+  int np = compute_np(&vec_ml, &vec_nk);
+  int r = *INTEGER(_r), compute_ph = !!(*INTEGER(_compute_ph)),
+      compute_Rh = !!(*INTEGER(_compute_Rh)), compute_vh = 1;
+  /* Optional parameters */
   opt_and_info opt;
   opt.disp = getRSLRADispOption(_opt);
-  AssignDefOptValue(opt,method);
-  AssignDefOptValue(opt,submethod);
+  getRSLRAMethodOption(&opt, _opt);
   getRSLRAOption(opt, _opt, maxiter, asInteger);
   getRSLRAOption(opt, _opt, epsabs, asReal);
   getRSLRAOption(opt, _opt, epsrel, asReal);
@@ -105,51 +107,40 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   getRSLRAOption(opt, _opt, step, asReal);
   getRSLRAOption(opt, _opt, tol, asReal);
   getRSLRAOption(opt, _opt, reggamma, asReal);
-  getRSLRAMethodOption(&opt, _opt);
-  SEXP _r_ini = getListElement(_opt, str);
-  gsl_matrix r_ini;
-  if (_r_ini != R_NilValue) {
-    r_ini = SEXP2mat(_r_ini);
-  }
-  //TODO : Rini
+  getRSLRAOption(opt, _opt, ls_correction, asReal);
+  getRSLRAOption(opt, _opt, gcd, asReal);
+  SEXP _r_ini = getListElement(_opt, RINI_STR);
+
+  /* Create output values */  
+  SEXP _p_out = R_NilValue, _r_out = R_NilValue, _v_out = R_NilValue;
   
-  
-  SEXP _p_out, _r_out, _v_out;
-  gsl_vector p_out;
-  gsl_matrix r_out, v_out;
   Structure *myStruct = NULL;
   int was_error = 0;
   try {
-    myStruct = createMosaicStructure(&vec_ml, &vec_nk, view2vec(vec_wk), np);  
-    int m = perm.size2;
-    
-    if (compute_dp) {
-      compute_dp = 1;
+    /* Create output info */
+    myStruct = createMosaicStructure(&vec_ml, &vec_nk, vecChkNIL(vec_wk), np);  
+    int m = phi.size2;
+    if (compute_ph) {
       PROTECT(_p_out = allocVector(REALSXP, np));
-      p_out = SEXP2vec(_p_out);
     }
     if (compute_Rh) {
-      compute_Rh = 1;
-      PROTECT(_r_out = allocMatrix(REALSXP, (m - r), m));
-      r_out = SEXP2mat(_r_out);
+      PROTECT(_r_out = allocMatrix(REALSXP, (m-r), m));
     }
     if (compute_vh) {
-      compute_vh = 1;
-      PROTECT(_v_out = allocMatrix(REALSXP, (m - r) * r, (m - r) * r));
-      v_out = SEXP2mat(_v_out);
-    }
+      PROTECT(_v_out = allocMatrix(REALSXP, (m-r)*r, (m-r)*r));
+    }    
+    gsl_matrix r_ini = SEXP2mat(_r_ini), r_out = SEXP2mat(_r_out),
+               v_out = SEXP2mat(_v_out);
+    gsl_vector p_out = SEXP2vec(_p_out);
  
-    slra(&p_in, myStruct, r, &opt, _r_ini != R_NilValue ? &r_ini : NULL, perm, 
-         _compute_dp ? &p_out : NULL, 
-         _compute_Rh ? &r_out : NULL, 
-         _compute_vh ? &v_out : NULL);
+    slra(&p_in, myStruct, r, &opt, matChkNIL(r_ini), &phi, vecChkNIL(p_out), 
+         matChkNIL(r_out), matChkNIL(v_out));
   } catch (Exception *e) {
     strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
     str_buf[STR_MAX_LEN - 1] = 0;
     was_error = 1;
     delete e;
   }   
-  
   
   if (myStruct != NULL) {
     delete myStruct;
@@ -159,52 +150,25 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
     error(str_buf);
   }
 
-  SEXP _info, _res;
+  SEXP _res, _info;
   PROTECT(_info = list5(ScalarInteger(opt.iter), ScalarReal(opt.time), 
-                        ScalarReal(opt.fmin)));
-  SET_TAG(_info, install("iter"));
-  SET_TAG(CDR(_info), install("time"));
-  SET_TAG(CDDR(_info), install("fmin"));
-  
+                        ScalarReal(opt.fmin), _r_out, _v_out));
+  {
+    const char *names[] = { FMIN_STR, ITER_STR, TIME_STR, RH_STR, VH_STRplot };
+    for (int i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+      SET_TAG(nthcdr(_info, i), install(names[i]));
+    }  
+  }                        
                           
   PROTECT(_res = list2(_p_out, _info));
-  SET_TAG(res, install("ph"));
-  SET_TAG(CDR(res), install("info"));
-
-
+  SET_TAG(_res, install(PH_STR));
+  SET_TAG(CDR(_res), install(INFO_STR));
+  UNPROTECT(2 + compute_ph + compute_Rh + compute_vh);
   
-  if (compute_dp) {
-    UNPROTECT(1);
-  } 
-  if (compute_Rh) {
-    UNPROTECT(1);
-  } 
-  if (compute_vh) {
-    UNPROTECT(1);
-  } 
-
-
-
- /* PROTECT(INFO = list3(ScalarInteger(pSO->opt.iter), ScalarReal(pSO->opt.time), 
-                         ScalarReal(pSO->opt.fmin)));
-  SET_TAG(INFO, install("iter"));
-  SET_TAG(CDR(INFO), install("time"));
-  SET_TAG(CDDR(INFO), install("fmin"));
-  PROTECT(XH = allocMatrix(REALSXP, pSO->x->size1, pSO->x->size2));
-  PROTECT(VXH = allocMatrix(REALSXP, pSO->v->size1, pSO->v->size2));
-  gsl_to_m_matrix(REAL(XH), pSO->x); 
-  gsl_to_m_matrix(REAL(VXH), pSO->v); 
-
-  PROTECT(res = list3(XH, INFO, VXH));
-  SET_TAG(res, install("xh"));
-  SET_TAG(CDR(res), install("info"));
-  SET_TAG(CDDR(res), install("vxh"));
-
-    UNPROTECT(4);*/
-
-
+  return _res;
 }
 
+}
 
 /* typedef struct  {
   gsl_matrix *x;

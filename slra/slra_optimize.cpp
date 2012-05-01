@@ -11,7 +11,7 @@
 int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, 
                   gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
-    {gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder};
+    { gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder };
   const gsl_multimin_fdfminimizer_type *Tqn[] = 
     { gsl_multimin_fdfminimizer_vector_bfgs,
       gsl_multimin_fdfminimizer_vector_bfgs2, 
@@ -87,7 +87,7 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec,
 
   /* optimization loop */
   if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {
-    PRINTF("STLS optimization:\n");
+    PRINTF("SLRA optimization:\n");
   }
     
   status = GSL_SUCCESS;  
@@ -203,7 +203,7 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec,
   if (opt->disp != SLRA_OPT_DISP_OFF) { /* unless "off" */
     switch (status) {
     case EITER: 
-      PRINTF("STLS optimization terminated by reaching the maximum number " 
+      PRINTF("SLRA optimization terminated by reaching the maximum number " 
 	     "of iterations.\nThe result could be far from optimal.\n");
       break;
     case GSL_ETOLF:

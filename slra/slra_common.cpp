@@ -25,13 +25,17 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
   throw new Exception("Incorrect weight specification\n");   
 }
 
-char meth_codes[] = "lqn";
-char submeth_codes_lm[] = "ls";
-char submeth_codes_qn[] = "b2pf";
-char submeth_codes_nm[] = "n2r";
-char *submeth_codes[] = {submeth_codes_lm,submeth_codes_qn,submeth_codes_nm};
+
 
 void String2Method( const char *str_buf, opt_and_info *popt )  {
+  char meth_codes[] = "lqn";
+  char submeth_codes_lm[] = "ls";
+  char submeth_codes_qn[] = "b2pf";
+  char submeth_codes_nm[] = "n2r";
+  char *submeth_codes[] = { submeth_codes_lm,
+                            submeth_codes_qn,
+                            submeth_codes_nm };
+
   int submeth_codes_max[] = { 
     sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) - 1, 
     sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) - 1, 
@@ -207,15 +211,15 @@ void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) {
   }
 }
 
-const gsl_vector *vecCheckNULL( const gsl_vector &vec ) {
+const gsl_vector *vecChkNIL( const gsl_vector &vec ) {
   return  vec.data != NULL ? &vec : NULL; 
 }
 
-gsl_vector *vecCheckNULL( gsl_vector &vec  ) {
+gsl_vector *vecChkNIL( gsl_vector &vec  ) {
   return  vec.data != NULL ? &vec : NULL; 
 }
 
-gsl_matrix *matCheckNULL( gsl_matrix &mat_vw ) {
+gsl_matrix *matChkNIL( gsl_matrix &mat_vw ) {
   return  mat_vw.data != NULL ? &mat_vw : NULL; 
 }
 

@@ -4,19 +4,24 @@
 \title{Function for solving structured low rank approximation problem}
 
 \description{SLRA - solves the structured low rank approximation problem 
-minimize over Ph  ||P - Ph||_2 subject to rank(S(Ph)) <= r
-where the matrix S(Ph) is of the form [S1 ... Sq], with Si being 
-(block) Toeplitz, Hankel structured, unstructured, or constant}
+
+\deqn{\mbox{minimize over}\;\widehat{p}\quad\|p - \widehat{p}\|_w\quad
+\mbox{subject to}\;\mathrm{rank}(\mathcal{S}(\widehat{p})) \le r}{minimize 
+over ph ||p - ph||_w subject to  rank S(p) <= r}
+
+where \eqn{\mathcal{S}(p)}{S(p)} is the affine structure of type 
+\eqn{\Phi \mathcal{H}_{m,n}}{\Phi H_mn}, 
+where \eqn{H_{m,n}} is a Mosaic Hankel matrix.
+}
 
 \usage{
-stls <- function(P, S, R, X0, opt, compute.dp)
+stls <- function(p, s, r, opt, compute.ph, compute.Rh)
 }
 
 \arguments{
-  \item{P}{parameter vector}
-  \item{S}{structure specification}
-  \item{R}{rank (default is rank reduction by 1)}
-  \item{X0}{initial approximation}
+  \item{p}{parameter vector of length \eqn{n_p}}
+  \item{s}{structure specification \eqn{\mathcal{S}(p)}}{S(p)}
+  \item{r}{rank (default is rank reduction by 1)}
   \item{opt}{optimization parameters}
   \item{compute.dp}{whether to compute the approximation obtained by STLS}
 }
@@ -36,25 +41,28 @@ stls <- function(P, S, R, X0, opt, compute.dp)
   The core C function and the package for STLS problem is described in 
   (Markovsky, Van Huffel, 2002), please read it first.
   
-  The structure specification should be currently a q x 1-4 matrix,
+  The structure specification \code{s} should be a list with following fields
   \describe{
-    \item{S(i, 1)}{= number of subblocks in a block row of Si 
-                     (use S(i, 1) = 1 for unstructured block Si)}
-    \item{S(i, 2)}{= number of columns in a subblock (default 1)}
-    \item{S(i, 3)}{= 1 if the block is exact, or 0 otherwise (default 0)}
-    \item{S(i, 4)}{= 1 if the block is Toeplitz, 0 if it is Hankel (default 0)}
+    \item{m}{(required) vector m of length q for the Mosaic structure}
+    \item{n}{- vector n of length N for the Mosaic structure}
+    \item{phi}{- (optional) matrix \eqn{\Phi} (default \eqn{I_d})}
+    \item{w}{- (optional) weights. Can be:
+       \describe{
+        \item{vector of length n_p}{elementwise weights}
+        \item{q x N matrix}{weights for each block}
+        \item{vector of length q}{weights for each block row}
+      }
+    }
   }
-  For block-Toeplitz/Hankel structured block Si with K x nu(i) size blocks
-  S is a list with fields k and a, where S$A is the matrix described 
-  above and S$k = K (the same for all block-Toeplitz/Hankel blocks S1)
 
-  opt is a list with elements:
+  Optimization parameters \code{opt} are passed in a list:
   \describe{
-    \item{Most widely used:}{}
-    \item{OPT.DISP}{- information about progress of the optimization 
+    \item{Most widely used:}{
+      \describe{
+    \item{disp}{- information about progress of the optimization 
                options: 'iter', 'notify', 'final', 'off' (default 'notify')}
-    \item{OPT.MAXITER}{- maximum number of iterations,}
-    \item{OPT.METHOD}{- optimization method (consult GSL library manual): 
+    \item{maxiter}{- maximum number of iterations,}
+    \item{method}{- optimization method (consult GSL library manual): 
       \describe{
         \item{'l'}{Levenberg-Marquardt, gsl_multifit_fdf_solver_...}
         \item{'ll'}{...lmder (default)}
@@ -70,14 +78,15 @@ stls <- function(P, S, R, X0, opt, compute.dp)
         \item{'nr'}{...nmsimplex2rand}
       }
     }        
+    }}
     \item{Initial parameters of optimization methods:}{}
-    \item{OPT.STEP}{'step_size' for fdfminimizer_set, fminimizer_set (scalar)} 
-    \item{OPT.TOL}{'tol' for fdfminimizer_set, fminimizer_set,} 
-    \item{Stopping parameters:}
-    \item{OPT.EPSREL, OPT.EPSABS}{- 'gsl_multifit_test_delta' stopping criterion}
-    \item{OPT.EPSGRAD}{- 'gsl_multi..._test_gradient' stopping criterion}
+    \item{step}{'step_size' for fdfminimizer_set, fminimizer_set (scalar)} 
+    \item{tol}{'tol' for fdfminimizer_set, fminimizer_set,} 
+    \item{Stopping parameters:}{}
+    \item{epsrel,opt$epsabs}{- 'gsl_multifit_test_delta' stopping criterion}
+    \item{epsgrad}{- 'gsl_multi..._test_gradient' stopping criterion}
     \item{Advanced parameters:}{}
-    \item{OPT.REGGAMMA}{ - regularization parameter for gamma, absolute}
+    \item{reggamma}{ - regularization parameter for gamma, absolute}
   }      
   
   Note: the STLS approximation is computed only if the structured matrix was given by vector P.
@@ -88,10 +97,10 @@ stls <- function(P, S, R, X0, opt, compute.dp)
 # Computing STLS approximation of a Hankel matrix with default initial approximation
 library('Rslra');
 r <- 2;
-f <- sin(1:100 * (2 * pi /10)) + 0.03 * rnorm(100, 0, 0.1);
-res <- slra(f, r+1, compute.dp = TRUE);
+T <- 100;
+f <- sin(1:T * (2 * pi /10)) + 0.03 * rnorm(T, 0, 0.1);
+res <- slra(f, list(m = r+1, n = T-r), r, compute.ph = TRUE);
 print(res);
-
 }
 
 
