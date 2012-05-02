@@ -27,7 +27,7 @@ int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
                           "an initial approximation.\n");
     }
   }
-
+  
   try { 
     myCostFun =  new CostFunction(s, r, p_in, opt, perm);
     R = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());

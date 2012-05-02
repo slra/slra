@@ -58,7 +58,7 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
                       "because '"#name"' > "#uvalue".");	\
       }                                                         \
     } else { \
-      opt.method =  SLRA_DEF_##disp; \
+      opt.name =  SLRA_DEF_##name; \
     }								\
   } while (0)
 

@@ -70,7 +70,7 @@ int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec,
     g = gsl_vector_alloc(F->getRank() * F->getD());
     break;
   case SLRA_OPT_METHOD_QN: /* QN */
-    solverqn = gsl_multimin_fdfminimizer_alloc( Tqn[opt->submethod], 
+    solverqn = gsl_multimin_fdfminimizer_alloc(Tqn[opt->submethod], 
 						F->getRank() * F->getD() );
     gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, x_vec, 
 				  stepqn, opt->tol); 
