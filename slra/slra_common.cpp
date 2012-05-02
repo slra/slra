@@ -27,7 +27,7 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
 
 
 
-void String2Method( const char *str_buf, opt_and_info *popt )  {
+void String2Method( const char *str_buf, OptimizationOptions *popt )  {
   char meth_codes[] = "lqn", 
        sm_codes_lm[] = "ls", sm_codes_qn[] = "b2pf", sm_codes_nm[] = "n2r";
   char *submeth_codes[] = { sm_codes_lm, sm_codes_qn, sm_codes_nm };

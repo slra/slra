@@ -39,7 +39,7 @@ void GammaCholeskyBTBandedSlicot::calcGammaCholesky( gsl_matrix *R )  {
           myCholeskyWork, &myCholeskyWorkSize, &info); /**/
 
   if (info) { 
-    PRINTF("Error: info = %d", info); /* TO BE COMPLETED */
+    PRINTF("Error: info = %d", info); /* \todo Handle singularity for SLICOT */
   }
 }
 

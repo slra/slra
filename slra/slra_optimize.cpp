@@ -8,8 +8,8 @@
 
 #include "slra.h"
 
-int gsl_optimize( CostFunction *F, opt_and_info *opt, gsl_vector* x_vec, 
-                  gsl_matrix *v ) {
+int gsl_optimize( CostFunction *F, OptimizationOptions *opt, 
+                  gsl_vector* x_vec, gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     { gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder };
   const gsl_multimin_fdfminimizer_type *Tqn[] = 

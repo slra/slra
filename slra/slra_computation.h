@@ -21,7 +21,7 @@ class CostFunction {
   gsl_matrix *myTmpGrad;  
 public:
   CostFunction( Structure *s, int r, const gsl_vector *p, 
-                    opt_and_info *opt, gsl_matrix *perm  );
+                OptimizationOptions *opt, gsl_matrix *perm  );
   virtual ~CostFunction();
   
   int getD() { return myPerm->size2 - myRank; }

@@ -72,7 +72,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, rh_view = { 0, 0, 0, 0, 0, 0 },
              vh_view = { 0, 0, 0, 0, 0, 0 };
   Structure *myStruct = NULL;
-  opt_and_info opt;
+  OptimizationOptions opt;
   
   int was_error = 0;
   try {
