@@ -18,10 +18,10 @@ BUILD_MODE=BUILD_DEFAULT
 
 # Main targets
 mex: $(MEX_SRC_FILES) 
-	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
+	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES)git $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra 
 
-mex-octave: 		or$(MEX_SRC_FILES)
+mex-octave: $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -llapack -lblas -o slra.mex
 
