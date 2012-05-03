@@ -58,7 +58,7 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
                       "because '"#name"' > "#uvalue".");	\
       }                                                         \
     } else { \
-      opt.method =  SLRA_DEF_##disp; \
+      opt.name =  SLRA_DEF_##name; \
     }								\
   } while (0)
 
@@ -72,7 +72,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, rh_view = { 0, 0, 0, 0, 0, 0 },
              vh_view = { 0, 0, 0, 0, 0, 0 };
   Structure *myStruct = NULL;
-  opt_and_info opt;
+  OptimizationOptions opt;
   
   int was_error = 0;
   try {

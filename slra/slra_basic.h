@@ -8,19 +8,35 @@ public:
 };
 
 
+/** Abstract class for Cholesky factorization of \f$\Gamma(R)\f$.
+ * Computation Cholesky factorization \f$C^T C = \Gamma(R)\f$ */
 class Cholesky {
 public:  
   virtual  ~Cholesky() {}
+  
+  //! Computes Cholesky factorization
   virtual void calcGammaCholesky( gsl_matrix *R ) = 0;
-
+  /** Solve linear system with factor \f$C\f$.
+   * Computes \f$ y_r \leftarrow C^{-1} y_r\f$  if trans = 0 or 
+   * \f$ y_r \leftarrow C^{-T} y_r\f$  if trans = 1 */
   virtual void multInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
+  /** Solves linear system with factor \f$C\f$. 
+   * Computes \f$M_r^T \leftarrow C^{-1} M_r^T\f$  if trans = 0 or 
+   * \f$M_r^T \leftarrow C^{-T} M_r^T\f$  if trans = 1 */
+  virtual void multInvCholeskyTransMatrix( gsl_matrix * M_r, int trans );
+  /** Solves linear system with \f$\Gamma(R)\f$ . 
+   * Computes \f$y_r \leftarrow \Gamma^{-1} y_r\f$ 
+   * using Cholesky factorization */
   virtual void multInvGammaVector( gsl_vector * yr ) = 0;                
-  virtual void multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
 };
 
+/** Abstract class for differentiating \f$\Gamma(R)\f$.
+ * Computations with \f$\Gamma(R)\f$ */
 class DGamma {
 public:  
   virtual ~DGamma() {}
+  /** Calculate varying part of the gradient.
+   * */
   virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
                    gsl_vector *yr ) = 0;
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
@@ -28,22 +44,25 @@ public:
 };
 
 
+/** Abstract class for structure specification */
 class Structure {
 public:
   virtual ~Structure() {}
-  virtual int getNp() const = 0;
-  virtual int getNplusD() const = 0;
-  virtual int getM() const = 0;
+  virtual int getNp() const = 0;     ///< Returns \f$n_p\f$
+  virtual int getNplusD() const = 0; ///< Returns \f$m\f$
+  virtual int getM() const = 0;      ///< Returns \f$n\f$
   
+  /** Fills matrix from given parameter vector */
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
-  
-  virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
-  virtual DGamma *createDGamma( int D ) const = 0;
+  /** Computes correction \f$ p \leftarrow p - G^T(R) y_r\f$ */
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          bool scaled = true ) = 0;
+  
+  /** Creates Cholesky object for this structure and rank reduction */
+  virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
+  /** Creates DGamma object for this structure and rank reduction */
+  virtual DGamma *createDGamma( int D ) const = 0;
 };
-
-
 
 class SDependentStructure : public Structure {
 public:
@@ -57,7 +76,6 @@ public:
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWijV, double beta = 0 ) const = 0;
 };
-
 
 class StationaryStructure : public SDependentStructure {
 

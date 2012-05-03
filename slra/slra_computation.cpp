@@ -10,7 +10,7 @@ extern "C" {
 #include "slra.h"
 
 CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p, 
-    opt_and_info *opt, gsl_matrix *perm ) : myRank(r), 
+    OptimizationOptions *opt, gsl_matrix *perm ) : myRank(r), 
                                             myP(p), isGCD(opt->gcd) {
   myStruct = s;     
 

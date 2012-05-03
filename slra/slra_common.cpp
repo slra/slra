@@ -27,35 +27,31 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
 
 
 
-void String2Method( const char *str_buf, opt_and_info *popt )  {
-  char meth_codes[] = "lqn";
-  char submeth_codes_lm[] = "ls";
-  char submeth_codes_qn[] = "b2pf";
-  char submeth_codes_nm[] = "n2r";
-  char *submeth_codes[] = { submeth_codes_lm,
-                            submeth_codes_qn,
-                            submeth_codes_nm };
+void String2Method( const char *str_buf, OptimizationOptions *popt )  {
+  char meth_codes[] = "lqn", 
+       sm_codes_lm[] = "ls", sm_codes_qn[] = "b2pf", sm_codes_nm[] = "n2r";
+  char *submeth_codes[] = { sm_codes_lm, sm_codes_qn, sm_codes_nm };
 
   int submeth_codes_max[] = { 
-    sizeof(submeth_codes_lm) / sizeof(submeth_codes_lm[0]) - 1, 
-    sizeof(submeth_codes_qn) / sizeof(submeth_codes_qn[0]) - 1, 
-    sizeof(submeth_codes_nm) / sizeof(submeth_codes_nm[0]) - 1,
-    0 
+    sizeof(sm_codes_lm) / sizeof(sm_codes_lm[0]) - 1, 
+    sizeof(sm_codes_qn) / sizeof(sm_codes_qn[0]) - 1, 
+    sizeof(sm_codes_nm) / sizeof(sm_codes_nm[0]) - 1
   };
+  int meth_code_max = sizeof(submeth_codes_max) / sizeof(submeth_codes_max[0]);
 
   int i;
-
-  for (i = sizeof(meth_codes)/sizeof(meth_codes[0]) - 1; i >= 0; i--)  {
+  for (i = meth_code_max - 1; i >= 0; --i)  {
     if (str_buf[0] == meth_codes[i]) {
       (*popt).method = i;
       break;
     }
   } 
-	  
-  if (i < 0)  {
+  
+  if (str_buf[0] == 0 || i < 0)  {
     WARNING("Ignoring optimization option 'method'. Unrecognized value.");
     AssignDefOptValue((*popt), method);
     AssignDefOptValue((*popt), submethod);
+    return;
   }
 
   for (i = submeth_codes_max[(*popt).method] - 1; i >= 0; i--)  {
@@ -64,7 +60,7 @@ void String2Method( const char *str_buf, opt_and_info *popt )  {
       break;
     }
   } 
-  if (i < 0 && str_buf[1] != 0 && str_buf[0] != 0)  {
+  if (str_buf[1] == 0 || i < 0)  {
     WARNING("Unrecognized submethod - using default.");
     AssignDefOptValue((*popt), submethod);
   }

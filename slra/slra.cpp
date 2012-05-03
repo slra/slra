@@ -10,24 +10,23 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_rng.h>
 
-
 #include "slra.h"
 
-int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
-         gsl_matrix *r_ini, gsl_matrix *perm, 
+int slra( const gsl_vector *p_in, Structure* s, int r, 
+          OptimizationOptions* opt, gsl_matrix *r_ini, gsl_matrix *perm, 
          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh ) { 
   CostFunction * myCostFun = NULL;
   gsl_matrix *x = NULL, *R = NULL;
   int res = GSL_SUCCESS;
 
   if (opt->gcd) { 
-    opt->ls_correction = 1; /* Only correction LS is allowed here */
+    opt->ls_correction = 1; /* Only correction LS is allowed for GCD */
     if (r_ini == NULL) {
       throw new Exception("GCD computation must have "
                           "an initial approximation.\n");
     }
   }
-
+  
   try { 
     myCostFun =  new CostFunction(s, r, p_in, opt, perm);
     R = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());

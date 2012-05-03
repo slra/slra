@@ -63,35 +63,45 @@
 extern char meth_codes[];
 extern char *submeth_codes[];
 
-/* optimization options and output information structure */
+/** Optimization options structure.
+ * This structure contains input and output parameters 
+ * for 'gsl_optimize' function. */
 typedef struct {
-  int disp; /* displayed information: 
-	       1 - notify, 2 - final, 3 - iter, 4 - off */
+  /** @name General-purpose options  */  
+  ///@{
+  int disp;  //!< displayed information, see SLRA_OPT_DISP_xxx
+  int method;    ///< method, see SLRA_OPT_METHOD_xxx 
+  int submethod; ///< submethod, see SLRA_OPT_SUBMETHOD_<method>_xxx 
+  ///@}
   
-  /* method */
-  int method;
-  int submethod;
+  /** @name Stopping criteria parameters */  
+  ///@{
+  int maxiter;           ///< Maximal number of iterations 
+  double epsabs, epsrel; ///< Eps for 'gsl_multifit_test_delta' criterion
+  double epsgrad;        ///< Eps for 'gsl_multi..._test_gradient' criteria
+  double epsx;           ///< Eps for Nead-Melder method
+  ///@}
   
-  /* stopping criterion */  
-  int maxiter;
-  double epsabs, epsrel;    /* Eps for LM */
-  double epsgrad;           /* Eps for LM and QN */
-  double epsx;              /* Eps for NM */ 
+  /** @name Method-specific parameters */  
+  ///@{
+  double step;  ///< 'step_size' for fdfminimizer_set, fminimizer_set 
+  double tol;   ///< 'tol' for fdfminimizer_set, fminimizer_set
+  ///@}
   
-  /* optimization parameters */
-  double step;
-  double tol;
-  
-  double reggamma; /* To be worked out */
-  int ls_correction;  /* Use correction computation in nonlinear l.s. */
-  int gcd;         /* Is gcd being computed? */
+  /** @name Advanced parameters */  
+  ///@{
+  double reggamma;   ///< regularization parameter for gamma, absolute 
+  int ls_correction; ///< Use correction computation in Levenberg-Marquardt 
+  int gcd;           ///< Testing option for agcd problem 
+  ///@}
 
-  /* output information */
-  int iter;
-  double fmin;
-  double time;
-  double chol_time;
-} opt_and_info;
+  /** @name Output info */  
+  ///@{
+  int iter;     ///< Total number of iterations 
+  double fmin;  ///< Value of the cost function 
+  double time;  ///< Time spent on local optimization 
+  ///@}
+} OptimizationOptions;
 
 #define SLRA_DEF_disp       SLRA_OPT_DISP_NOTIFY 
 #define SLRA_DEF_method     SLRA_OPT_METHOD_LM
@@ -165,13 +175,20 @@ typedef struct {
 #include "slra_common.h"
 #include "slralapack.h"
 
-int gsl_optimize( CostFunction *F, opt_and_info *opt, 
+
+/** \addtogroup Func
+ * Global functions. */
+///{@
+
+/** Main function that runs SLRA optimization */
+int slra( const gsl_vector *p_in, Structure* s, int r, 
+          OptimizationOptions* opt, gsl_matrix *r_ini, gsl_matrix *perm, 
+          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
+/** Function that runs SLRA optimization */
+int gsl_optimize( CostFunction *F, OptimizationOptions *opt, 
                        gsl_vector* x_vec, gsl_matrix *v );
 
-/* Prototypes of functions */
-int slra( const gsl_vector *p_in, Structure* s, int r, opt_and_info* opt,
-          gsl_matrix *r_ini, gsl_matrix *perm, 
-          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
+///@}
 
 #endif /* _SLRA_H_ */
 
