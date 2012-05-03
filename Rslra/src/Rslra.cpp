@@ -50,7 +50,7 @@ static int getRSLRADispOption( SEXP OPTS ) {
   return SLRA_DEF_disp;
 }
 
-static void getRSLRAMethodOption( opt_and_info *popt, SEXP OPTS ) {
+static void getRSLRAMethodOption( OptimizationOptions *popt, SEXP OPTS ) {
   SEXP str_val_sexp;
 
   if (TYPEOF((str_val_sexp = getListElement(OPTS, "method"))) == STRSXP) {
@@ -96,7 +96,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   int r = *INTEGER(_r), compute_ph = !!(*INTEGER(_compute_ph)),
       compute_Rh = !!(*INTEGER(_compute_Rh)), compute_vh = 1;
   /* Optional parameters */
-  opt_and_info opt;
+  OptimizationOptions opt;
   opt.disp = getRSLRADispOption(_opt);
   getRSLRAMethodOption(&opt, _opt);
   getRSLRAOption(opt, _opt, maxiter, asInteger);

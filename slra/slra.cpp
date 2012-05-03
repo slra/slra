@@ -12,7 +12,6 @@
 
 #include "slra.h"
 
-///< Main function that runs SLRA approximation
 int slra( const gsl_vector *p_in, Structure* s, int r, 
           OptimizationOptions* opt, gsl_matrix *r_ini, gsl_matrix *perm, 
          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh ) { 
