@@ -130,10 +130,6 @@ DGamma *LayeredHStructure::createDGamma( int D ) const {
 }
 
 
-void LayeredHStructure::setM( int m ) {
-  myM = m <= 0 ? 1 : m;
-}
-
 void LayeredHStructure::WkB( gsl_matrix *res, int k, 
                              const gsl_matrix *B ) const {
   gsl_matrix_memcpy(res, B);

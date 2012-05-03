@@ -46,7 +46,7 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
 #define MATStoreOption(MAT, opt, name, lvalue, uvalue)  \
   do {                                                   \
     mxArray *fld = mxGetField(MAT, 0, #name);               \
-    if (fld != NULL) {			         	\
+    if (fld != NULL && mxGetN(fld) != 0 && mxGetM(fld) != 0) { \
       opt.name = mxGetScalar(fld);	\
       if (opt.name < lvalue) {					\
         opt.name = SLRA_DEF_##name;				\
@@ -133,7 +133,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
     gsl_vector p_out = M2vec(plhs[0]);
     if (nlhs > 1) {
-      int l = 1;
+      mwSize l = 1;
       const char *names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
       plhs[1] = mxCreateStructArray(1, &l, 5, names);
       mxArray *rh, *vh;
