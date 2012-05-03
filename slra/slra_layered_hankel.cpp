@@ -10,17 +10,17 @@ extern "C" {
 }
 #include "slra.h"
 
-LayeredHStructure::LayeredHStructure( const double *oldNk, 
-    size_t q, int M, const double *layer_w  ) : myQ(q), myM(M), mySA(NULL)  {
+LayeredHStructure::LayeredHStructure( const double *m_l, 
+    size_t q, int n, const double *w_l  ) : myQ(q), myN(n), mySA(NULL)  {
   mySA = new Layer[myQ];
  
   for (size_t l = 0; l < myQ; l++) {
-    mySA[l].blocks_in_row = oldNk[l];
-    if (layer_w != NULL && !(layer_w[l] > 0)) {
+    mySA[l].blocks_in_row = m_l[l];
+    if (w_l != NULL && !(w_l[l] > 0)) {
       throw new Exception("This value of weight is not supported: %lf\n", 
-                          layer_w[l]);
+                          w_l[l]);
     }
-    mySA[l].inv_w = (layer_w != NULL) ? (1 / layer_w[l]) : 1.0;
+    mySA[l].inv_w = (w_l != NULL) ? (1 / w_l[l]) : 1.0;
   }    
    
   computeStats(); 
@@ -46,10 +46,10 @@ void LayeredHStructure::fillMatrixFromP( gsl_matrix* c,
  
   for (l = 0; l < getQ(); 
        sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-    c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, getM(), getLayerLag(l));
+    c_chunk = gsl_matrix_submatrix(c, 0, sum_nl, getN(), getLayerLag(l));
     for (j = 0; j < getLayerLag(l); j++) {
       gsl_vector_const_view psub = gsl_vector_const_subvector(p, sum_np + j, 
-                                                              getM());
+                                                              getN());
       gsl_matrix_set_col(&c_chunk.matrix, j, &psub.vector);
     }  
   }
@@ -64,7 +64,7 @@ void LayeredHStructure::computeWkParams() {
   
   /* construct w */
   for (k = 0; k < getMaxLag(); k++) { 
-    zk   = gsl_matrix_alloc(getNplusD(), getNplusD());
+    zk   = gsl_matrix_alloc(getM(), getM());
     gsl_matrix_set_zero(zk);
 
     for (sum_nl = 0, l = 0; l < getQ(); sum_nl += getLayerLag(l), ++l) { 
@@ -81,8 +81,8 @@ void LayeredHStructure::computeWkParams() {
 
 void LayeredHStructure::computeStats() {
   int l;
-  for (l = 0, myNplusD = 0, myMaxLag = 1; l < myQ; 
-       myNplusD += getLayerLag(l), ++l) {
+  for (l = 0, myM = 0, myMaxLag = 1; l < myQ; 
+       myM += getLayerLag(l), ++l) {
     if ((!isLayerExact(l)) && getLayerLag(l) > myMaxLag) {
       myMaxLag = getLayerLag(l);
     }
@@ -92,7 +92,7 @@ void LayeredHStructure::computeStats() {
 void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
                                   gsl_vector *yr, bool scaled ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len, D = R->size2;
-  gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getM(), D).matrix, b_xext;
+  gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), D).matrix, b_xext;
   gsl_vector yr_matr_row, res_sub, p_chunk_sub;
   gsl_vector *res = gsl_vector_alloc(R->size1);
   double w_scale;
@@ -103,7 +103,7 @@ void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
     res_sub = gsl_vector_subvector(res, 0, getLayerLag(l)).vector;
     w_scale = scaled ? getLayerInvWeight(l) : sqrt(getLayerInvWeight(l));
     if (!isLayerExact(l)) {    /* Subtract correction if needed */
-      for (k = 0; k < getM(); k++) {
+      for (k = 0; k < getN(); k++) {
         p_chunk_sub = gsl_vector_subvector(p, k + sum_np, 
                                            getLayerLag(l)).vector;
         yr_matr_row = gsl_matrix_row(&yr_matr, k).vector; 

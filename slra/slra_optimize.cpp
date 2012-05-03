@@ -39,7 +39,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
   }
   
   /* LM */
-  int ls_nfun = opt->ls_correction ? F->getNp() : F->getM() * F->getD();
+  int ls_nfun = opt->ls_correction ? F->getNp() : F->getN() * F->getD();
   gsl_multifit_fdfsolver* solverlm;
   gsl_multifit_function_fdf fdflm = { 
       opt->ls_correction ? &(F->_f_cor) : &(F->_f_ls), 

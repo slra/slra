@@ -17,7 +17,7 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   gsl_blas_ddot(myP, myP, &myPNorm);
 
   if (perm == NULL) {
-    myPerm = gsl_matrix_alloc(getNplusD(), getNplusD());
+    myPerm = gsl_matrix_alloc(getM(), getM());
   } else {
     myPerm = gsl_matrix_alloc(perm->size1, perm->size2);
   }
@@ -25,17 +25,17 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   myGam = myStruct->createCholesky(getD(), opt->reggamma);
   myDeriv = myStruct->createDGamma(getD());
       
-  myMatr = gsl_matrix_alloc(getM(), getNplusD());
-  myMatrMulPerm = gsl_matrix_alloc(getM(), myPerm->size2);
+  myMatr = gsl_matrix_alloc(getN(), getM());
+  myMatrMulPerm = gsl_matrix_alloc(getN(), myPerm->size2);
   
   myTmpThetaExt = gsl_matrix_alloc(myPerm->size2, getD());
 
-  myTmpGradR = gsl_matrix_alloc(getNplusD(), getD());
-  myTmpGradR2 = gsl_matrix_alloc(getNplusD(), getD());
+  myTmpGradR = gsl_matrix_alloc(getM(), getD());
+  myTmpGradR2 = gsl_matrix_alloc(getM(), getD());
 
-  myTmpR = gsl_matrix_alloc(getNplusD(), getD());
-  myTmpYr = gsl_vector_alloc(getM() * getD());
-  myTmpJacobianCol = gsl_vector_alloc(getM() * getD());
+  myTmpR = gsl_matrix_alloc(getM(), getD());
+  myTmpYr = gsl_vector_alloc(getN() * getD());
+  myTmpJacobianCol = gsl_vector_alloc(getN() * getD());
 
   myTmpGrad = gsl_matrix_alloc(myRank, getD());
   
@@ -45,20 +45,20 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   
   myTmpCorr = gsl_vector_alloc(getNp());
   
-  if (getM() < getNplusD()) {
+  if (getN() < getM()) {
     throw new Exception("Number of rows %d is less than "
-                        "the number of columns %d.", getM(), getNplusD());
+                        "the number of columns %d.", getN(), getM());
   }
  /* TODO:
- if (myStruct->getNp() < getM() * getD()) {
+ if (myStruct->getNp() < getN() * getD()) {
     throw new Exception("The inner minimization problem is overdetermined: " 
-        "m * (n-r) = %d, n_p = %d.\n", getM() * getD(), myStruct->getNp());
+        "m * (n-r) = %d, n_p = %d.\n", getN() * getD(), myStruct->getNp());
   }*/
     
   if (perm == NULL) {
     gsl_matrix_set_identity(myPerm);
   } else {
-    if (perm->size1 != getNplusD() || perm->size1 < perm->size2) {
+    if (perm->size1 != getM() || perm->size1 < perm->size2) {
       throw new Exception("Incorrect sizes of permutation matrix.\n");   
     }
     gsl_matrix_memcpy(myPerm, perm);
@@ -121,7 +121,7 @@ void CostFunction::computeR( const gsl_vector * x, gsl_matrix *R ) {
 }
 
 void CostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
-  gsl_matrix_view SrMat = gsl_matrix_view_vector(Sr, getM(), getD()); 
+  gsl_matrix_view SrMat = gsl_matrix_view_vector(Sr, getN(), getD()); 
 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myMatr, R, 0.0, 
                  &SrMat.matrix);
@@ -195,7 +195,7 @@ void CostFunction::computeJacobianZij( gsl_vector *res, int i, int j,
   myDeriv->calcDijGammaYr(res, R, myPerm, i, j, yr);
   gsl_vector_scale(res, -factor);
   
-  for (int k = 0; k < getM(); k++) {  /* Convert to vector strides */
+  for (int k = 0; k < getN(); k++) {  /* Convert to vector strides */
     (*gsl_vector_ptr(res, j + k * getD())) += 
           gsl_matrix_get(myMatrMulPerm, k, i);
   }  
@@ -248,10 +248,10 @@ void CostFunction::computeJacobianOfCorrection( gsl_vector* yr,
 
 void CostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, 
                                       gsl_vector *grad ) {
-  gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getM(), getD());
+  gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getN(), getD());
   gsl_matrix_view grad_matr = gsl_matrix_view_vector(grad, getRank(), getD());
   gsl_matrix_view perm_sub_matr = gsl_matrix_submatrix(myPerm, 0, 0, 
-                                      getNplusD(), getRank());
+                                      getM(), getRank());
 
   /* Compute gradient of f(R) */ 
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix,

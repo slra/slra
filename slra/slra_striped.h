@@ -1,8 +1,8 @@
 class StripedStructure : public Structure {
-  size_t myN;
+  size_t myBlocksN;
 
   /* Helper variables */
-  size_t myM;
+  size_t myN;
   size_t myNp;
 
   size_t myMaxMlInd;
@@ -13,13 +13,13 @@ public:
   Structure **myStripe;
   virtual ~StripedStructure();
 
-  virtual int getM() const { return myM; }
+  virtual int getN() const { return myN; }
   virtual int getNp() const { return myNp; }
-  virtual int getNplusD() const { return myStripe[0]->getNplusD(); }
+  virtual int getM() const { return myStripe[0]->getM(); }
   
-  int getBlocksN() const { return myN; }
+  int getBlocksN() const { return myBlocksN; }
 
-  int getMl( int k ) const { return myStripe[k]->getM(); }
+  int getMl( int k ) const { return myStripe[k]->getN(); }
   const Structure *getBlock( size_t k ) const { 
     return myStripe[k]; 
   }

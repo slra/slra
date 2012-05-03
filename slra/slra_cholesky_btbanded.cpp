@@ -12,7 +12,7 @@ extern "C" {
 StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  int D, 
     double reg_gamma  ) :  SDependentCholesky(s, D, reg_gamma), myWs(s)  {
   myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
-  myWkTmp = gsl_matrix_alloc(getNplusD(), getD());
+  myWkTmp = gsl_matrix_alloc(getM(), getD());
 }  
   
 StationaryCholesky::~StationaryCholesky() {
@@ -45,7 +45,7 @@ void StationaryCholesky::computeGammaUpperPart( gsl_matrix *R ) {
           icor % getD(), j + (getS() - (icor / getD())) * getD());
     }
   }
-  for (int r = 1; r < getM(); r++) {
+  for (int r = 1; r < getN(); r++) {
     gp +=  d_times_s * getD();
     memcpy(gp, myPackedCholesky, d_times_s * getD() * sizeof(double));
   }

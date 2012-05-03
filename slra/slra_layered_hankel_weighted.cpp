@@ -39,13 +39,13 @@ WLayeredHStructure::~WLayeredHStructure() {
 void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
                                    gsl_vector *yr, bool scaled ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
-  gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getM(), R->size2).matrix;
+  gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), R->size2).matrix;
   gsl_vector yr_matr_row;
   gsl_vector_view res_sub, p_chunk_sub, inv_w_chunk;
   gsl_vector *res = gsl_vector_alloc(R->size1), 
              *weights = scaled ? myInvWeights : myInvSqrtWeights;
 
-  for (k = 0; k < getM(); k++) {
+  for (k = 0; k < getN(); k++) {
     yr_matr_row = gsl_matrix_row(&yr_matr, k).vector; 
     gsl_blas_dgemv(CblasNoTrans, 1.0, R,  &yr_matr_row, 0.0, res); 
     
@@ -70,7 +70,7 @@ void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
   for (l = 0; l < getQ(); sum_np += getLayerNp(l), ++l) {
     for (k = 0; k < getLayerLag(l); ++k, ++sum_nl) {
       matr_row = gsl_matrix_row(matr, sum_nl).vector;
-      gsl_vector_scale(&matr_row, getInvWeights(sum_np + k));
+      gsl_vector_scale(&matr_row, getInvWeight(sum_np + k));
     }
   }
 }
@@ -104,13 +104,14 @@ void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j,
   }
 
   int diff = j - i;
+  
   sum_nl = 0;
   for (l = 0, sum_np = j; l < getQ(); 
        sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
     for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
       const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl+k+diff).vector;
       const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl+k).vector;
-      gsl_blas_dger(getInvWeights(sum_np + k), &A_row, &B_row, res);
+      gsl_blas_dger(getInvWeight(sum_np + k), &A_row, &B_row, res);
     }
   }
 }   
@@ -131,7 +132,7 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
       for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
         const gsl_vector A_row = gsl_matrix_const_row(A, 
                                      sum_nl + k + diff).vector;
-        gsl_blas_daxpy(getInvWeights(sum_np + k) * gsl_vector_get(V, sum_nl + k), 
+        gsl_blas_daxpy(getInvWeight(sum_np + k) * gsl_vector_get(V, sum_nl + k), 
             &A_row, res);
       }
     }
@@ -142,7 +143,7 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
          sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
       for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
         const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl + k).vector;
-        gsl_blas_daxpy(getInvWeights(sum_np + k) * 
+        gsl_blas_daxpy(getInvWeight(sum_np + k) * 
                        gsl_vector_get(V, sum_nl + k + diff), &A_row, res);
       }
     }

@@ -24,12 +24,6 @@ void gsl_matrix_vec_inv(gsl_matrix*, double*);
 void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m);
 void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl); 
 
-/* Convert double matrix to structure */
-/*int slraMatrix2Struct( data_struct *s, double *s_matr, 
-                       int q, int s_matr_cols );*/
-void String2Method( const char *str_buf, OptimizationOptions *popt );
-int String2Disp( const char *str_value );
-
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
                gsl_vector * wk, int np_comp );
                

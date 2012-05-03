@@ -58,14 +58,13 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
 //  data_struct s; /* {1,2,{'T',10,1,'U',1,1}}; */
 
   int s_k,  s_q;
-  opt_and_info opt;
+  OptimizationOptions opt;
   
-  AssignDefOptValues(opt);
-//  opt.maxiter = 500;
-  opt.maxiter = 500;
+  opt.maxiter = 100;
   opt.disp = SLRA_OPT_DISP_ITER;
-  String2Method(method, &opt);
+  opt.str2Method(method);
 //  opt.use_slicot = use_slicot;
+  opt.epsx = 1e-8;
   opt.ls_correction = use_slicot;
   
   int i, j, m = 9599, n = 12, d = 4, tmp, np = 9599;
@@ -90,8 +89,6 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
     if (!silent) {
       fprintf(log, "Running test %s\n", testname);  
     }
-   
-
 
     /* Read structure */
     file = fopen(fsname,"r");
@@ -125,17 +122,13 @@ void run_test( FILE * log, char * testname, double & time, double & fmin, double
       }
     }
       
-    myStruct = new MosaicHStructure(L_q, m_k, w_k);
+    myStruct = new WMosaicHStructure(L_q, m_k, NULL);
     m = myStruct->getM();
-      
     gsl_vector_free(m_k);  
     gsl_vector_free(L_q);  
 
-
     fclose(file);
-
-
-    d = myStruct->getNplusD() - n;
+    d = myStruct->getM() - n;
     np = myStruct->getNp();
 
     if (((R = gsl_matrix_calloc(n+d, d)) == NULL)) {

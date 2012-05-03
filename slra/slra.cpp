@@ -13,7 +13,7 @@
 #include "slra.h"
 
 int slra( const gsl_vector *p_in, Structure* s, int r, 
-          OptimizationOptions* opt, gsl_matrix *r_ini, gsl_matrix *perm, 
+          OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh ) { 
   CostFunction * myCostFun = NULL;
   gsl_matrix *x = NULL, *R = NULL;
@@ -21,20 +21,20 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
 
   if (opt->gcd) { 
     opt->ls_correction = 1; /* Only correction LS is allowed for GCD */
-    if (r_ini == NULL) {
+    if (Rini == NULL) {
       throw new Exception("GCD computation must have "
                           "an initial approximation.\n");
     }
   }
   
   try { 
-    myCostFun =  new CostFunction(s, r, p_in, opt, perm);
+    myCostFun =  new CostFunction(s, r, p_in, opt, Phi);
     R = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
     
-    if (r_ini == NULL) {  /* compute default initial approximation */
+    if (Rini == NULL) {  /* compute default initial approximation */
       myCostFun->computeDefaultRTheta(R);
     } else {
-      gsl_matrix_memcpy(R, r_ini);
+      gsl_matrix_memcpy(R, Rini);
     }
 
     x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());

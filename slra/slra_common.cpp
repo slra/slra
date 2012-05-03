@@ -27,7 +27,7 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
 
 
 
-void String2Method( const char *str_buf, OptimizationOptions *popt )  {
+void OptimizationOptions::str2Method( const char *str )  {
   char meth_codes[] = "lqn", 
        sm_codes_lm[] = "ls", sm_codes_qn[] = "b2pf", sm_codes_nm[] = "n2r";
   char *submeth_codes[] = { sm_codes_lm, sm_codes_qn, sm_codes_nm };
@@ -38,49 +38,47 @@ void String2Method( const char *str_buf, OptimizationOptions *popt )  {
     sizeof(sm_codes_nm) / sizeof(sm_codes_nm[0]) - 1
   };
   int meth_code_max = sizeof(submeth_codes_max) / sizeof(submeth_codes_max[0]);
-
   int i;
+  
+  if (str[0] == 0) {
+    return;
+  }
   for (i = meth_code_max - 1; i >= 0; --i)  {
-    if (str_buf[0] == meth_codes[i]) {
-      (*popt).method = i;
+    if (str[0] == meth_codes[i]) {
+      method = i;
       break;
     }
   } 
   
-  if (str_buf[0] == 0 || i < 0)  {
+  if (str[0] == 0 || i < 0)  {
     WARNING("Ignoring optimization option 'method'. Unrecognized value.");
-    AssignDefOptValue((*popt), method);
-    AssignDefOptValue((*popt), submethod);
     return;
   }
 
-  for (i = submeth_codes_max[(*popt).method] - 1; i >= 0; i--)  {
-    if (str_buf[1] == submeth_codes[(*popt).method][i]) {
-      (*popt).submethod = i;
+  for (i = submeth_codes_max[method] - 1; i >= 0; i--)  {
+    if (str[1] == submeth_codes[method][i]) {
+      submethod = i;
       break;
     }
   } 
-  if (str_buf[1] == 0 || i < 0)  {
+  if (str[1] == 0 || i < 0)  {
     WARNING("Unrecognized submethod - using default.");
-    AssignDefOptValue((*popt), submethod);
   }
 }
 
-int String2Disp( const char *str_value )  {
+void OptimizationOptions::str2Disp( const char *str )  {
   char *str_disp[] = {"notify", "final", "iter", "off" };
   int i;
-
+  
   for (i = 0; i < sizeof(str_disp) / sizeof(str_disp[0]); i++) {
-    if (strcmp(str_disp[i], str_value) == 0) {
-      return i;
+    if (strcmp(str_disp[i], str) == 0) {
+      disp = i;
     }
   }
     
   if (i < 0) {
     WARNING("Ignoring optimization option 'disp'. Unrecognized value.");
   }
-   
-  return SLRA_DEF_disp;
 }
 
 /* ************************************************ */

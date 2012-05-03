@@ -16,7 +16,7 @@ GammaCholeskyBTBandedSlicot::
   myGammaVec = (double*)malloc(getD() * getD() * (getS()+1) * sizeof(double));
   myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 
                        3 * getD() + /* 3 * K */
-                       mymax(getS(), getM() - getS()) * getD() * getD();
+                       mymax(getS(), getN() - getS()) * getD() * getD();
   myCholeskyWork = (double *)malloc(myCholeskyWorkSize * sizeof(double));                       
 }
 
@@ -31,10 +31,10 @@ void GammaCholeskyBTBandedSlicot::calcGammaCholesky( gsl_matrix *R )  {
 
   computeGammak(R);
 
-  size_t D = getD(), Mg = getM();
+  size_t D = getD(), n = getN();
   gsl_matrix_vectorize(myGammaVec, myGamma);
     
-  mb02gd_("R", "N", &D, &Mg, &s_minus_1, &zero, 
+  mb02gd_("R", "N", &D, &n, &s_minus_1, &zero, 
           &Mg, myGammaVec, &D, myPackedCholesky, &d_times_s, 
           myCholeskyWork, &myCholeskyWorkSize, &info); /**/
 

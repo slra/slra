@@ -8,13 +8,13 @@ extern "C" {
 
 /* Structure striped classes */
 StripedStructure::StripedStructure( size_t N, Structure **stripe  ) :
-    myN(N), myStripe(stripe) {
+    myBlocksN(N), myStripe(stripe) {
   size_t k;  
   
-  for (k = 0, myM = 0, myNp = 0, myMaxMlInd = 0; k < myN; 
-       myM += myStripe[k]->getM(), myNp += myStripe[k]->getNp(), k++) {
+  for (k = 0, myN = 0, myNp = 0, myMaxMlInd = 0; k < myBlocksN; 
+       myN += myStripe[k]->getN(), myNp += myStripe[k]->getNp(), k++) {
 
-    if (myStripe[k]->getM() > myStripe[myMaxMlInd]->getM()) {
+    if (myStripe[k]->getN() > myStripe[myMaxMlInd]->getN()) {
       myMaxMlInd = k;
     }
   }
@@ -22,7 +22,7 @@ StripedStructure::StripedStructure( size_t N, Structure **stripe  ) :
 
 StripedStructure::~StripedStructure()  {
   if (myStripe != NULL) {
-    for (size_t k = 0; k < myN; k++) {
+    for (size_t k = 0; k < myBlocksN; k++) {
       if (myStripe[k] != NULL) {
         delete myStripe[k];
       }
@@ -120,7 +120,7 @@ typedef DGamma* pDGamma;
 
 StripedDGamma::StripedDGamma( const StripedStructure *s, int D  ) : 
     myStruct(s) {
-  myTmpGrad = gsl_matrix_alloc(myStruct->getNplusD(), D);  
+  myTmpGrad = gsl_matrix_alloc(myStruct->getM(), D);  
   myLHDGamma = new pDGamma[myStruct->getBlocksN()];
   for (int k = 0; k < myStruct->getBlocksN(); k++) {
     myLHDGamma[k] = myStruct->getBlock(k)->createDGamma(D);

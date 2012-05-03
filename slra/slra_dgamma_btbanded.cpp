@@ -10,13 +10,13 @@ extern "C" {
 
 StationaryDGamma::StationaryDGamma( const StationaryStructure *s, int D ) :
     myD(D), myW(s) {
-  myTempWkColRow = gsl_vector_alloc(myW->getNplusD());
+  myTempWkColRow = gsl_vector_alloc(myW->getM());
   myDGammaVec = gsl_vector_alloc(myD * (2 * myW->getS() - 1));
   myDGammaTrMat = gsl_matrix_alloc(myD, 2 * myW->getS() - 1);
   myDGamma = gsl_matrix_alloc(myD, myD * (2 * myW->getS() - 1));
-  myTmpCol = gsl_vector_alloc(myW->getM());
-  myWk_R =  gsl_matrix_alloc(myW->getNplusD(), myD);
-  myWkT_R = gsl_matrix_alloc(myW->getNplusD(), myD);
+  myTmpCol = gsl_vector_alloc(myW->getN());
+  myWk_R =  gsl_matrix_alloc(myW->getM(), myD);
+  myWkT_R = gsl_matrix_alloc(myW->getM(), myD);
   myN_k = gsl_matrix_alloc(myD, myD);
 }
 
@@ -86,7 +86,7 @@ void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R,
 SDependentDGamma::SDependentDGamma( const SDependentStructure *s, int D ) :
    myD(D), myW(s) {
   myTmp1 = gsl_vector_alloc(myD);  
-  myTmp2 = gsl_vector_alloc(myW->getNplusD());  
+  myTmp2 = gsl_vector_alloc(myW->getM());  
 }
 
 SDependentDGamma::~SDependentDGamma(){

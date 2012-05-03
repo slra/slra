@@ -6,7 +6,7 @@ protected:
     
   size_t s_minus_1;
   size_t d_times_s;
-  size_t d_times_Mg;
+  size_t d_times_n;
   size_t d_times_s_minus_1;
   gsl_matrix *myTempR, *myTempWktR, *myTempGammaij;
   
@@ -20,8 +20,8 @@ public:
   virtual ~SDependentCholesky();
 
   int getD() const { return myD; }
+  int getN() const { return myW->getN(); }
   int getM() const { return myW->getM(); }
-  int getNplusD() const { return myW->getNplusD(); }
   int getS() const { return myW->getS(); }
 
 

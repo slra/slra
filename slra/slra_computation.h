@@ -25,10 +25,10 @@ public:
   virtual ~CostFunction();
   
   int getD() { return myPerm->size2 - myRank; }
-  int getNplusD() { return myStruct->getNplusD(); }
+  int getM() { return myStruct->getM(); }
   int getRank() { return myRank; }
   int getRsize() { return myPerm->size2; }
-  int getM() { return myStruct->getM(); }
+  int getN() { return myStruct->getN(); }
   int getNp() { return myStruct->getNp(); }
   const gsl_matrix * getPerm() { return myPerm; }
   const gsl_matrix * getSMart() { return myMatr; }

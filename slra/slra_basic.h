@@ -57,8 +57,8 @@ class Structure {
 public:
   virtual ~Structure() {}
   virtual int getNp() const = 0;     ///< Returns \f$n_p\f$
-  virtual int getNplusD() const = 0; ///< Returns \f$m\f$
-  virtual int getM() const = 0;      ///< Returns \f$n\f$
+  virtual int getM() const = 0;      ///< Returns \f$m\f$
+  virtual int getN() const = 0;      ///< Returns \f$n\f$
   
   /** Fills matrix from given parameter vector */
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 

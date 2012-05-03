@@ -47,19 +47,17 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
   do {                                                   \
     mxArray *fld = mxGetField(MAT, 0, #name);               \
     if (fld != NULL && mxGetN(fld) != 0 && mxGetM(fld) != 0) { \
-      opt.name = mxGetScalar(fld);	\
-      if (opt.name < lvalue) {					\
-        opt.name = SLRA_DEF_##name;				\
+      double val = mxGetScalar(fld);	\
+      if (val < lvalue) {					\
         mexWarnMsgTxt("Ignoring optimization option '"#name"' "	\
                       "because '"#name"' < "#lvalue".");	\
-      } else if (opt.name > uvalue) {			        \
-        opt.name = SLRA_DEF_##name;				\
+      } else if (val > uvalue) {			        \
         mexWarnMsgTxt("Ignoring optimization option '"#name"' "	\
                       "because '"#name"' > "#uvalue".");	\
+      } else {                                                  \
+        opt.name = val;                                         \
       }                                                         \
-    } else { \
-      opt.name =  SLRA_DEF_##name; \
-    }								\
+    } 								\
   } while (0)
 
 #define STR_MAX_LEN 200
@@ -97,12 +95,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     int r = mxGetScalar(prhs[2]);
 
     myStruct = createMosaicStructure(&ml, &nk, vecChkNIL(wk), p_in.size);
-    int m = (perm.data == NULL ? myStruct->getNplusD() : perm.size2);
+    int m = (perm.data == NULL ? myStruct->getM() : perm.size2);
     if (r <= 0 || r >= m) {
       throw new Exception("Incorrect rank\n");   
     }
     /* Parse user supplied options */
-    AssignDefOptValues(opt);  
     if (nrhs > 3) {
       if (! mxIsStruct(prhs[3])) {
         mexWarnMsgTxt("Ignoring 'opt'. The optimization options "
@@ -112,10 +109,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         if (rini.data != NULL && (rini.size2 != (m - r) || rini.size1 != m)) {
           throw new Exception("Incorrect Rini\n");   
         }
-        opt.disp = String2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), 
-                                     str_buf, STR_MAX_LEN));
-        String2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), 
-                            str_buf, STR_MAX_LEN), &opt);
+        opt.str2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), str_buf, 
+                                     STR_MAX_LEN));
+        opt.str2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), str_buf, 
+                                       STR_MAX_LEN));
         MATStoreOption(prhs[3], opt, maxiter, 0, numeric_limits<int>::max());
         MATStoreOption(prhs[3], opt, epsabs, 0, 1);
         MATStoreOption(prhs[3], opt, epsrel, 0, 1);

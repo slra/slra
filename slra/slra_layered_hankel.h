@@ -1,12 +1,11 @@
 /** Layered Hankel structure with blockwise weights.
- * Implements 
+ * A structure of form 
  * \f$ \mathcal{H}_{{\bf m}, n} := 
- * \begin{bmatrix} \mathcal{H}_{m_1,n} \\ \vdots \\ \mathcal{H}_{m_q,n} 
- * \end{bmatrix} \f$ 
- * with blockwise weights 
- * \f$\begin{bmatrix} w_1 & \dots \\ w_q \end{bmatrix}\f$
+ * \begin{bmatrix} \mathcal{H}_{n,m_1} & \cdots & \mathcal{H}_{n,m_q} 
+ * \end{bmatrix} \f$  with \f$q\f$ blocks
+ * and blockwise weights 
+ * \f$\begin{bmatrix} w_1 & \cdots & w_q \end{bmatrix}\f$ 
  */
-
 class LayeredHStructure : public StationaryStructure {
   typedef struct {
     size_t blocks_in_row;       /* Number of blocks in a row of Ci */
@@ -14,8 +13,8 @@ class LayeredHStructure : public StationaryStructure {
   } Layer;
 
   int myQ;	                /* number of layers */
+  size_t myN;
   size_t myM;
-  size_t myNplusD;
   size_t myMaxLag;
   gsl_matrix **myA;
   Layer *mySA;	/* q-element array describing C1,...,Cq; */  
@@ -23,21 +22,20 @@ class LayeredHStructure : public StationaryStructure {
   void computeStats();
   void computeWkParams(); 
 protected:
-  int nvGetNp() const { return (myM - 1) * myQ + myNplusD; }  
+  int nvGetNp() const { return (myN - 1) * myQ + myM; }  
 public:
-  /** Constructs Layered Hankel structure.
-   * 
+  /** Constructs Layered Hankel structure
+   * from array of \f$m_l\f$, \f$q\f$, \f$n\f$ and array of \f$w_l\f$ 
+   * (if w_l = NULL then \f$w_l = \begin{bmatrix}1&\cdots&1\end{bmatrix}\f$). 
    */
-  LayeredHStructure( const double *oldNk, /**< Array of \f$m_k\f$*/
-                     size_t q,            /**< \f$q\f$ */   
-                     int M,               /**< \f$n\f$ */  
-                     const double *layer_w = NULL /**< Array of \f$w_k\f$*/ );
+  LayeredHStructure( const double *m_l, size_t q, int n, 
+                     const double *w_l = NULL );
   virtual ~LayeredHStructure();
 
   /** @name Implementing Structure interface */
   /**@{*/
-  virtual int getNplusD() const { return myNplusD; }
   virtual int getM() const { return myM; }
+  virtual int getN() const { return myN; }
   virtual int getNp() const { return nvGetNp(); }
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
@@ -59,25 +57,22 @@ public:
   /**@}*/
 
 
-  /** @name LayeredHankel- specific methods */
+  /** @name Layered-Hankel-specific methods */
   /**@{*/
-  /** Returns a pointer to Wk matrix. @todo remove */
-  const gsl_matrix *getWk( int l ) const { 
-    return myA[l]; 
-  } 
-  /** Returns a pointer to Wk matrix. @todo remove */
-  /* Returns \f$q\f$ */
+  /** Returns a pointer to Wk matrix.  @todo remove.*/
+  const gsl_matrix *getWk( int l ) const { return myA[l]; } 
+  /** Returns \f$q\f$. */
   int getQ() const { return myQ; }
   /** Returns \f$\max \{m_l\}_{l=1}^{q}\f$ */
   int getMaxLag() const { return myMaxLag; }
-  /** Returns \f$\max \{m_l\}\f$ */
+  /** Returns \f$m_l\f$ */
   int getLayerLag( int l ) const { return mySA[l].blocks_in_row; }
-  /** Checks whether \f$w_l=\infty\f$ (block is exact) */
+  /** Checks whether \f$w_l=\infty\f$ (block is fixed) */
   bool isLayerExact( int l ) const { return (mySA[l].inv_w == 0.0); }
   /** Returns \f$w_l^{-1}\f$ */
   double getLayerInvWeight( int l ) const { return mySA[l].inv_w; }
-  /** Returns numper of parameters in each block: \f$m_l +n- 1\f$ */
-  int getLayerNp( int l ) const { return getLayerLag(l) + getM() - 1; }
+  /** Returns number of parameters in each block: \f$m_l +n- 1\f$ */
+  int getLayerNp( int l ) const { return getLayerLag(l) + getN() - 1; }
   /**@}*/
 };
 

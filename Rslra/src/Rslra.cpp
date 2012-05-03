@@ -18,49 +18,39 @@
 /* default constants for the exit condition */
 static SEXP getListElement(SEXP list, const char *str) {
   SEXP elmt = R_NilValue, names = GET_NAMES(list);
-  int i;
 
-  for (i = 0; i < length(list); i++)
+  for (int i = 0; i < length(list); i++) {
     if (strcmp(CHAR(STRING_ELT(names, i)), str) == 0) {
       elmt = VECTOR_ELT(list, i);
       break;
     }
+  }
   return elmt;
 }
 
-#define getScalarListElement(trg, list, str, coerce, def)         \
-  do {                                                            \
-    SEXP __tmp = getListElement(list, str);                       \
-    trg = (__tmp != R_NilValue ? coerce(__tmp) : (def));          \
+#define getRSLRAOption(opt, list, field, coerce)             \
+  do {                                                       \
+    SEXP __tmp = getListElement(list, #field);               \
+    if (__tmp != R_NilValue) {                               \
+      opt.field = coerce(__tmp);                             \
+    }                                                        \
   } while(0)
 
-#define getRSLRAOption(opt, list, field, coerce)          \
-  do {                                                    \
-    getScalarListElement(opt.field, list, #field, coerce, \
-        SLRA_DEF_##field);  \
-  } while(0)
-
-static int getRSLRADispOption( SEXP OPTS ) {
+static void getRSLRADispOption( OptimizationOptions *popt, SEXP OPTS ) {
   SEXP str_value_sexp;
   
   if (TYPEOF((str_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
-    return String2Disp(CHAR(STRING_ELT(str_value_sexp, 0)));    
+    return popt->str2Disp(CHAR(STRING_ELT(str_value_sexp, 0)));    
   }
-  
-  return SLRA_DEF_disp;
 }
 
 static void getRSLRAMethodOption( OptimizationOptions *popt, SEXP OPTS ) {
   SEXP str_val_sexp;
 
   if (TYPEOF((str_val_sexp = getListElement(OPTS, "method"))) == STRSXP) {
-    String2Method(CHAR(STRING_ELT(str_val_sexp, 0)), popt);
-  } else {
-    AssignDefOptValue((*popt), method);
-    AssignDefOptValue((*popt), submethod);
-  }
+    popt->str2Method(CHAR(STRING_ELT(str_val_sexp, 0)));
+  } 
 }
-
 
 gsl_vector SEXP2vec( SEXP p ) {
   gsl_vector res = { 0, 0, 0, 0, 0 };
@@ -97,7 +87,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
       compute_Rh = !!(*INTEGER(_compute_Rh)), compute_vh = 1;
   /* Optional parameters */
   OptimizationOptions opt;
-  opt.disp = getRSLRADispOption(_opt);
+  getRSLRADispOption(&opt, _opt);
   getRSLRAMethodOption(&opt, _opt);
   getRSLRAOption(opt, _opt, maxiter, asInteger);
   getRSLRAOption(opt, _opt, epsabs, asReal);
