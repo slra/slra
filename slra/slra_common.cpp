@@ -51,7 +51,7 @@ void OptimizationOptions::str2Method( const char *str )  {
   } 
   
   if (str[0] == 0 || i < 0)  {
-    WARNING("Ignoring optimization option 'method'. Unrecognized value.");
+    WARNING("Ignoring optimization option 'method'. Unrecognized value.\n");
     return;
   }
 
@@ -62,7 +62,7 @@ void OptimizationOptions::str2Method( const char *str )  {
     }
   } 
   if (str[1] == 0 || i < 0)  {
-    WARNING("Unrecognized submethod - using default.");
+    WARNING("Unrecognized submethod - using default.\n");
   }
 }
 
@@ -77,7 +77,7 @@ void OptimizationOptions::str2Disp( const char *str )  {
   }
     
   if (i < 0) {
-    WARNING("Ignoring optimization option 'disp'. Unrecognized value.");
+    WARNING("Ignoring optimization option 'disp'. Unrecognized value.\n");
   }
 }
 

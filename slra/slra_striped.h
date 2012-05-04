@@ -7,7 +7,7 @@ class StripedStructure : public Structure {
 
   size_t myMaxMlInd;
 protected:
-  StripedStructure( size_t N, Structure **stripe );
+  StripedStructure( size_t blocksN, Structure **stripe );
 
 public:
   Structure **myStripe;

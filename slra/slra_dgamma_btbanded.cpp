@@ -65,21 +65,21 @@ void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R,
     gsl_matrix_set_col(myDGammaTrMat, -k + myW->getS() - 1, &gv_sub);
   }
 
-  int M = yr->size / myD;
+  int n = yr->size / myD;
   if (myD == 1) {
     dgammajrow = gsl_matrix_row(myDGammaTrMat, 0).vector;
     gsl_vector_add (myDGammaVec, &dgammajrow);
-    tmv_prod_vector(myDGammaVec, myW->getS(), yr, M, res);  
+    tmv_prod_vector(myDGammaVec, myW->getS(), yr, n, res);  
   } else {
-    res_stride = gsl_vector_subvector_with_stride(res, j, myD, M).vector;       
-    yr_stride = gsl_vector_subvector_with_stride(yr, j, myD, M).vector;       
+    res_stride = gsl_vector_subvector_with_stride(res, j, myD, n).vector;       
+    yr_stride = gsl_vector_subvector_with_stride(yr, j, myD, n).vector;       
     gsl_matrix_view gamma_vec_mat = gsl_matrix_view_vector(myDGammaVec, 1, 
                                                            myDGammaVec->size);
     gsl_vector_memcpy(myTmpCol, &yr_stride);
   
     gsl_vector_set_zero(res);
-    tmv_prod_vector(myDGammaVec, myW->getS(), yr, M, &res_stride);  
-    tmv_prod_new(myDGammaTrMat, myW->getS(), myTmpCol, M, res, 1.0);  
+    tmv_prod_vector(myDGammaVec, myW->getS(), yr, n, &res_stride);  
+    tmv_prod_new(myDGammaTrMat, myW->getS(), myTmpCol, n, res, 1.0);  
   }
 }
 
@@ -97,14 +97,14 @@ SDependentDGamma::~SDependentDGamma(){
 void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr ) {
   gsl_vector perm_col = gsl_matrix_column(perm, i).vector, yr_sub, res_sub;
-  int k, l, S = myW->getS(), M = Yr->size / myD;
+  int k, l, S = myW->getS(), n = Yr->size / myD;
   double tmp;
 
   gsl_vector_set_zero(res); 
-  for (k = 0; k < M; k++)  {
+  for (k = 0; k < n; k++)  {
     res_sub = gsl_vector_subvector(res, k * myD, myD).vector;
     
-    for (l = mymax(0, k - S + 1);  l < mymin(k + S, M); l++) {
+    for (l = mymax(0, k - S + 1);  l < mymin(k + S, n); l++) {
       yr_sub = gsl_vector_subvector(Yr, l * myD, myD).vector;
       myW->AtWijV(myTmp1, k, l, R, &perm_col, myTmp2);
       gsl_blas_daxpy(gsl_vector_get(&yr_sub, j), myTmp1, &res_sub);

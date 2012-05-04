@@ -7,8 +7,8 @@ extern "C" {
 }
 
 /* Structure striped classes */
-StripedStructure::StripedStructure( size_t N, Structure **stripe  ) :
-    myBlocksN(N), myStripe(stripe) {
+StripedStructure::StripedStructure( size_t blocksN, Structure **stripe  ) :
+    myBlocksN(blocksN), myStripe(stripe) {
   size_t k;  
   
   for (k = 0, myN = 0, myNp = 0, myMaxMlInd = 0; k < myBlocksN; 
