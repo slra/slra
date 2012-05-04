@@ -15,17 +15,14 @@ Exception::Exception( const char *format, ... ) {
 
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
                gsl_vector * wk, int np_comp ) {
-  if (wk == NULL || wk->size == ml->size * nk->size) { 
+  if (wk == NULL || wk->size == ml->size * nk->size || wk->size == ml->size) { 
     return new MosaicHStructure(ml, nk, wk);
-  } else if (wk->size == np_comp) {
+  } 
+  if (wk->size == np_comp) {
     return new WMosaicHStructure(ml, nk, wk);
-  } else if (wk->size == ml->size) {
-    return new MosaicHStructure(ml, nk, wk, true); 
   } 
   throw new Exception("Incorrect weight specification\n");   
 }
-
-
 
 void OptimizationOptions::str2Method( const char *str )  {
   char meth_codes[] = "lqn", 

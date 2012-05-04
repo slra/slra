@@ -161,24 +161,23 @@ Cholesky *MosaicHStructure::createCholesky( int D, double reg_gamma ) const {
 
 typedef Structure* pStructure;
 
-pStructure * MosaicHStructure::allocStripe( gsl_vector *oldNk,
-                 gsl_vector *oldMl, gsl_vector *Wk,  bool wkIsCol )  {
-  pStructure *res = new pStructure[oldMl->size];
+pStructure * MosaicHStructure::allocStripe( gsl_vector *m_l,
+                 gsl_vector *n_k, gsl_vector *w )  {
+  pStructure *res = new pStructure[n_k->size];
 
-  for (size_t k = 0; k < oldMl->size; k++) {
-    res[k] = new LayeredHStructure(oldNk->data, oldNk->size, oldMl->data[k], 
-                                   (Wk != NULL ? Wk->data : NULL));
-    if (Wk != NULL && !wkIsCol) {
-      Wk->data += oldNk->size;
+  for (size_t k = 0; k < n_k->size; k++) {
+    res[k] = new LayeredHStructure(m_l->data, m_l->size, n_k->data[k], 
+                                   (w != NULL ? w->data : NULL));
+    if (w != NULL && (w->size != m_l->size)) {
+      w->data += m_l->size;
     }
   }
   return res;
 }
 
-MosaicHStructure::MosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
-          gsl_vector *Wk, bool wkIsCol ) :
-        StripedStructure(oldMl->size, allocStripe(oldNk, oldMl, Wk, wkIsCol)),
-        myWkIsCol(wkIsCol)  {
+MosaicHStructure::MosaicHStructure( gsl_vector *m_l, gsl_vector *n_k,  
+     gsl_vector *w ) : StripedStructure(n_k->size, allocStripe(m_l, n_k, w)),
+        myWkIsCol(w == NULL || w->size == m_l->size)  {
 }
 
 

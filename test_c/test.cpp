@@ -76,7 +76,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
       gsl_vector_set_all(w_k, 1);
     }
     fclose(file);
-    S = new MosaicHStructure(L_q, m_k, w_k, true);
+    S = new MosaicHStructure(L_q, m_k, w_k);
     gsl_vector_free(m_k);  
     gsl_vector_free(w_k);  
     gsl_vector_free(L_q);  

@@ -10,18 +10,18 @@ extern "C" {
 }
 #include "slra.h"
 
-WLayeredHStructure::WLayeredHStructure( const double *oldNk, size_t q, int M, 
-    const gsl_vector *weights ) : myBase(oldNk, q, M, NULL) {
+WLayeredHStructure::WLayeredHStructure( const double *m_l, size_t q, int n, 
+    const gsl_vector *w ) : myBase(m_l, q, n, NULL) {
   myInvWeights = gsl_vector_alloc(myBase.getNp());
   myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
 
-  if (weights != NULL) {
+  if (w != NULL) {
     for (size_t l = 0; l < myInvWeights->size; l++) {
-      if (!(gsl_vector_get(weights, l) > 0)) {
+      if (!(gsl_vector_get(w, l) > 0)) {
         throw new Exception("Value of weight not supported: %lf\n", 
-                            gsl_vector_get(weights, l));
+                            gsl_vector_get(w, l));
       }
-      gsl_vector_set(myInvWeights, l, (1 / gsl_vector_get(weights, l)));
+      gsl_vector_set(myInvWeights, l, (1 / gsl_vector_get(w, l)));
       gsl_vector_set(myInvSqrtWeights, l, 
           sqrt(gsl_vector_get(myInvWeights, l)));
     }
@@ -161,22 +161,21 @@ DGamma *WLayeredHStructure::createDGamma( int D ) const {
 
 typedef Structure* pStructure;
 
-pStructure *WMosaicHStructure::allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
-                gsl_vector *Wk )  {
-  pStructure *res = new pStructure[oldMl->size];
+pStructure *WMosaicHStructure::allocStripe( gsl_vector *m_l, gsl_vector *n_k,  
+                gsl_vector *w )  {
+  pStructure *res = new pStructure[n_k->size];
 
-  for (size_t k = 0; k < oldMl->size; k++) {
-    res[k] = new WLayeredHStructure(oldNk->data, oldNk->size, oldMl->data[k], Wk);
-    if (Wk != NULL) {
-      Wk->data += res[k]->getNp();
+  for (size_t k = 0; k < n_k->size; k++) {
+    res[k] = new WLayeredHStructure(m_l->data, m_l->size, n_k->data[k], w);
+    if (w != NULL) {
+      w->data += res[k]->getNp();
     }
   }
   return res;
 }
 
-WMosaicHStructure::WMosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
-                gsl_vector *Wk ) :
-        StripedStructure(oldMl->size, allocStripe(oldNk, oldMl, Wk)) {
+WMosaicHStructure::WMosaicHStructure( gsl_vector *m_l, gsl_vector *n_k,  
+    gsl_vector *w ) : StripedStructure(n_k->size, allocStripe(m_l, n_k, w)) {
 }
 
 

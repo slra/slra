@@ -11,11 +11,11 @@ StripedStructure::StripedStructure( size_t blocksN, Structure **stripe  ) :
     myBlocksN(blocksN), myStripe(stripe) {
   size_t k;  
   
-  for (k = 0, myN = 0, myNp = 0, myMaxMlInd = 0; k < myBlocksN; 
+  for (k = 0, myN = 0, myNp = 0, myMaxNkInd = 0; k < myBlocksN; 
        myN += myStripe[k]->getN(), myNp += myStripe[k]->getNp(), k++) {
 
-    if (myStripe[k]->getN() > myStripe[myMaxMlInd]->getN()) {
-      myMaxMlInd = k;
+    if (myStripe[k]->getN() > myStripe[myMaxNkInd]->getN()) {
+      myMaxNkInd = k;
     }
   }
 }
@@ -36,8 +36,8 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
   gsl_matrix_view sub_c;
   
   for (int k = 0; k < getBlocksN(); 
-       sum_np += myStripe[k]->getNp(), n_row += getMl(k), k++) {
-    sub_c = gsl_matrix_submatrix(c, n_row, 0, getMl(k), c->size2);    
+       sum_np += myStripe[k]->getNp(), n_row += getBlock(k)->getN(), k++) {
+    sub_c = gsl_matrix_submatrix(c, n_row, 0, getBlock(k)->getN(), c->size2);    
     gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, 
         myStripe[k]->getNp());
     myStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
@@ -50,8 +50,8 @@ void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R,
   gsl_vector_view sub_p, sub_yr;
   
   for (int k = 0; k < getBlocksN(); 
-       sum_np += myStripe[k]->getNp(), n_row += getMl(k) * D, k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row, getMl(k) * D);    
+       sum_np += myStripe[k]->getNp(), n_row += getBlock(k)->getN()*D, k++) {
+    sub_yr = gsl_vector_subvector(yr, n_row, getBlock(k)->getN() * D);    
     sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
     myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector, scaled);
   }
@@ -69,18 +69,17 @@ DGamma *StripedStructure::createDGamma( int D ) const {
 typedef Cholesky* pGammaCholesky;
 
 StripedCholesky::StripedCholesky( const StripedStructure *s, int D, 
-                                   double reg_gamma ) :
-    myStruct(s) {
+                                   double reg_gamma ) : myS(s) {
   myD = D;
-  myGamma = new pGammaCholesky[myStruct->getBlocksN()];
-  for (int k = 0; k < myStruct->getBlocksN(); k++) {
-    myGamma[k] = myStruct->getBlock(k)->createCholesky(D, reg_gamma);
+  myGamma = new pGammaCholesky[myS->getBlocksN()];
+  for (int k = 0; k < myS->getBlocksN(); k++) {
+    myGamma[k] = myS->getBlock(k)->createCholesky(D, reg_gamma);
   }
 }    
 
 StripedCholesky::~StripedCholesky() {
   if (myGamma != NULL) {
-    for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
+    for (size_t k = 0; k < myS->getBlocksN(); k++) {
       if (myGamma[k] != NULL) {
         delete myGamma[k];
       }
@@ -91,26 +90,26 @@ StripedCholesky::~StripedCholesky() {
 
 void StripedCholesky::multInvCholeskyVector( gsl_vector * yr, int trans ) {
   int n_row = 0, k;
-  gsl_vector_view sub_yr;
+  gsl_vector_view yr_b;
   
-  for (k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myD, myStruct->getMl(k) * myD);    
-    myGamma[k]->multInvCholeskyVector(&sub_yr.vector, trans);
+  for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
+    yr_b = gsl_vector_subvector(yr, n_row*myD, myS->getBlock(k)->getN()*myD);    
+    myGamma[k]->multInvCholeskyVector(&yr_b.vector, trans);
   }
 }
 
 void StripedCholesky::multInvGammaVector( gsl_vector * yr ) {
   int n_row = 0, k;
-  gsl_vector_view sub_yr;
+  gsl_vector_view yr_b;
   
-  for (k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myD, myStruct->getMl(k) * myD);    
-    myGamma[k]->multInvGammaVector(&sub_yr.vector);
+  for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
+    yr_b = gsl_vector_subvector(yr, n_row*myD, myS->getBlock(k)->getN()*myD);    
+    myGamma[k]->multInvGammaVector(&yr_b.vector);
   }
 }
 
 void StripedCholesky::calcGammaCholesky( gsl_matrix *R ) {
-  for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
+  for (size_t k = 0; k < myS->getBlocksN(); k++) {
     myGamma[k]->calcGammaCholesky(R);  
   }
 }
@@ -119,18 +118,18 @@ void StripedCholesky::calcGammaCholesky( gsl_matrix *R ) {
 typedef DGamma* pDGamma;
 
 StripedDGamma::StripedDGamma( const StripedStructure *s, int D  ) : 
-    myStruct(s) {
-  myTmpGrad = gsl_matrix_alloc(myStruct->getM(), D);  
-  myLHDGamma = new pDGamma[myStruct->getBlocksN()];
-  for (int k = 0; k < myStruct->getBlocksN(); k++) {
-    myLHDGamma[k] = myStruct->getBlock(k)->createDGamma(D);
+    myS(s) {
+  myTmpGrad = gsl_matrix_alloc(myS->getM(), D);  
+  myLHDGamma = new pDGamma[myS->getBlocksN()];
+  for (int k = 0; k < myS->getBlocksN(); k++) {
+    myLHDGamma[k] = myS->getBlock(k)->createDGamma(D);
   }
 }    
 
 StripedDGamma::~StripedDGamma() {
   gsl_matrix_free(myTmpGrad);
   if (myLHDGamma != NULL) {
-    for (size_t k = 0; k < myStruct->getBlocksN(); k++) {
+    for (size_t k = 0; k < myS->getBlocksN(); k++) {
       if (myLHDGamma[k] != NULL) {
         delete myLHDGamma[k];
       }
@@ -144,9 +143,9 @@ void StripedDGamma::calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R,
   int n_row = 0, k;
   gsl_vector_view sub_yr;
   
-  for (k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
+  for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * R->size2, 
-                                  myStruct->getMl(k) * R->size2);    
+                                  myS->getBlock(k)->getN() * R->size2);    
     myLHDGamma[k]->calcYrtDgammaYr(myTmpGrad, R, &sub_yr.vector);
     gsl_matrix_add(grad, myTmpGrad);
   }
@@ -157,11 +156,11 @@ void StripedDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R,
   int n_row = 0, k;
   gsl_vector_view sub_yr, sub_res;
   
-  for (k = 0; k < myStruct->getBlocksN(); n_row += myStruct->getMl(k), k++) {
+  for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
     sub_yr = gsl_vector_subvector(yr, n_row * R->size2, 
-                                  myStruct->getMl(k) * R->size2);    
+                                  myS->getBlock(k)->getN() * R->size2);    
     sub_res = gsl_vector_subvector(res, n_row * R->size2, 
-                                   myStruct->getMl(k) * R->size2);    
+                                   myS->getBlock(k)->getN() * R->size2);    
     myLHDGamma[k]->calcDijGammaYr(&sub_res.vector, R, perm, i, j,
                                   &sub_yr.vector);
   }                   

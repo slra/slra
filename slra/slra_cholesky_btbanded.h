@@ -71,7 +71,7 @@ public:
 
 class SameStripedStationaryCholesky : public Cholesky {
   StationaryCholesky *myBase;
-  const MosaicHStructure *myStruct;
+  const MosaicHStructure *myS;
 public:  
   SameStripedStationaryCholesky( const MosaicHStructure *s, 
       int r, int use_slicot, double reg_gamma );

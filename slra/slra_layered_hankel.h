@@ -1,10 +1,8 @@
 /** Layered Hankel structure with blockwise weights.
- * A structure of form 
+ * The layered Hankel structure is a structure of form 
  * \f$ \mathcal{H}_{{\bf m}, n} := 
  * \begin{bmatrix} \mathcal{H}_{n,m_1} & \cdots & \mathcal{H}_{n,m_q} 
- * \end{bmatrix} \f$  with \f$q\f$ blocks
- * and blockwise weights 
- * \f$\begin{bmatrix} w_1 & \cdots & w_q \end{bmatrix}\f$ 
+ * \end{bmatrix} \f$  with \f$q\f$ blocks.
  */
 class LayeredHStructure : public StationaryStructure {
   typedef struct {
@@ -24,14 +22,17 @@ class LayeredHStructure : public StationaryStructure {
 protected:
   int nvGetNp() const { return (myN - 1) * myQ + myM; }  
 public:
-  /** Constructs Layered Hankel structure
-   * from array of \f$m_l\f$, \f$q\f$, \f$n\f$ and array of \f$w_l\f$ 
-   * (if w_l = NULL then \f$w_l = \begin{bmatrix}1&\cdots&1\end{bmatrix}\f$). 
+  /** Constructs layered Hankel structure.
+   * @param m_l \f${\bf m} = \begin{bmatrix}m_1 & \cdots & m_q\end{bmatrix}\f$
+   * @param q   \f$q\f$
+   * @param w_l vector of weights 
+   * \f${\bf w} =\begin{bmatrix} w_1 & \cdots & w_q \end{bmatrix}\f$.
+   * If w_l == NULL then \f${\bf w}\f$ is set to be
+   * \f$\begin{bmatrix}1&\cdots&1\end{bmatrix}\f$. 
    */
   LayeredHStructure( const double *m_l, size_t q, int n, 
                      const double *w_l = NULL );
   virtual ~LayeredHStructure();
-
   /** @name Implementing Structure interface */
   /**@{*/
   virtual int getM() const { return myM; }
@@ -43,7 +44,7 @@ public:
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          bool scaled = true );
   /**@}*/
-
+ 
   /** @name Implementing StationaryStructure interface */
   /**@{*/
   virtual int getS() const { return myMaxLag; }
@@ -55,8 +56,7 @@ public:
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWkV, double beta = 0 ) const;
   /**@}*/
-
-
+ 
   /** @name Layered-Hankel-specific methods */
   /**@{*/
   /** Returns a pointer to Wk matrix.  @todo remove.*/
@@ -77,16 +77,48 @@ public:
 };
 
 
+/** Mosaic Hankel structure with blockwise weights.
+ * The mosaic Hankel structure is a structure of form 
+ * \f$ \mathcal{H}_{{\bf m}, {\bf n}} := 
+ * \begin{bmatrix} 
+ * \mathcal{H}_{n_1,m_1} & \cdots & \mathcal{H}_{n_1,m_q} \\
+ * \vdots                &        & \vdots              \\
+ * \mathcal{H}_{n_N,m_1} & \cdots & \mathcal{H}_{n_N,m_q} \\
+ * \end{bmatrix} \f$  with \f$N q\f$ blocks.
+ */
 class MosaicHStructure : public StripedStructure {
   bool myWkIsCol;
 protected:
-  static Structure **allocStripe( gsl_vector *oldNk, gsl_vector *oldMl,  
-                                  gsl_vector *Wk, bool wkIsCol = false );
+  static Structure **allocStripe( gsl_vector *m_l, gsl_vector *n_k,  
+                                  gsl_vector *w );
 public:
-  MosaicHStructure( gsl_vector *oldNk, gsl_vector *oldMl,  
-                    gsl_vector *Wk, bool wkIsCol = false );
+  /** Constructs MosaicHStructure object 
+   * by combining StripedStructure and LayeredHStructure.
+   * @param m_l vector 
+   * \f${\bf m} = \begin{bmatrix}m_1 & \cdots & m_q\end{bmatrix}\f$
+   * @param n_k vector 
+   * \f${\bf n} = \begin{bmatrix}n_1 & \cdots & n_N\end{bmatrix}\f$
+   * @param w vector of weights \f${\bf w}\f$, defining
+   * the matrix of blockwise weights 
+   * \f$W = \begin{bmatrix} 
+   * w_{1,1} & \cdots & w_{1,q} \\
+   * \vdots  &        & \vdots  \\
+   * w_{N,1} & \cdots & w_{N,q} \\
+   * \end{bmatrix}\f$ in a following wya
+   * \f[{\rm vec}\ W^{\rm T} = 
+   * \begin{cases}
+   *   \begin{bmatrix}1&\cdots&1\end{bmatrix}, &  {\bf w} = NULL, \\
+   *   \begin{bmatrix}1&\cdots&1\end{bmatrix} \otimes {\bf w}, &
+   *   {\rm length}\ ({\bf w}) = q, \\
+   *   {\bf w}, & \mbox{otherwise}. \\
+   * \end{cases}\f]
+   */
+  MosaicHStructure( gsl_vector *m_l, gsl_vector *n_k, gsl_vector *w );
   virtual ~MosaicHStructure() {}
+  /** @name Implementing Structure interface */
+  /**@{*/
   virtual Cholesky *createCholesky( int r, double reg_gamma ) const;
+  /**@}*/
 };
 
 
