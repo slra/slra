@@ -172,6 +172,7 @@ public:
 #define FMIN_STR "fmin"
 #define ITER_STR "iter"
 #define TIME_STR "time"
+#define PSI_STR "Psi"
           
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
 #define mymin(a, b) ((a) < (b) ? (a) : (b))
@@ -205,7 +206,7 @@ public:
  */
 int slra( const gsl_vector *p_in, Structure* s, int r, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
-          gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
+          gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
 /** Function that runs SLRA optimization */
 int gsl_optimize( CostFunction *F, OptimizationOptions *opt, 
                        gsl_vector* x_vec, gsl_matrix *v );

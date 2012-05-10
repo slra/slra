@@ -20,6 +20,7 @@ BUILD_MODE=BUILD_DEFAULT
 mex: $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra 
+	cp slra.mexa64 doc/slra_mex.mexa64
 
 mex-octave: $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \

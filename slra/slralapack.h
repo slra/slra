@@ -40,6 +40,11 @@ void dgesvd_(const char* jobu, const char* jobvt, const size_t* m,
              const double* vt, const size_t* ldvt, 
              double* work, const size_t* lwork, size_t * info);              
 
+void dgels_(const char * trans, const size_t* m, const size_t* n,
+            const size_t* nrhs, double* a, const size_t* lda, 
+            double* b, const size_t* ldb, 
+            double* work, const size_t* lwork, size_t* info);
+
 #ifndef BUILD_R_PACKAGE 
 void dtrsm_(const char* side, const char *uplo, const char *transa,
             const char *diag, const size_t *m, const size_t *n, 

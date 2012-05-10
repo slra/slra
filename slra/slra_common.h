@@ -8,6 +8,8 @@ void tmv_prod_vector( gsl_vector *T, int s, gsl_vector* v, int m,
          gsl_vector* p );
 void tmv_prod_new( gsl_matrix *T, int s,  gsl_vector *v, int m, gsl_vector *p, 
          double beta = 0.0 );
+
+void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ); 
          
 void copyLowerTrg( gsl_matrix * dest, const gsl_matrix *src  );         
 void shiftLowerTrg( gsl_matrix * dest, const gsl_matrix *src  );         

@@ -221,3 +221,43 @@ void tolowerstr( char * str ) {
   }
 } 
 
+void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ) {
+  size_t D = B->size2, i, j, one = 1, lwork = -1, info;
+  gsl_matrix *AkronI = gsl_matrix_alloc(A->size1 * D, A->size2 * D);
+  gsl_matrix *Btemp = gsl_matrix_alloc(B->size1, B->size2);
+  gsl_matrix subA;
+  gsl_vector diagSubA;
+  double tmp;
+                                         
+  /* Fill A^{T} \kron I_d */
+  gsl_matrix_set_zero(AkronI);
+  for (i = 0; i < A->size1; i++) {
+    for (j = 0; j < A->size2; j++) {
+      subA = gsl_matrix_submatrix(AkronI, i * D, j * D, D, D).matrix;
+      diagSubA = gsl_matrix_diagonal(&subA).vector;
+      gsl_vector_set_all(&diagSubA, gsl_matrix_get(A, i, j));
+    }
+  }
+
+  gsl_matrix_memcpy(Btemp, B);
+  dgels_("T", &AkronI->size2, &AkronI->size1, &one, AkronI->data,
+         &AkronI->size2, Btemp->data, &B->size2, &tmp, &lwork, &info);
+  double *work = new double[lwork = tmp];
+  dgels_("T", &AkronI->size2, &AkronI->size1, &one, AkronI->data,
+         &AkronI->size2, Btemp->data, &B->size2, work, &lwork, &info);
+
+  delete [] work;
+  gsl_matrix_free(Btemp);
+  gsl_matrix_free(AkronI);
+  
+  
+  gsl_matrix Btempsub = 
+      gsl_matrix_submatrix(Btemp, 0, 0, X->size1, X->size2).matrix;
+  gsl_matrix_memcpy(X, &Btempsub);
+
+  if (info != 0) {
+    throw new Exception("DGELS error %d", info);
+  }
+}
+
+

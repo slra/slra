@@ -11,6 +11,8 @@ class CostFunction {
   gsl_matrix *myTmpGradR;
   gsl_matrix *myTmpGradR2;
   gsl_matrix *myTmpR;  
+  gsl_matrix *myEye;  
+  gsl_matrix *myTmpJac;  
   gsl_vector *myTmpYr;  
   gsl_vector *myTmpCorr;  
   const gsl_vector *myP;
@@ -34,9 +36,9 @@ public:
   const gsl_matrix * getSMart() { return myMatr; }
   const gsl_matrix * getPhiSMatr() { return myMatrMulPerm; }
 
-  void computeRTheta( const gsl_matrix * x_mat, gsl_matrix *RTheta ); 
+  void X2Rtheta( const gsl_matrix * x_mat, gsl_matrix *RTheta ); 
   void computeDefaultRTheta( gsl_matrix *RTheta ); 
-  static void R_2_x( const gsl_matrix *R, gsl_matrix * x );
+  static void Rtheta2X( const gsl_matrix *R, gsl_matrix * x );
   
   void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 
   void computeR( const gsl_vector *x, gsl_matrix *R ); 
@@ -45,10 +47,16 @@ public:
 
   void computeJacobianZij( gsl_vector*res, int i, int j, gsl_vector* yr, 
                            gsl_matrix *R, double factor = 0.5 );
-  void computeJacobianOfCorrection( gsl_vector* yr, gsl_matrix *R, 
-                                    gsl_matrix *jac );
   void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *R, 
                                       gsl_matrix *jac );
+
+  void computeJacobianZijOld( gsl_vector*res, int i, int j, gsl_vector* yr, 
+                           gsl_matrix *R, double factor = 0.5 );
+  void computePseudoJacobianLsFromYrOld( gsl_vector* yr, gsl_matrix *R, 
+                                       gsl_matrix *jac );
+
+  void computeJacobianOfCorrection( gsl_vector* yr, gsl_matrix *R, 
+                                    gsl_matrix *jac );
   void computeGradFromYr( gsl_vector* yr, gsl_matrix *R, gsl_vector *grad );
   void computeCorrectionAndJacobian( const gsl_vector* x, gsl_vector *res, 
                                      gsl_matrix *jac  );

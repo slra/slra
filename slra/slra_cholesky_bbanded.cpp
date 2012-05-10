@@ -78,7 +78,7 @@ void SDependentCholesky::calcGammaCholesky( gsl_matrix *R ) {
   dpbtrf_("U", &d_times_n, &d_times_s_minus_1, myPackedCholesky, 
           &d_times_s, &info);
   if (info) { 
-    PRINTF("Gamma matrix is close to singular, adding regularization.\n");
+    //PRINTF("Gamma matrix is close to singular, adding regularization.\n");
     computeGammaUpperPart(R);
     
     gsl_vector v;

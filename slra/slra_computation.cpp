@@ -38,6 +38,10 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   myTmpJacobianCol = gsl_vector_alloc(getN() * getD());
 
   myTmpGrad = gsl_matrix_alloc(myRank, getD());
+
+  myEye = gsl_matrix_alloc(getM(), getM());
+  gsl_matrix_set_identity(myEye);
+  myTmpJac = gsl_matrix_alloc(getM() * getD(), getN() * getD());
   
   if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
@@ -80,6 +84,10 @@ CostFunction::~CostFunction() {
   gsl_matrix_free(myTmpGradR);
   gsl_matrix_free(myTmpGradR2);
   gsl_matrix_free(myTmpR);
+  
+  gsl_matrix_free(myEye);
+  gsl_matrix_free(myTmpJac);
+
   gsl_vector_free(myTmpYr);
 
   gsl_vector_free(myTmpJacobianCol);
@@ -95,7 +103,7 @@ void CostFunction::computeRGammaSr( const gsl_vector *x, gsl_matrix *R,
   computeSr(myTmpR, Sr);
 } 
 
-void CostFunction::computeRTheta( const gsl_matrix *x, gsl_matrix *RTheta ) { 
+void CostFunction::X2Rtheta( const gsl_matrix *x, gsl_matrix *RTheta ) { 
   gsl_vector diag;
   gsl_matrix submat;
   int n = x->size1, d = x->size2;
@@ -110,7 +118,7 @@ void CostFunction::computeRTheta( const gsl_matrix *x, gsl_matrix *RTheta ) {
 }
 
 void CostFunction::computeR(gsl_matrix_const_view x_mat, gsl_matrix *R ) { 
-  computeRTheta(&x_mat.matrix, myTmpThetaExt);
+  X2Rtheta(&x_mat.matrix, myTmpThetaExt);
 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, myPerm, myTmpThetaExt, 0.0,
       R);
@@ -190,7 +198,7 @@ void CostFunction::computeCorrectionAndJacobian( const gsl_vector* x,
 }
 
 
-void CostFunction::computeJacobianZij( gsl_vector *res, int i, int j,
+void CostFunction::computeJacobianZijOld( gsl_vector *res, int i, int j,
          gsl_vector* yr, gsl_matrix *R, double factor ) {
   myDeriv->calcDijGammaYr(res, R, myPerm, i, j, yr);
   gsl_vector_scale(res, -factor);
@@ -201,7 +209,20 @@ void CostFunction::computeJacobianZij( gsl_vector *res, int i, int j,
   }  
 }
 
-void CostFunction::computePseudoJacobianLsFromYr( gsl_vector* yr, 
+
+void CostFunction::computeJacobianZij( gsl_vector *res, int i, int j,
+         gsl_vector* yr, gsl_matrix *R, double factor ) {
+  myDeriv->calcDijGammaYr(res, R, myEye, i, j, yr);
+  gsl_vector_scale(res, -factor);
+  
+  for (int k = 0; k < getN(); k++) {  /* Convert to vector strides */
+    (*gsl_vector_ptr(res, j + k * getD())) += 
+          gsl_matrix_get(myMatr, k, i);
+  }  
+}
+
+
+void CostFunction::computePseudoJacobianLsFromYrOld( gsl_vector* yr, 
          gsl_matrix *R, gsl_matrix *jac ) {
   for (size_t i = 0; i < getRank(); i++) {
     for (size_t j = 0; j < getD(); j++) {
@@ -212,6 +233,32 @@ void CostFunction::computePseudoJacobianLsFromYr( gsl_vector* yr,
     }
   }
 }
+
+void CostFunction::computePseudoJacobianLsFromYr( gsl_vector* yr, 
+         gsl_matrix *R, gsl_matrix *jac ) {
+  size_t i, j;
+  for (i = 0; i < getM(); i++) {
+    for (j = 0; j < getD(); j++) {
+      gsl_vector tmpJacRow = gsl_matrix_row(myTmpJac, i + j * getM()).vector;
+    
+      computeJacobianZij(&tmpJacRow, i, j, yr, R);
+    }
+  }
+  
+  for (i = 0; i < getRank(); i++) {
+    for (j = 0; j < getD(); j++) {
+      gsl_matrix subJ = gsl_matrix_submatrix(myTmpJac, j * getM(), 0, getM(),
+                            myTmpJac->size2).matrix;
+      gsl_vector phiCol = gsl_matrix_column(myPerm, i).vector;
+      gsl_blas_dgemv(CblasTrans, 1.0, &subJ, &phiCol, 0.0, myTmpJacobianCol);
+    
+      myGam->multInvCholeskyVector(myTmpJacobianCol, 1);
+      gsl_matrix_set_col(jac, i * getD() + j, myTmpJacobianCol);  
+    }
+  }
+}
+
+
 
 void CostFunction::computeJacobianOfCorrection( gsl_vector* yr, 
          gsl_matrix *R, gsl_matrix *jac ) {
@@ -311,7 +358,7 @@ void CostFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
   gsl_matrix_free(tempu);
 }
 
-void CostFunction::R_2_x( const gsl_matrix *R, gsl_matrix * x ) {
+void CostFunction::Rtheta2X( const gsl_matrix *R, gsl_matrix * x ) {
   size_t status = 0;
   gsl_matrix *tempR = gsl_matrix_alloc(R->size1, R->size2);
   gsl_matrix_memcpy(tempR, R);

@@ -127,6 +127,7 @@ Cholesky *LayeredHStructure::createCholesky( int D, double reg_gamma ) const {
 
 DGamma *LayeredHStructure::createDGamma( int D ) const {
   return new StationaryDGamma(this, D);
+//  return new SDependentDGamma(this, D);
 }
 
 

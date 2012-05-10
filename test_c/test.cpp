@@ -39,7 +39,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
          int ls_correction = 0, bool silent = false ) {
   gsl_matrix *Rt = NULL, *R = NULL, *v = NULL, *Phi = NULL;
   gsl_vector *p = NULL, *p2 = NULL;
-  int rk = 1, s_k, s_q, hasR, hasPhi, hasW;
+  int rk = 1, s_k, s_q, hasR, hasPhi, hasW, m;
   FILE *file;
   char fnR[MAX_FN], fpname[MAX_FN], fRtname[MAX_FN], fsname[MAX_FN], 
        fRresname[MAX_FN], fpresname[MAX_FN], fnPhi[MAX_FN];
@@ -54,6 +54,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
 
   OptimizationOptions opt;
   opt.maxiter = 500;
+  
   opt.disp = silent ? 0 : SLRA_OPT_DISP_ITER;
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
@@ -65,7 +66,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
       fprintf(log, "Error opening file %s\n", fsname);
       throw 1;
     }
-    fscanf(file, "%d %d %d %d", &s_k, &s_q, &rk, &hasW); 
+    fscanf(file, "%d %d %d %d %d", &s_k, &s_q, &m, &rk, &hasW); 
     gsl_vector *m_k = gsl_vector_alloc(s_k), *L_q = gsl_vector_alloc(s_q),
                *w_k = gsl_vector_alloc(s_q);
     gsl_vector_fscanf(file, m_k);
@@ -84,15 +85,16 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
     /* Compute invariants and read everything else */ 
     read_vec(p = gsl_vector_alloc(S->getNp()), fpname, log);
     p2 = gsl_vector_alloc(S->getNp());
-    hasR = read_mat(R = gsl_matrix_calloc(S->getM(), S->getM()-rk), fnR, log);
-    hasPhi = read_mat(Phi=gsl_matrix_alloc(S->getM(), S->getM()), fnPhi, log);
-    read_mat(Rt = gsl_matrix_calloc(S->getM(), S->getM()-rk), fRtname, log);
+    hasR = read_mat(R = gsl_matrix_calloc(m, m - rk), fnR, log);
+    hasPhi = read_mat(Phi=gsl_matrix_alloc(S->getM(), m), fnPhi, log);
+    read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname, log);
     /* call slra */  
-    slra(p, S, rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), p2, R, v);
+    slra(p, S, rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), NULL,
+         p2, R, v);
          
     gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");
     fclose(file);
-    gsl_vector_fprintf(file = fopen(fpresname, "w"), p, "%.14f");
+    gsl_vector_fprintf(file = fopen(fpresname, "w"), p2, "%.14f");
     fclose(file);
     gsl_vector_sub(p2, p);
     gsl_matrix_sub(Rt, R);
@@ -130,7 +132,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
   }
 }
 
-#define TEST_NUM 9
+#define TEST_NUM 10
 
 int main(int argc, char *argv[])
 {

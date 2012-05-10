@@ -68,7 +68,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   gsl_error_handler_t *old_gsl_err_h = gsl_set_error_handler(new_gsl_err_h);
   char str_buf[STR_MAX_LEN];
   gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, rh_view = { 0, 0, 0, 0, 0, 0 },
-             vh_view = { 0, 0, 0, 0, 0, 0 };
+             vh_view = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 };
   Structure *myStruct = NULL;
   OptimizationOptions opt;
   
@@ -109,6 +109,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         if (rini.data != NULL && (rini.size2 != (m - r) || rini.size1 != m)) {
           throw new Exception("Incorrect Rini\n");   
         }
+        psi = M2trmat(mxGetField(prhs[3], 0, PSI_STR));
+        if (psi.data != NULL && (psi.size2 == 0 || psi.size1 > m ||
+                                 psi.size2 != m)) {
+          throw new Exception("Incorrect Rini\n");   
+        }
         opt.str2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), str_buf, 
                                      STR_MAX_LEN));
         opt.str2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), str_buf, 
@@ -141,7 +146,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
     /* Call slra solver and output info */
     slra(vecChkNIL(p_in), myStruct, r, &opt, matChkNIL(rini), matChkNIL(perm),
-         vecChkNIL(p_out), matChkNIL(rh_view), matChkNIL(vh_view));
+         matChkNIL(psi), vecChkNIL(p_out), matChkNIL(rh_view), matChkNIL(vh_view));
     if (nlhs > 1) {
       mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
       mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));

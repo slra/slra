@@ -14,10 +14,16 @@
 
 int slra( const gsl_vector *p_in, Structure* s, int r, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
-         gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh ) { 
+          gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
+          gsl_matrix *vh ) { 
   CostFunction * myCostFun = NULL;
-  gsl_matrix *x = NULL, *R = NULL;
+  gsl_matrix *x = NULL, *Rtheta = NULL, *tmpphi = NULL;
   int res = GSL_SUCCESS;
+  
+  if (Phi != NULL && Psi != NULL) {
+    tmpphi = gsl_matrix_alloc(Phi->size1, Psi->size2);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Phi, Psi, 0, tmpphi); 
+  }
 
   if (opt->gcd) { 
     opt->ls_correction = 1; /* Only correction LS is allowed for GCD */
@@ -28,22 +34,26 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
   }
   
   try { 
-    myCostFun =  new CostFunction(s, r, p_in, opt, Phi);
-    R = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
+    myCostFun =  new CostFunction(s, r, p_in, opt, 
+                                  (tmpphi != NULL? tmpphi : Phi));
+    Rtheta = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
     
     if (Rini == NULL) {  /* compute default initial approximation */
-      myCostFun->computeDefaultRTheta(R);
+      myCostFun->computeDefaultRTheta(Rtheta);
     } else {
-      gsl_matrix_memcpy(R, Rini);
+      if (tmpphi == NULL) {
+        gsl_matrix_memcpy(Rtheta, Rini);
+      } else {
+        ls_solve(Psi, Rini, Rtheta);
+      }      
     }
 
     x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());
-    myCostFun->R_2_x(R, x);
+    myCostFun->Rtheta2X(Rtheta, x);
     time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
     int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
-    myCostFun->computeRTheta(x, R);
     if (p_out != NULL) {
       if (opt->gcd) {
         gsl_vector_set_zero(p_out);
@@ -54,13 +64,17 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }
-    if (rh != NULL) {
-      gsl_matrix_memcpy(rh, R);
+    
+    if (Rout != NULL) {
+      myCostFun->X2Rtheta(x, Rtheta);
+      if (tmpphi == NULL) {
+        gsl_matrix_memcpy(Rout, Rtheta);
+      } else {
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, Psi, Rtheta, 0, Rout);
+      }
     }
 
-    gsl_matrix_free(x);
-    gsl_matrix_free(R);
-    delete myCostFun;
+    throw (Exception *)NULL; /* Throw NULL exception to unify deallocation */
   } catch ( Exception *e ) {
     if (myCostFun != NULL) {
       delete myCostFun;
@@ -68,11 +82,16 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
     if (x != NULL) {
       gsl_matrix_free(x);
     }
-    if (R != NULL) {
-      gsl_matrix_free(R);
+    if (Rtheta != NULL) {
+      gsl_matrix_free(Rtheta);
+    }
+    if (tmpphi != NULL) {
+      gsl_matrix_free(tmpphi);
     }
     
-    throw; 
+    if (e != NULL) { /* Abnormal termination only if e is normal exception */
+      throw;  
+    }
   }
 
   return res;
