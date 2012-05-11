@@ -30,6 +30,7 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
                gsl_vector * wk, int np_comp );
                
 int compute_np( gsl_vector* ml, gsl_vector *nk );               
+int compute_n( gsl_vector* ml, int np );               
 
 
 const gsl_vector *vecChkNIL( const gsl_vector &vec );

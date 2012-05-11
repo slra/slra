@@ -51,8 +51,8 @@ CostFunction::CostFunction( Structure *s, int d, const gsl_vector *p,
   myTmpCorr = gsl_vector_alloc(getNp());
   
   if (getN() < getM()) {
-    throw new Exception("Number of rows %d is less than "
-                        "the number of columns %d.", getN(), getM());
+    throw new Exception("Number of columns %d is less than "
+                        "the number of rows %d.", getN(), getM());
   }
 
   if (myStruct->getNp() < getN() * getD()) {

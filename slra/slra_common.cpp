@@ -195,6 +195,19 @@ int compute_np( gsl_vector* ml, gsl_vector *nk ) {
   return np;
 }
 
+
+int compute_n( gsl_vector* ml, int np ) {
+  for (int i = 0; i < ml->size; i++) {
+    np -= ((int)gsl_vector_get(ml, i) - 1);
+  }
+
+  if (np <= 0 || (np % ml->size != 0)) {
+    throw new Exception("np not compatible with structure specification");
+  }
+
+  return np / ml->size;
+}
+
 void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
   for (int i = 0; i < yr_matr->size1; i++) {
     gsl_vector_view row = gsl_matrix_row(yr_matr, i);

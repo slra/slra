@@ -69,6 +69,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   char str_buf[STR_MAX_LEN];
   gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, rh_view = { 0, 0, 0, 0, 0, 0 },
              vh_view = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 };
+  double tmp_n;             
   Structure *myStruct = NULL;
   OptimizationOptions opt;
   
@@ -80,15 +81,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     gsl_vector p_in = M2vec(prhs[0]);
     gsl_vector ml = M2vec(mxGetField(prhs[1], 0, ML_STR));
     gsl_vector nk = M2vec(mxGetField(prhs[1], 0, NK_STR));
-    if (ml.size == 0 || nk.size == 0) {
-      throw new Exception("s.m and s.n should be nonempty vectors");   
+    if (ml.size == 0) {
+      throw new Exception("s.m should be a nonempty vector");   
     }
+    
+    if (nk.size == 0) {
+      tmp_n = compute_n(&ml, p_in.size);
+      nk = gsl_vector_view_array(&tmp_n, 1).vector;
+    }    
     int np = compute_np(&ml, &nk);
     if (p_in.size < np) {
       throw new Exception("Size of vector p less than needed");   
     } else if (p_in.size > np) {
-      p_in.size = np;
-      mexWarnMsgTxt("Size of vector p exceeds structure requirements");   
+      throw new Exception("Size of vector p exceeds structure requirements");   
     } 
     gsl_matrix perm = M2trmat(mxGetField(prhs[1], 0, PERM_STR));
     gsl_vector wk = M2vec(mxGetField(prhs[1], 0, WK_STR));
@@ -155,7 +160,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxArray *rh, *vh;
       rh_view = M2trmat(rh = mxCreateDoubleMatrix((m-r), m, mxREAL));
       vh_view = M2trmat(vh = mxCreateDoubleMatrix((m-r) * (mtheta - (m-r)), 
-                                                  (m-r) * (mtheta - (m-r)), mxREAL));
+                                 (m-r) * (mtheta - (m-r)), mxREAL));
       mxSetField(plhs[1], 0, RH_STR, rh);
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
