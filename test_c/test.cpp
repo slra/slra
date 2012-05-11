@@ -89,7 +89,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
     hasPhi = read_mat(Phi=gsl_matrix_alloc(S->getM(), m), fnPhi, log);
     read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname, log);
     /* call slra */  
-    slra(p, S, rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), NULL,
+    slra(p, S, m-rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), NULL,
          p2, R, v);
          
     gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");

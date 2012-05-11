@@ -172,7 +172,7 @@ public:
 #define FMIN_STR "fmin"
 #define ITER_STR "iter"
 #define TIME_STR "time"
-#define PSI_STR "Psi"
+#define PSI_STR "psi"
           
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
 #define mymin(a, b) ((a) < (b) ? (a) : (b))
@@ -195,7 +195,7 @@ public:
  * @ingroup MainFunctions 
  * @param [in]  p_in  Input pararmeter vector \f$p\f$  
  * @param [in]  s     Structure specification  
- * @param [in]  r     Structure specification  
+ * @param [in]  d     Rank reduction  
  * @param [in]  opt   Optimization options
  * @param [in]  Rini  Initial approximation  
  * @param [in]  Phi   Phi matrix
@@ -204,7 +204,7 @@ public:
  *                    (not computed if p_out == NULL )
  * @param [out] R_out Output parameter vector 
  */
-int slra( const gsl_vector *p_in, Structure* s, int r, 
+int slra( const gsl_vector *p_in, Structure* s, int d, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
           gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *rh, gsl_matrix *vh );
 /** Function that runs SLRA optimization */

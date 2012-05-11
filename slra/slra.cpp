@@ -12,7 +12,7 @@
 
 #include "slra.h"
 
-int slra( const gsl_vector *p_in, Structure* s, int r, 
+int slra( const gsl_vector *p_in, Structure* s, int d, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
           gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
           gsl_matrix *vh ) { 
@@ -20,9 +20,14 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
   gsl_matrix *x = NULL, *Rtheta = NULL, *tmpphi = NULL;
   int res = GSL_SUCCESS;
   
-  if (Phi != NULL && Psi != NULL) {
-    tmpphi = gsl_matrix_alloc(Phi->size1, Psi->size2);
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Phi, Psi, 0, tmpphi); 
+  if (Psi != NULL) {
+    if (Phi != NULL) {
+      tmpphi = gsl_matrix_alloc(Phi->size1, Psi->size2);
+      gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Phi, Psi, 0, tmpphi); 
+    } else {
+      tmpphi = gsl_matrix_alloc(Psi->size1, Psi->size2);
+      gsl_matrix_memcpy(tmpphi, Psi); 
+    }
   }
 
   if (opt->gcd) { 
@@ -34,10 +39,10 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
   }
   
   try { 
-    myCostFun =  new CostFunction(s, r, p_in, opt, 
-                                  (tmpphi != NULL? tmpphi : Phi));
+    myCostFun =  new CostFunction(s, d, p_in, opt, 
+                                  (tmpphi != NULL ? tmpphi : Phi));
     Rtheta = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
-    
+
     if (Rini == NULL) {  /* compute default initial approximation */
       myCostFun->computeDefaultRTheta(Rtheta);
     } else {
@@ -64,10 +69,10 @@ int slra( const gsl_vector *p_in, Structure* s, int r,
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }
-    
+
     if (Rout != NULL) {
       myCostFun->X2Rtheta(x, Rtheta);
-      if (tmpphi == NULL) {
+      if (Psi == NULL) {
         gsl_matrix_memcpy(Rout, Rtheta);
       } else {
         gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, Psi, Rtheta, 0, Rout);

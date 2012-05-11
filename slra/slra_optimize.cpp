@@ -61,6 +61,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
   gsl_multimin_function fnm = { &(CostFunction::_f), 
       F->getRank() * F->getD(), F };
 
+
   /* initialize the optimization method */
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
@@ -89,6 +90,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
   if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {
     PRINTF("SLRA optimization:\n");
   }
+
     
   status = GSL_SUCCESS;  
   status_dx = GSL_CONTINUE;
@@ -104,7 +106,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
     PRINTF("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
            opt->fmin, g_norm, x_norm);
   }
- 
+
   while (status_dx == GSL_CONTINUE && 
 	 status_grad == GSL_CONTINUE &&
 	 status == GSL_SUCCESS &&

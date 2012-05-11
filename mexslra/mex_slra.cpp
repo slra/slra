@@ -99,6 +99,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (r <= 0 || r >= m) {
       throw new Exception("Incorrect rank\n");   
     }
+    
+    int mtheta = m;
     /* Parse user supplied options */
     if (nrhs > 3) {
       if (! mxIsStruct(prhs[3])) {
@@ -109,11 +111,22 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         if (rini.data != NULL && (rini.size2 != (m - r) || rini.size1 != m)) {
           throw new Exception("Incorrect Rini\n");   
         }
+        
         psi = M2trmat(mxGetField(prhs[3], 0, PSI_STR));
-        if (psi.data != NULL && (psi.size2 == 0 || psi.size1 > m ||
-                                 psi.size2 != m)) {
-          throw new Exception("Incorrect Rini\n");   
+        if (psi.data != NULL) {
+          if (psi.size1 != m || psi.size2 == 0 || psi.size2 > m) {
+//            throw new Exception("Incorrect Psi\n");   
+            PRINTF("Incorrect Psi: setting to identity\n");   
+            psi = M2trmat(NULL);
+          } else {
+            mtheta = psi.size2;
+          }
+        } 
+        
+        if ((m-r) >= mtheta) {
+          throw new Exception("Rank reduction and psi incompatible\n");   
         }
+        
         opt.str2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), str_buf, 
                                      STR_MAX_LEN));
         opt.str2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), str_buf, 
@@ -131,6 +144,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         MATStoreOption(prhs[3], opt, gcd, 0, 1);
       }
     }  
+
     /* Prepare output info */
     plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
     gsl_vector p_out = M2vec(plhs[0]);
@@ -139,14 +153,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       const char *names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
       plhs[1] = mxCreateStructArray(1, &l, 5, names);
       mxArray *rh, *vh;
-      rh_view = M2trmat(rh = mxCreateDoubleMatrix((m - r), m, mxREAL));
-      vh_view = M2trmat(vh = mxCreateDoubleMatrix((m-r)*r, (m-r)*r, mxREAL));
+      rh_view = M2trmat(rh = mxCreateDoubleMatrix((m-r), m, mxREAL));
+      vh_view = M2trmat(vh = mxCreateDoubleMatrix((m-r) * (mtheta - (m-r)), 
+                                                  (m-r) * (mtheta - (m-r)), mxREAL));
       mxSetField(plhs[1], 0, RH_STR, rh);
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
     /* Call slra solver and output info */
-    slra(vecChkNIL(p_in), myStruct, r, &opt, matChkNIL(rini), matChkNIL(perm),
-         matChkNIL(psi), vecChkNIL(p_out), matChkNIL(rh_view), matChkNIL(vh_view));
+    slra(vecChkNIL(p_in), myStruct, m-r, &opt, matChkNIL(rini), matChkNIL(perm),
+         matChkNIL(psi), vecChkNIL(p_out), matChkNIL(rh_view), 
+         matChkNIL(vh_view));
     if (nlhs > 1) {
       mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
       mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));

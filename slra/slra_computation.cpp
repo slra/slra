@@ -9,8 +9,8 @@ extern "C" {
 
 #include "slra.h"
 
-CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p, 
-    OptimizationOptions *opt, gsl_matrix *perm ) : myRank(r), 
+CostFunction::CostFunction( Structure *s, int d, const gsl_vector *p, 
+    OptimizationOptions *opt, gsl_matrix *perm ) :  
                                             myP(p), isGCD(opt->gcd) {
   myStruct = s;     
 
@@ -21,13 +21,14 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   } else {
     myPerm = gsl_matrix_alloc(perm->size1, perm->size2);
   }
+  
+  myRank = myPerm->size2 - d;
 
   myGam = myStruct->createCholesky(getD(), opt->reggamma);
   myDeriv = myStruct->createDGamma(getD());
-      
+
   myMatr = gsl_matrix_alloc(getN(), getM());
   myMatrMulPerm = gsl_matrix_alloc(getN(), myPerm->size2);
-  
   myTmpThetaExt = gsl_matrix_alloc(myPerm->size2, getD());
 
   myTmpGradR = gsl_matrix_alloc(getM(), getD());
@@ -42,7 +43,7 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
   myEye = gsl_matrix_alloc(getM(), getM());
   gsl_matrix_set_identity(myEye);
   myTmpJac = gsl_matrix_alloc(getM() * getD(), getN() * getD());
-  
+
   if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
   }
@@ -53,11 +54,11 @@ CostFunction::CostFunction( Structure *s, int r, const gsl_vector *p,
     throw new Exception("Number of rows %d is less than "
                         "the number of columns %d.", getN(), getM());
   }
- /* TODO:
- if (myStruct->getNp() < getN() * getD()) {
+
+  if (myStruct->getNp() < getN() * getD()) {
     throw new Exception("The inner minimization problem is overdetermined: " 
-        "m * (n-r) = %d, n_p = %d.\n", getN() * getD(), myStruct->getNp());
-  }*/
+        "n * (m-r) = %d, n_p = %d.\n", getN() * getD(), myStruct->getNp());
+  }
     
   if (perm == NULL) {
     gsl_matrix_set_identity(myPerm);

@@ -123,7 +123,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
                v_out = SEXP2mat(_v_out);
     gsl_vector p_out = SEXP2vec(_p_out);
  
-    slra(&p_in, myStruct, r, &opt, matChkNIL(r_ini), &phi, vecChkNIL(p_out), 
+    slra(&p_in, myStruct, m-r, &opt, matChkNIL(r_ini), &phi, vecChkNIL(p_out), 
          matChkNIL(r_out), matChkNIL(v_out));
   } catch (Exception *e) {
     strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);

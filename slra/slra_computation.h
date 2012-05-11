@@ -22,7 +22,7 @@ class CostFunction {
   gsl_vector *myTmpJacobianCol;  
   gsl_matrix *myTmpGrad;  
 public:
-  CostFunction( Structure *s, int r, const gsl_vector *p, 
+  CostFunction( Structure *s, int d, const gsl_vector *p, 
                 OptimizationOptions *opt, gsl_matrix *perm  );
   virtual ~CostFunction();
   
