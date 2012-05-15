@@ -37,6 +37,7 @@ R:
 	R CMD build Rslra
 	R CMD INSTALL Rslra
 
+## Targets for advanced users
 testc : clean test_c/test.o $(SLRA_OBJ_FILES) 
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test_c/test.o \
 	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm
