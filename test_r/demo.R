@@ -1,3 +1,4 @@
+library('pracma')
 library('DAAG')
 library('Rslra');
 
@@ -70,7 +71,7 @@ cat("\n2) Next we solve a TLS problem with (TLS+LS)/2 initial approximation\n")
 # Define and solve the TLS problem as an STLS problem
 s_tls <- list(m = rep(1, n+d), n = m);
 X_tls <- tls(cbind(a,b), d);
-R_tls <- cbind(X_tls,-pracma::eye(d));
+R_tls <- cbind(X_tls,-eye(d));
 print(system.time(res <- slra(c(as.vector(a),as.vector(b)),s_tls,n, 
                             opt = list(Rini = (res_ls$info$Rh +R_tls)/2,
                             maxiter=1000, disp='iter'))))
