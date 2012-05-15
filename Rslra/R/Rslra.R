@@ -24,8 +24,8 @@
 #  }
 #  res;    
 #}
-slra <- function(p, s, r = dim(phi)[1] - 1, opt = list(), 
-            compute.ph = FALSE, compute.Rh = TRUE, ret.obj = FALSE) {
+slra <- function(p, s, r = dim(s$phi)[1] - 1, opt = list(), 
+            compute.ph = FALSE, compute.Rh = TRUE) {
   # Check necessary parameters            
   if (!is.list(s) || is.null(s$m)) {
     stop('Structure must be a list with "m" and "n" elements');
@@ -57,7 +57,7 @@ slra <- function(p, s, r = dim(phi)[1] - 1, opt = list(),
   if (is.null(s$phi)) {
     s$phi <- diag(sum(s$m));
   } else{
-    if (dim(phi)[1] > dim(phi)[2] || dim(phi)[2] != sum(s$m)) {
+    if (dim(s$phi)[1] > dim(s$phi)[2] || dim(s$phi)[2] != sum(s$m)) {
       stop('s$phi should be a full row rank matrix compatible with s');
     }
   }

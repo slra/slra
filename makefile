@@ -2,7 +2,7 @@
 CC  = gcc  -g -fPIC -static -Wno-write-strings
 CCPP  = g++  -g -fPIC -Wno-write-strings
 F77 = gcc -g -fPIC -static 
-INC_FLAGS = -I./$(SLRA_INCLUDE_DIR) 
+INC_FLAGS = -I./$(SLRA_CPP_DIR) 
 OPT_FLAGS = -O # -pg 
 
 OCTAVE_MEX = mkoctfile --mex -v -DBUILD_MEX_OCTAVE 
@@ -11,32 +11,33 @@ MEX = mex -v -largeArrayDims -DBUILD_MEX_MATLAB
 SLRA_OBJ_FILES=$(shell cat SLRAOBJ.txt)
 SLRA_SRC_FILES=$(SLRA_OBJ_FILES:%o=%cpp)
 
-SLRA_INCLUDE_DIR = slra
-MEX_SRC_FILES = mexslra/mex_slra.cpp
+SLRA_CPP_DIR = cpp
+MEX_SRC_FILES = mex/slra_mex.cpp
 
 BUILD_MODE=BUILD_DEFAULT
 
 # Main targets
-matlab: $(MEX_SRC_FILES) 
+matlab: clean $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra 
-	cp slra.mexa64 doc/slra_mex.mexa64
+	cp slra.mex* doc
 
-octave: $(MEX_SRC_FILES)
+octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -o slra.mex
 
 R: BUILD_MODE=BUILD_R_PACKAGE
 R: 
-	mkdir -p Rslra/src/slra
-	cp slra/*.cpp Rslra/src/slra
-	cp slra/*.h Rslra/src/slra
+	mkdir -p Rslra/src/$(SLRA_CPP_DIR)
+	rm -r -f Rslra/*/*.o Rslra/*/*.so
+	cp $(SLRA_CPP_DIR)/*.cpp Rslra/src/$(SLRA_CPP_DIR)
+	cp $(SLRA_CPP_DIR)/*.h Rslra/src/$(SLRA_CPP_DIR)
 	cp SLRAOBJ.txt Rslra/src/SLRAOBJ.txt
 	R CMD check Rslra
 	R CMD build Rslra
 	R CMD INSTALL Rslra
 
-testc : test_c/test.o $(SLRA_OBJ_FILES) 
+testc : clean test_c/test.o $(SLRA_OBJ_FILES) 
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test_c/test.o \
 	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm
 
@@ -45,12 +46,12 @@ SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  \
 		SLICOT/MB02CV.f  SLICOT/MB02GD.f 
 SLICOT_OBJ_FILES = MA02FD.o  MB02CU.o  MB02CV.o  MB02GD.o 
 
-mex-octave-slicot: SLICOT.a $(MEX_SRC_FILES)
+octave-slicot: SLICOT.a $(MEX_SRC_FILES)
 	$(OCTAVE_MEX) $(INC_FLAGS) -DUSE_SLICOT $(MEX_SRC_FILES) \
 	$(SLRA_SRC_FILES) -lgsl -lgslcblas -llapack -lblas -o slra.mex
 
-mex-slicot: BUILD_MODE=MEX_MATLAB
-mex-slicot: $(MEX_SRC_FILES) SLICOT.a
+matlab-slicot: BUILD_MODE=MEX_MATLAB
+matlab-slicot: $(MEX_SRC_FILES) SLICOT.a
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) SLICOT.a \
 	-lgsl -lgslcblas -llapack -lblas -o slra
 
@@ -82,5 +83,5 @@ SLICOT.a : $(SLICOT_SRC_FILES)
 	ar -r SLICOT.a $(SLICOT_OBJ_FILES)
 
 clean : 
-	rm -r */*.o *.o *.a #*.mex*
+	rm -f -r */*.o *.o *.a
 

@@ -1,4 +1,4 @@
-\name{Rslra}
+\name{slra}
 \alias{slra}
 
 \title{Function for solving structured low rank approximation problem}
@@ -15,7 +15,7 @@ where \eqn{H_{m,n}}{H_mn} is a Mosaic Hankel matrix.
 }
 
 \usage{
-stls <- function(p, s, r, opt, compute.ph, compute.Rh)
+slra(p, s, r = dim(s$phi)[1] - 1, opt = list(), compute.ph = FALSE, compute.Rh = TRUE) 
 }
 
 \arguments{
@@ -23,8 +23,8 @@ stls <- function(p, s, r, opt, compute.ph, compute.Rh)
   \item{s}{structure specification \eqn{\mathcal{S}(p)}{S(p)}}
   \item{r}{rank (default is rank reduction by 1)}
   \item{opt}{optimization parameters}
-  \item{compute.ph}{whether to compute the approximation obtained by }
-  \item{compute.Rh}{whether to return the kernel}
+  \item{compute.ph}{whether to compute ph}
+  \item{compute.Rh}{whether to return Rh}
 }
 
 \value{

@@ -10,19 +10,19 @@
 
 #include <R.h>
 #define PRINTF Rprintf
-#define WARNING Rprintf
+#define MYWARNING Rprintf
 
 #elif defined(BUILD_MEX_OCTAVE) || defined(BUILD_MEX_MATLAB)
 
 #include "mex.h"
 #define PRINTF mexPrintf
-#define WARNING mexWarnMsgTxt
+#define MYWARNING mexWarnMsgTxt
 
 #else
 
 #include <stdio.h>
 #define PRINTF printf
-#define WARNING printf
+#define MYWARNING printf
 
 #endif
 

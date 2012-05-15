@@ -6,5 +6,5 @@ Date: 2012-04-25
 Author: Konstantin Usevich and Ivan Markovsky
 Maintainer: Konstantin Usevich <kdu@ecs.soton.ac.uk>
 Description: This package provides R binding to SLRA package
-License: GPL v.>=3
+License: GPL-3
 URL: http://github.com/slra/slra
