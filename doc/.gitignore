@@ -1,0 +1,14 @@
+old/*
+*.tex
+*.nw
+*.blg
+*.aux
+*.pdf
+*.bbl
+*.log
+*.bib
+*.*~
+*.ps
+*.eps
+*.dvi
+makefile
