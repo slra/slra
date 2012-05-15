@@ -73,6 +73,7 @@ in the manual is available in "doc" directory.
 A standard help for the function is also available by typing:
   help slra			--- in MATLAB/Octave
   ?slra				--- in R
+Directories "test_m" and "test_r" contain demo files for MATLAB/Octave and R.
 
 If you use the package in your research, please cite the following reference:
 
