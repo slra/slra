@@ -77,7 +77,7 @@ public:
  * Assumes that the rows of the matrix are s-dependent, i.e.
  * \f${\bf cov}(S(\widetilde{p})_i, S(\widetilde{p})_j) =const\cdot W_{i,j}\f$
  * and \f$W_{i,j} = 0\f$ for \f$|i-j| < s\f$,
- * where \f$\wtilde{p}\f$ is an uncorrelated sequence with 
+ * where \f$\widetilde{p}\f$ is an uncorrelated sequence with 
  * \f${\bf D} \widetilde{p}_k = \gamma_k\f$.
  *
  * In particular, this implies that \f$\Gamma(R)\f$ is a block matrix with

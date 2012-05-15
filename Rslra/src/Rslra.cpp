@@ -13,7 +13,7 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include <time.h>
 
-#include "slra/slra.h"
+#include "cpp/slra.h"
 
 /* default constants for the exit condition */
 static SEXP getListElement(SEXP list, const char *str) {
@@ -122,7 +122,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
     gsl_matrix r_ini = SEXP2mat(_r_ini), r_out = SEXP2mat(_r_out),
                v_out = SEXP2mat(_v_out);
     gsl_vector p_out = SEXP2vec(_p_out);
- 
+    
     slra(&p_in, myStruct, m-r, &opt, matChkNIL(r_ini), &phi, NULL,
          vecChkNIL(p_out), matChkNIL(r_out), matChkNIL(v_out));
   } catch (Exception *e) {
