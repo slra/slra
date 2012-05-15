@@ -25,8 +25,8 @@ pause
 %% Low rank approximation problem
 
 % Define dimensions and generate random data
-m = 100; n = 5; d = 2; sigma = 0.1;
-D0 = rand(m, n) * rand(n, n + d); 
+%m = 100; n = 5; d = 2; sigma = 0.1;
+D0 = [a0 b0]; %rand(m, n) * rand(n, n + d); 
 D  = D0 + sigma * randn(m, n + d);
 
 tic, x_lra = tls(D(:, 1:n), D(:, n + 1:end))'; t_lra = toc, 

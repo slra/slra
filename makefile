@@ -17,14 +17,14 @@ MEX_SRC_FILES = mexslra/mex_slra.cpp
 BUILD_MODE=BUILD_DEFAULT
 
 # Main targets
-mex: $(MEX_SRC_FILES) 
+matlab: $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra 
 	cp slra.mexa64 doc/slra_mex.mexa64
 
-mex-octave: $(MEX_SRC_FILES)
+octave: $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
-	-lgsl -lgslcblas -llapack -lblas -o slra.mex
+	-lgsl -lgslcblas -o slra.mex
 
 R: BUILD_MODE=BUILD_R_PACKAGE
 R: 
@@ -82,5 +82,5 @@ SLICOT.a : $(SLICOT_SRC_FILES)
 	ar -r SLICOT.a $(SLICOT_OBJ_FILES)
 
 clean : 
-	rm -r */*.o *.o *.mex* *.a
+	rm -r */*.o *.o *.a #*.mex*
 

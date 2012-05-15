@@ -193,7 +193,7 @@ public:
 
 /** Main function that runs SLRA optimization
  * @ingroup MainFunctions 
- * @param [in]  p_in  Input pararmeter vector \f$p\f$  
+ * @param [in]  p_in  Input parameter vector \f$p\f$  
  * @param [in]  s     Structure specification  
  * @param [in]  d     Rank reduction  
  * @param [in]  opt   Optimization options

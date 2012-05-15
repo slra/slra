@@ -27,14 +27,22 @@
 slra <- function(p, s, r = dim(phi)[1] - 1, opt = list(), 
             compute.ph = FALSE, compute.Rh = TRUE, ret.obj = FALSE) {
   # Check necessary parameters            
-  if (!is.list(s) || is.null(s$m) || is.null(s$n)) {
+  if (!is.list(s) || is.null(s$m)) {
     stop('Structure must be a list with "m" and "n" elements');
   } 
-  storage.mode(s$m) <- storage.mode(s$n) <- 'integer';
-  storage.mode(s$m) <- storage.mode(s$n) <- 'double';
+  storage.mode(s$m)  <- 'integer';
+  storage.mode(s$m)  <- 'double';
+  s$m <- as.vector(s$m);
+  if (is.null(s$n)) {
+    s$n = (length(p) - sum(s$m)) / length(s$m) + 1;
+  }
+  storage.mode(s$n) <- 'integer';
+  storage.mode(s$n) <- 'double';
+
   if (!prod(s$m > 0) || !prod(s$n > 0)) {
     stop('s$m and s$n elements should be positive vectors');
   }
+  
   if (sum(s$m) > sum(s$n)) {
     stop('Matrix should be fat');
   }
