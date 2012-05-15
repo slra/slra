@@ -59,10 +59,11 @@ Linux distributions.
   
   If you downloaded a precompiled R package, you should run
     install.packages(repos=NULL, pkgs="Rslra_x.x.xxx"); 
-  in the R console launched in the same directory where the package is.
+  in R console launched in the same directory where the package is.
   
   The R package should be loaded each time before using it by typing
     library(Rslra);
+  in R console.    
     
 2) Using the package
 Package consists of a single "slra" function, which is documented in the
@@ -87,7 +88,7 @@ If you use the package in your research, please cite the following reference:
 The package contains a demo C++ program, which gives an example of using 
 C++ interface and tests various SLRA problems (make target "testc"). 
 Documentation for C++ interface can be obtained by running Doxygen
-in cpp subdirectory.
+in "cpp" subdirectory.
 
 Advanced compilation options can be found in other targets of makefile, but
 not all of targets may run on your machine "as is".
