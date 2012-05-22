@@ -39,6 +39,7 @@ int slra( const gsl_vector *p_in, Structure* s, int d,
   }
   
   try { 
+    time_t t_b = clock();
     myCostFun =  new CostFunction(s, d, p_in, opt, 
                                   (tmpphi != NULL ? tmpphi : Phi));
     Rtheta = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
@@ -55,10 +56,8 @@ int slra( const gsl_vector *p_in, Structure* s, int d,
 
     x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());
     myCostFun->Rtheta2X(Rtheta, x);
-    time_t t_b = clock();
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
     int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
-    opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
     if (p_out != NULL) {
       if (opt->gcd) {
         gsl_vector_set_zero(p_out);
@@ -69,6 +68,8 @@ int slra( const gsl_vector *p_in, Structure* s, int d,
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }
+
+    opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
     if (Rout != NULL) {
       myCostFun->X2Rtheta(x, Rtheta);

@@ -78,57 +78,28 @@ void OptimizationOptions::str2Disp( const char *str )  {
   }
 }
 
-/* ************************************************ */
-/* m_to_gsl_matrix: convert the Matlab style column */
-/* major mxn matrix array to a GSL matrix           */
-/* ************************************************ */
-void m_to_gsl_matrix(gsl_matrix* a_gsl, double* a_m) 
-{
-  int i, j;
-
-  for (i = 0; i < a_gsl->size1; i++) {
-    for (j = 0; j < a_gsl->size2; j++) {
-      gsl_matrix_set(a_gsl, i, j, a_m[i + j * a_gsl->size1]);
-    }
-  }
-}
-
-/* ************************************************ */
-/* gsl_to_m_matrix: convert the GSL mxn matrix to a */
-/* Matlab style column major matrix array           */
-/* ************************************************ */
-void gsl_to_m_matrix(double* a_m, gsl_matrix* a_gsl) 
-{
-  int i, j;
-
-  for (i = 0; i < a_gsl->size1; i++) {
-    for (j = 0; j < a_gsl->size2; j++) {
-      a_m[i + j * a_gsl->size1] = gsl_matrix_get(a_gsl, i, j);
-    }
-  }
-}
 
 /* gsl_matrix_vectorize: vectorize column-wise a gsl_matrix */
-void gsl_matrix_vectorize(double* v, gsl_matrix* m)
+void gsl_matrix_vectorize(double* v, const gsl_matrix* m)
 {
-  int i, j;
-
-  for (j = 0; j < m->size2; j++)
-    for (i = 0; i < m->size1; i++)
-      v[i+j*m->size1] = gsl_matrix_get(m,i,j);
+  for (int j = 0; j < m->size2; j++) {
+    for (int i = 0; i < m->size1; i++) {
+      v[i+j*m->size1] = gsl_matrix_get(m,i,j); 
+    }
+  }
 }
-
 
 /* gsl_matrix_vec_inv: gsl_matrix from an array */
-void gsl_matrix_vec_inv(gsl_matrix* m, double* v)
+
+
+void gsl_matrix_vec_inv(gsl_matrix* m, const double* v)
 {
-  int i, j;
-
-  for (i = 0; i < m->size1; i++)
-    for (j = 0; j < m->size2; j++)
-      gsl_matrix_set(m,i,j,v[i+j*m->size1]);
+  for (int i = 0; i < m->size1; i++) {
+    for (int j = 0; j < m->size2; j++) {
+      gsl_matrix_set(m, i, j, v[i + j * m->size1]);
+    }
+  }
 }
-
 
 /* print matrix */
 void print_mat(const gsl_matrix* m)
@@ -234,43 +205,42 @@ void tolowerstr( char * str ) {
   }
 } 
 
-void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ) {
-  size_t D = B->size2, i, j, one = 1, lwork = -1, info;
-  gsl_matrix *AkronI = gsl_matrix_alloc(A->size1 * D, A->size2 * D);
-  gsl_matrix *Btemp = gsl_matrix_alloc(B->size1, B->size2);
-  gsl_matrix subA;
-  gsl_vector diagSubA;
-  double tmp;
-                                         
-  /* Fill A^{T} \kron I_d */
-  gsl_matrix_set_zero(AkronI);
-  for (i = 0; i < A->size1; i++) {
-    for (j = 0; j < A->size2; j++) {
-      subA = gsl_matrix_submatrix(AkronI, i * D, j * D, D, D).matrix;
-      diagSubA = gsl_matrix_diagonal(&subA).vector;
-      gsl_vector_set_all(&diagSubA, gsl_matrix_get(A, i, j));
-    }
-  }
-
-  gsl_matrix_memcpy(Btemp, B);
-  dgels_("T", &AkronI->size2, &AkronI->size1, &one, AkronI->data,
-         &AkronI->size2, Btemp->data, &B->size2, &tmp, &lwork, &info);
-  double *work = new double[lwork = tmp];
-  dgels_("T", &AkronI->size2, &AkronI->size1, &one, AkronI->data,
-         &AkronI->size2, Btemp->data, &B->size2, work, &lwork, &info);
-
-  delete [] work;
-  gsl_matrix_free(Btemp);
-  gsl_matrix_free(AkronI);
-  
-  
-  gsl_matrix Btempsub = 
-      gsl_matrix_submatrix(Btemp, 0, 0, X->size1, X->size2).matrix;
-  gsl_matrix_memcpy(X, &Btempsub);
-
-  if (info != 0) {
-    throw new Exception("DGELS error %d", info);
+void id_kron_a( const gsl_matrix *A, int d,  gsl_matrix *IkronA ) {
+  gsl_matrix_set_zero(IkronA);
+  for (int  k = 0; k < d; k++) {
+    gsl_matrix subA = gsl_matrix_submatrix(IkronA, k * A->size1, k * A->size2, 
+                           A->size1, A->size2).matrix;
+    gsl_matrix_memcpy(&subA, A);
   }
 }
+
+
+void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ) {
+  size_t d = B->size2, i, j, one = 1, lwork = -1, info;
+  gsl_matrix *IkronA = gsl_matrix_alloc(A->size1 * d, A->size2 * d);
+  double tmp;
+  
+  double *vecIkronA = new double[IkronA->size1 * IkronA->size2],
+         *vecB = new double[B->size1 * B->size2]; 
+                          
+  id_kron_a(A, d, IkronA);                                      
+  gsl_matrix_vectorize(vecIkronA, IkronA);
+  gsl_matrix_vectorize(vecB, B);
+  
+  dgels_("N", &IkronA->size1, &IkronA->size2, &one, vecIkronA,
+         &IkronA->size1, vecB, &B->size1, &tmp, &lwork, &info);
+  double *work = new double[lwork = tmp];
+  dgels_("N", &IkronA->size1, &IkronA->size2, &one, vecIkronA,
+         &IkronA->size1, vecB, &B->size1, work, &lwork, &info);
+
+  delete [] work;
+  
+  gsl_matrix_free(IkronA);
+  gsl_matrix_vec_inv(X, vecB);
+  
+  delete [] vecB;
+  delete [] vecIkronA;
+}
+
 
 
