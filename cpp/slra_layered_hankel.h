@@ -104,7 +104,7 @@ public:
    * w_{1,1} & \cdots & w_{1,q} \\
    * \vdots  &        & \vdots  \\
    * w_{N,1} & \cdots & w_{N,q} \\
-   * \end{bmatrix}\f$ in a following wya
+   * \end{bmatrix}\f$ in a following way
    * \f[{\rm vec}\ W^{\rm T} = 
    * \begin{cases}
    *   \begin{bmatrix}1&\cdots&1\end{bmatrix}, &  {\bf w} = NULL, \\

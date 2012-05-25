@@ -1,3 +1,53 @@
+
+#if defined(BUILD_R_PACKAGE)
+
+#include <R.h>
+#define PRINTF Rprintf
+#define MYWARNING Rprintf
+
+#elif defined(BUILD_MEX_OCTAVE) || defined(BUILD_MEX_MATLAB)
+
+#include "mex.h"
+#define PRINTF mexPrintf
+#define MYWARNING mexWarnMsgTxt
+
+#else
+
+#include <stdio.h>
+#define PRINTF printf
+#define MYWARNING printf
+
+#endif
+
+#define DEBUGINT(x) PRINTF("%s = %d\n", #x, x)
+#define DEBUGDOUBLE(x) PRINTF("%s = %f\n", #x, x)
+
+/* field names for s */
+#define ML_STR "m"
+#define NK_STR "n"
+#define PERM_STR "phi"
+#define WK_STR "w"
+
+/* field names for opt */
+#define RINI_STR "Rini"
+#define DISP_STR "disp"
+#define METHOD_STR "method"
+
+/* names for output */
+#define PH_STR "ph"
+#define INFO_STR "info"
+
+
+/* field names for info */
+#define RH_STR "Rh"
+#define VH_STR "Vh"
+#define FMIN_STR "fmin"
+#define ITER_STR "iter"
+#define TIME_STR "time"
+#define PSI_STR "psi"
+          
+#define mymax(a, b) ((a) > (b) ? (a) : (b)) 
+#define mymin(a, b) ((a) < (b) ? (a) : (b))
          
 /*
  * tmv_prod_new: block-Toeplitz banded matrix p =  T * v
@@ -23,8 +73,7 @@ void print_vec(const gsl_vector*);
 void gsl_matrix_vectorize(double*, const gsl_matrix*);
 void gsl_matrix_vec_inv(gsl_matrix*, const double*);
 
-Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
-               gsl_vector * wk, int np_comp );
+
                
 int compute_np( gsl_vector* ml, gsl_vector *nk );               
 int compute_n( gsl_vector* ml, int np );               
