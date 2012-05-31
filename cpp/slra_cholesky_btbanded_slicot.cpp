@@ -10,9 +10,9 @@ extern "C" {
 #include "slra.h"
 
 #ifdef USE_SLICOT
-GammaCholeskyBTBandedSlicot::
-    GammaCholeskyBTBandedSlicot( const StationaryStructure *s, int D, 
-        double reg_gamma  ) :  GammaCholeskyBTBanded(s, D, reg_gamma)  {
+StationaryCholeskySlicot::
+    StationaryCholeskySlicot( const StationaryStructure *s, int D, 
+        double reg_gamma  ) :  StationaryCholesky(s, D, reg_gamma)  {
   myGammaVec = (double*)malloc(getD() * getD() * (getS()+1) * sizeof(double));
   myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 
                        3 * getD() + /* 3 * K */
@@ -20,12 +20,12 @@ GammaCholeskyBTBandedSlicot::
   myCholeskyWork = (double *)malloc(myCholeskyWorkSize * sizeof(double));                       
 }
 
-GammaCholeskyBTBandedSlicot::~GammaCholeskyBTBandedSlicot() {
+StationaryCholeskySlicot::~StationaryCholeskySlicot() {
   free(myGammaVec);
   free(myCholeskyWork);
 }
 
-void GammaCholeskyBTBandedSlicot::calcGammaCholesky( gsl_matrix *R )  {
+void StationaryCholeskySlicot::calcGammaCholesky( gsl_matrix *R )  {
   size_t info = 0;
   const size_t zero = 0;
 
@@ -35,7 +35,7 @@ void GammaCholeskyBTBandedSlicot::calcGammaCholesky( gsl_matrix *R )  {
   gsl_matrix_vectorize(myGammaVec, myGamma);
     
   mb02gd_("R", "N", &D, &n, &s_minus_1, &zero, 
-          &Mg, myGammaVec, &D, myPackedCholesky, &d_times_s, 
+          &n, myGammaVec, &D, myPackedCholesky, &d_times_s, 
           myCholeskyWork, &myCholeskyWorkSize, &info); /**/
 
   if (info) { 

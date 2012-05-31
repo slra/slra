@@ -3,6 +3,7 @@
    .\test   - test all examples            */ 
 #include <limits>
 #include <stdio.h>
+#include <ctime>
 #include <string.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_vector.h>
@@ -92,6 +93,29 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
     slra(p, S, m-rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), NULL,
          p2, R, v);
          
+    { 
+      PRINTF("Test Cholesky factorization speed:\n");
+      int rep = 10000;     
+      Cholesky *ch = S->createCholesky(m-rk, opt.reggamma);
+      clock_t tm = clock();
+      
+      gsl_matrix *tmpR = gsl_matrix_alloc((hasPhi ? Phi->size1 : R->size1), R->size2);
+      
+      if (hasPhi) {
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Phi, R, 0.0, tmpR);
+      } else {
+        gsl_matrix_memcpy(tmpR, R);
+      }
+            
+      for (int i = 0; i < rep; i++) {
+        ch->calcGammaCholesky(tmpR);
+      }        
+  
+      fmin2 = ((double)clock() - tm) / (rep * CLOCKS_PER_SEC);  
+      gsl_matrix_free(tmpR);
+      delete ch;
+    }
+         
     gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");
     fclose(file);
     gsl_vector_fprintf(file = fopen(fpresname, "w"), p2, "%.14f");
@@ -105,7 +129,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
     time = opt.time;
     fmin = opt.fmin;
     iter = opt.iter;
-    fmin2 = dp_norm * dp_norm;
+//    fmin2 = dp_norm * dp_norm;
     throw 0;
   } catch(...) {
     if (R != NULL) {
@@ -132,7 +156,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
   }
 }
 
-#define TEST_NUM 10
+#define TEST_NUM 11
 
 int main(int argc, char *argv[])
 {
@@ -152,7 +176,7 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n"
 "------------------------------------------------------------------------\n"
-"|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (R) |\n"
+"|  # |       Time | Iter |     Minimum | t_chol      |        Diff (R) |\n"
 "------------------------------------------------------------------------\n"
 "| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n"
 "------------------------------------------------------------------------\n",
@@ -171,7 +195,7 @@ int main(int argc, char *argv[])
 
     printf("\n------------ Results summary --------------------\n\n"
 "------------------------------------------------------------------------\n"
-"|  # |       Time | Iter |     Minimum | ||dp||^2    |        Diff (X) |\n"
+"|  # |       Time | Iter |     Minimum | t_chol      |        Diff (X) |\n"
 "------------------------------------------------------------------------\n");
     for( i = 1; i <= TEST_NUM; i++ ) {
       printf("| %2d | %10.6f | %4d | %11.7f | %11.7f | %15.10f |\n", 

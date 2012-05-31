@@ -12,13 +12,12 @@
 
 #include "slra.h"
 
-int slra( const gsl_vector *p_in, Structure* s, int d, 
+void slra( const gsl_vector *p_in, Structure* s, int d, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
           gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
           gsl_matrix *vh ) { 
   CostFunction * myCostFun = NULL;
   gsl_matrix *x = NULL, *Rtheta = NULL, *tmpphi = NULL;
-  int res = GSL_SUCCESS;
   
   if (Psi != NULL) {
     if (Phi != NULL) {
@@ -99,6 +98,4 @@ int slra( const gsl_vector *p_in, Structure* s, int d,
       throw;  
     }
   }
-
-  return res;
 }

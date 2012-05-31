@@ -64,7 +64,7 @@ public:
                             double reg_gamma );
   virtual ~StationaryCholeskySlicot();
 
-  virtual void computeCholeskyOfGamma( gsl_matrix *R );
+  virtual void calcGammaCholesky( gsl_matrix *R );
 };
 #endif /* USE_SLICOT */
 

@@ -58,7 +58,7 @@ matlab-slicot: $(MEX_SRC_FILES) SLICOT.a
 
 testc-slicot : BUILD_MODE=USE_SLICOT
 testc-slicot : test_c/test.o $(SLRA_OBJ_FILES) SLICOT.a
-	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -DUSE_SLICOT -o test_c/test test.o \
+	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -DUSE_SLICOT -o test_c/test test_c/test.o \
 	$(SLRA_OBJ_FILES) SLICOT.a -lgsl -lcblas -llapack \
 	-latlas -lblas -lm -lgfortran
 
