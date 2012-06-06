@@ -43,7 +43,8 @@ public:
   void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 
   void computeR( const gsl_vector *x, gsl_matrix *R ); 
   void computeSr( gsl_matrix *R, gsl_vector *Sr );
-  void computeRGammaSr( const gsl_vector *x, gsl_matrix *R, gsl_vector *Sr ) ;
+  void computeRGammaSr( const gsl_vector *x, gsl_matrix *R, gsl_vector *Sr, 
+          bool regularize_gamma = true ) ;
 
   void computeJacobianZij( gsl_vector*res, int i, int j, gsl_vector* yr, 
                            gsl_matrix *R, double factor = 0.5 );

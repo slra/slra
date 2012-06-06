@@ -12,7 +12,7 @@ protected:
   
   double *myPackedCholesky;
 protected:  
-  virtual void computeGammaUpperPart( gsl_matrix *R );
+  virtual void computeGammaUpperPart( gsl_matrix *R, double reg = 0 );
 
 public:
   SDependentCholesky( const SDependentStructure *s, int D,  
@@ -25,7 +25,7 @@ public:
   int getS() const { return myW->getS(); }
 
 
-  virtual void calcGammaCholesky( gsl_matrix *R );
+  virtual void calcGammaCholesky( gsl_matrix *R, bool regularize = true );
 
   
   virtual void multInvPartCholeskyArray( double * yr, int trans, 
@@ -39,47 +39,51 @@ public:
 };
 
 class StationaryCholesky : public SDependentCholesky {
+public:
+  StationaryCholesky( const StationaryStructure *s, int D, double reg_gamma );
+  virtual ~StationaryCholesky();
+
+  virtual void computeGammaUpperPart( gsl_matrix *R, double reg = 0 );
+
 protected:
   const StationaryStructure *myWs;
   gsl_matrix *myGamma;
   gsl_matrix *myWkTmp;
   
   virtual void computeGammak( gsl_matrix *R );
-public:
-  StationaryCholesky( const StationaryStructure *s, int D, 
-                             double reg_gamma  );
-  virtual ~StationaryCholesky();
-
-  virtual void computeGammaUpperPart( gsl_matrix *R );
 };
 
 
 #ifdef USE_SLICOT
 class StationaryCholeskySlicot : public StationaryCholesky {
-  double *myGammaVec;
-  double *myCholeskyWork;
-  size_t myCholeskyWorkSize;
 public:
   StationaryCholeskySlicot( const StationaryStructure *s, int D, 
                             double reg_gamma );
   virtual ~StationaryCholeskySlicot();
 
-  virtual void calcGammaCholesky( gsl_matrix *R );
+  virtual void calcGammaCholesky( gsl_matrix *R, bool regularize = true );
+
+private:
+  double *myGammaVec;
+  double *myCholeskyWork;
+  size_t myCholeskyWorkSize;
 };
 #endif /* USE_SLICOT */
 
 
 class SameStripedStationaryCholesky : public Cholesky {
-  StationaryCholesky *myBase;
-  const MosaicHStructure *myS;
 public:  
   SameStripedStationaryCholesky( const MosaicHStructure *s, 
       int r, int use_slicot, double reg_gamma );
   virtual ~SameStripedStationaryCholesky();
 
-  virtual void calcGammaCholesky( gsl_matrix *R );
+  virtual void calcGammaCholesky( gsl_matrix *R, bool regularize = true );
   virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
+  
+private:
+  StationaryCholesky *myBase;
+  const MosaicHStructure *myS;
 };
 
 

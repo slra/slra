@@ -112,6 +112,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         mexWarnMsgTxt("Ignoring 'opt'. The optimization options "
 	              "should be passed in a structure.");
       } else {
+        Log::str2DispLevel(M2Str(mxGetField(prhs[3], 0, DISP_STR), str_buf, 
+                                     STR_MAX_LEN));
+
         rini = M2trmat(mxGetField(prhs[3], 0, RINI_STR));
         if (rini.data != NULL && (rini.size2 != (m - r) || rini.size1 != m)) {
           throw new Exception("Incorrect Rini\n");   
@@ -120,9 +123,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         psi = M2trmat(mxGetField(prhs[3], 0, PSI_STR));
         if (psi.data != NULL) {
           if (psi.size1 != m || psi.size2 == 0 || psi.size2 > m) {
-//            throw new Exception("Incorrect Psi\n");   
-            PRINTF("Incorrect Psi: setting to identity\n");   
-            psi = M2trmat(NULL);
+            throw new Exception("Incorrect Psi\n");   
           } else {
             mtheta = psi.size2;
           }
@@ -132,8 +133,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           throw new Exception("Rank reduction and psi incompatible\n");   
         }
         
-        opt.str2Disp(M2Str(mxGetField(prhs[3], 0, DISP_STR), str_buf, 
-                                     STR_MAX_LEN));
         opt.str2Method(M2Str(mxGetField(prhs[3], 0, METHOD_STR), str_buf, 
                                        STR_MAX_LEN));
         MATStoreOption(prhs[3], opt, maxiter, 0, numeric_limits<int>::max());
@@ -165,9 +164,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
     /* Call slra solver and output info */
-    slra(vecChkNIL(p_in), myStruct, m-r, &opt, matChkNIL(rini), matChkNIL(perm),
-         matChkNIL(psi), vecChkNIL(p_out), matChkNIL(rh_view), 
-         matChkNIL(vh_view));
+    slra(vecChkNIL(p_in), myStruct, m-r, &opt, matChkNIL(rini), 
+         matChkNIL(perm), matChkNIL(psi), 
+         vecChkNIL(p_out), matChkNIL(rh_view), matChkNIL(vh_view));
     if (nlhs > 1) {
       mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
       mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
@@ -184,6 +183,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (myStruct != NULL) {
     delete myStruct;
   }
+  Log::deleteLog();
   if (was_error) {
     mexErrMsgTxt(str_buf);
   }

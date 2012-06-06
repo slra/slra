@@ -1,4 +1,5 @@
 class StationaryDGamma : public DGamma {
+private:
   const StationaryStructure *myW;
   size_t  myD;
   
@@ -11,7 +12,7 @@ class StationaryDGamma : public DGamma {
   gsl_matrix *myWk_R;
   gsl_matrix *myWkT_R;
   gsl_matrix *myN_k;
-
+  
 public:
   StationaryDGamma( const StationaryStructure *s, int D );
   virtual ~StationaryDGamma();
@@ -22,15 +23,10 @@ public:
                    gsl_vector *yr );
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr );
-
 };
 
 
 class SDependentDGamma : public DGamma {
-  const SDependentStructure *myW;
-  size_t myD;
-  gsl_vector *myTmp1, *myTmp2;
-  gsl_vector *myYrR;
 public:  
   SDependentDGamma( const SDependentStructure *s, int D );
   virtual ~SDependentDGamma();
@@ -38,4 +34,11 @@ public:
                    gsl_matrix *perm, int i, int j, gsl_vector *Yr );
   virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
                    gsl_vector *yr ) {}
+                   
+
+private:
+  const SDependentStructure *myW;
+  size_t myD;
+  gsl_vector *myTmp1, *myTmp2;
+  gsl_vector *myYrR;
 };

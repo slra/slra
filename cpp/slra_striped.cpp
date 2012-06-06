@@ -108,9 +108,9 @@ void StripedCholesky::multInvGammaVector( gsl_vector * yr ) {
   }
 }
 
-void StripedCholesky::calcGammaCholesky( gsl_matrix *R ) {
+void StripedCholesky::calcGammaCholesky( gsl_matrix *R, bool regularize  ) {
   for (size_t k = 0; k < myS->getBlocksN(); k++) {
-    myGamma[k]->calcGammaCholesky(R);  
+    myGamma[k]->calcGammaCholesky(R, regularize);  
   }
 }
 

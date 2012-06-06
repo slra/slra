@@ -87,24 +87,22 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
   }
 
   /* optimization loop */
-  if (opt->disp == SLRA_OPT_DISP_FINAL || opt->disp == SLRA_OPT_DISP_ITER) {
-    PRINTF("SLRA optimization:\n");
-  }
-
+  Log::lprintf(Log::LOG_LEVEL_FINAL, "SLRA optimization:\n");
     
   status = GSL_SUCCESS;  
   status_dx = GSL_CONTINUE;
   status_grad = GSL_CONTINUE;  
   opt->iter = 0;
   
-  if (opt->method == SLRA_OPT_METHOD_LM && opt->disp == SLRA_OPT_DISP_ITER) {
+  if (opt->method == SLRA_OPT_METHOD_LM && 
+      Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
     gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
 
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
     x_norm = gsl_blas_dnrm2(solverlm->x);
     g_norm = gsl_blas_dnrm2(g);
-    PRINTF("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
-           opt->fmin, g_norm, x_norm);
+    Log::lprintf("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
+                opt->fmin, g_norm, x_norm);
   }
 
   while (status_dx == GSL_CONTINUE && 
@@ -128,14 +126,14 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
       status_grad = gsl_multifit_test_gradient(g, opt->epsgrad);
       /* print information */
-      if (opt->disp == SLRA_OPT_DISP_ITER) {
+      if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
 	gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
 	
 	x_norm = gsl_blas_dnrm2(solverlm->x);
 	g_norm = gsl_blas_dnrm2(g);
 	
-	PRINTF("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
-	       opt->iter, opt->fmin, g_norm, x_norm);
+	Log::lprintf("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
+                    opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     case SLRA_OPT_METHOD_QN:
@@ -150,12 +148,12 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
 		    
       status_dx = gsl_multifit_test_delta(solverqn->dx, solverqn->x, 
 	 				 opt->epsabs, opt->epsrel);  		    
-      if (opt->disp == SLRA_OPT_DISP_ITER) {
+      if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
 	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
 	x_norm = gsl_blas_dnrm2(solverqn->x);
 	g_norm = gsl_blas_dnrm2(solverqn->gradient);
-	PRINTF("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
-	       opt->iter, opt->fmin, g_norm, x_norm);
+	Log::lprintf("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
+                    opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     case SLRA_OPT_METHOD_NM:
@@ -164,12 +162,12 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
       size = gsl_multimin_fminimizer_size( solvernm );
       status_dx = gsl_multimin_test_size( size, opt->epsx );
       /* print information */
-      if (opt->disp == SLRA_OPT_DISP_ITER) {
+      if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
 	x_norm = gsl_blas_dnrm2(solvernm->x);
 
-	PRINTF("%3u: f0 = %16.11f,  ||x|| = %10.8f\n", 
-	       opt->iter, opt->fmin, g_norm, x_norm);
+	Log::lprintf("%3u: f0 = %16.11f,  ||x|| = %10.8f\n", 
+	            opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
     }
@@ -202,37 +200,41 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
   }
   
   /* print exit information */  
-  if (opt->disp != SLRA_OPT_DISP_OFF) { /* unless "off" */
+  if (Log::getMaxLevel() >= Log::LOG_LEVEL_FINAL) { /* unless "off" */
     switch (status) {
     case EITER: 
-      PRINTF("SLRA optimization terminated by reaching the maximum number " 
-	     "of iterations.\nThe result could be far from optimal.\n");
+      Log::lprintf("SLRA optimization terminated by reaching " 
+                  "the maximum number of iterations.\n" 
+                  "The result could be far from optimal.\n");
       break;
     case GSL_ETOLF:
-      PRINTF("Lack of convergence: "
-             "progress in function value < machine EPS.\n");
+      Log::lprintf("Lack of convergence: "
+                  "progress in function value < machine EPS.\n");
       break;
     case GSL_ETOLX:
-      PRINTF("Lack of convergence: change in parameters < machine EPS.\n");
+      Log::lprintf("Lack of convergence: "
+                  "change in parameters < machine EPS.\n");
       break;
     case GSL_ETOLG:
-      PRINTF("Lack of convergence: change in gradient < machine EPS.\n");
+      Log::lprintf("Lack of convergence: "
+                  "change in gradient < machine EPS.\n");
       break;
     case GSL_ENOPROG:
-      PRINTF("Possible lack of convergence: no progress.\n");
+      Log::lprintf("Possible lack of convergence: no progress.\n");
       break;
     }
-    if (!status && (opt->disp == SLRA_OPT_DISP_FINAL || 
-                    opt->disp == SLRA_OPT_DISP_ITER)) { 
-      if (status_grad == GSL_CONTINUE) {
-	PRINTF("Optimization terminated by reaching the convergence " 
-	       "tolerance for X.\n");
-      } else if (status_dx == GSL_CONTINUE) {
-	PRINTF("Optimization terminated by reaching the convergence " 
-	       "tolerance for the gradient.\n");
+    
+    if (status_grad != GSL_CONTINUE && status_dx != GSL_CONTINUE) {
+      Log::lprintf("Optimization terminated by reaching the convergence "
+                  "tolerance for both X and the gradient.\n"); 
+    
+    } else {
+      if (status_grad != GSL_CONTINUE) {
+	Log::lprintf("Optimization terminated by reaching the convergence "
+	            "tolerance for the gradient.\n");
       } else {
-	PRINTF("Optimization terminated by reaching the convergence " 
-	       "tolerance for both X and the gradient.\n"); 
+        Log::lprintf("Optimization terminated by reaching the convergence "
+                    "tolerance for X.\n");
       }
     }
   }

@@ -25,7 +25,7 @@ StationaryCholeskySlicot::~StationaryCholeskySlicot() {
   free(myCholeskyWork);
 }
 
-void StationaryCholeskySlicot::calcGammaCholesky( gsl_matrix *R )  {
+void StationaryCholeskySlicot::calcGammaCholesky( gsl_matrix *R, bool regularize )  {
   size_t info = 0;
   const size_t zero = 0;
 
@@ -38,8 +38,9 @@ void StationaryCholeskySlicot::calcGammaCholesky( gsl_matrix *R )  {
           &n, myGammaVec, &D, myPackedCholesky, &d_times_s, 
           myCholeskyWork, &myCholeskyWorkSize, &info); /**/
 
-  if (info) { 
-    PRINTF("Error: info = %d", info); /* \todo Handle singularity for SLICOT */
+  if (info) {
+    throw new Exception("Gamma matrix is singular "
+                        "(MB02GD info = %d).\n", info); 
   }
 }
 

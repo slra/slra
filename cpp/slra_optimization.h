@@ -5,10 +5,10 @@
 /** @memberof OptimizationOptions 
  * @name Output options
  * @{*/
-#define SLRA_OPT_DISP_NOTIFY   0  /**< Display information mesages */
+#define SLRA_OPT_DISP_OFF      0  /**< Disable display */
 #define SLRA_OPT_DISP_FINAL    1  /**< Show only final information ? */
-#define SLRA_OPT_DISP_ITER     2  /**< Show each iteration */
-#define SLRA_OPT_DISP_OFF      3  /**< Disable display */
+#define SLRA_OPT_DISP_NOTIFY   2  /**< Show final information and mesages */
+#define SLRA_OPT_DISP_ITER     3  /**< Display all */
 /* @}*/
 
 /** @memberof OptimizationOptions 
@@ -52,7 +52,7 @@
 #define SLRA_DEF_epsx     1e-5
 #define SLRA_DEF_step     0.001
 #define SLRA_DEF_tol      1e-6
-#define SLRA_DEF_reggamma 0.001
+#define SLRA_DEF_reggamma 0.000
 #define SLRA_DEF_ls_correction 0
 #define SLRA_DEF_gcd          0
 /* @} */
@@ -71,8 +71,6 @@ public:
       ls_correction(SLRA_DEF_ls_correction), gcd(SLRA_DEF_gcd) {
   }
   
-  /** Initialize disp field from string */
-  void str2Disp( const char *str );
   /** Initialize method and submethod fields from string */
   void str2Method( const char *str );
 

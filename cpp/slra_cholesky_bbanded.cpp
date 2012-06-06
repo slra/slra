@@ -68,42 +68,39 @@ void SDependentCholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr,
   }
 }
 
-void SDependentCholesky::calcGammaCholesky( gsl_matrix *R ) {
+void SDependentCholesky::calcGammaCholesky( gsl_matrix *R, bool regularize ) {
   size_t info = 0;
   computeGammaUpperPart(R);
   
-  gsl_matrix m = gsl_matrix_view_array(myPackedCholesky, d_times_s, 
-                     d_times_n).matrix;
+  gsl_matrix m = gsl_matrix_view_array(myPackedCholesky, d_times_n, 
+                     d_times_s).matrix;
+  gsl_vector m_col = gsl_matrix_column(&m, d_times_s - 1).vector;
   
   dpbtrf_("U", &d_times_n, &d_times_s_minus_1, myPackedCholesky, 
           &d_times_s, &info);
-  if (info) { 
-    //PRINTF("Gamma matrix is close to singular, adding regularization.\n");
-    computeGammaUpperPart(R);
-    
-    gsl_vector v;
-    v = gsl_vector_view_array_with_stride(
-            &myPackedCholesky[d_times_s_minus_1],  
-            d_times_s, d_times_n).vector;
-                       
-    for (int j = 0; j < v.size; j++) {
-      gsl_vector_set(&v, j, gsl_vector_get(&v, j) + my_reg_gamma);
-    }                       
+          
+  if (info && regularize) { 
+    if (my_reg_gamma > 0) {
+      Log::lprintf(Log::LOG_LEVEL_NOTIFY, 
+          "Gamma matrix is singular (DPBTRF info = %d), "
+          "adding regularization, reg = %f.\n", info, my_reg_gamma);
+      computeGammaUpperPart(R, my_reg_gamma);
 
-    dpbtrf_("U", &d_times_n, &d_times_s_minus_1,
-            myPackedCholesky, &d_times_s, &info);
-
-    
-    if (info) {
-      PRINTF("Error: info = %d\n", info); /* TODO: add regularization */
+      dpbtrf_("U", &d_times_n, &d_times_s_minus_1,
+              myPackedCholesky, &d_times_s, &info);
     }
+  }
+  
+  if (info) {
+    throw new Exception("Gamma matrix is singular "
+                        "(DPBTRF info = %d).\n", info); 
   }
 }
 
-void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R ) {
+void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R, double reg ) {
   gsl_matrix gamma_ij;
+  gsl_vector diag;
   double *diagPtr =  myPackedCholesky;
-  
   for (size_t i = 0; i < getN(); ++i, diagPtr += getS() * getD() * getD()) {
     if (getS() > 1) {
       gsl_matrix blk_row = 
@@ -118,6 +115,11 @@ void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R ) {
           gsl_matrix_set_zero(myTempGammaij);
         }
         if (j == 0) {
+          if (reg > 0) {
+            diag = gsl_matrix_diagonal(myTempGammaij).vector;
+            gsl_vector_add_constant(&diag, reg);
+          }
+        
           copyLowerTrg(&gamma_ij, myTempGammaij);
         } else {
           gsl_matrix_memcpy(&gamma_ij, myTempGammaij);

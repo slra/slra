@@ -15,7 +15,7 @@ public:
   virtual  ~Cholesky() {}
   
   /** Computes Cholesky factorization */
-  virtual void calcGammaCholesky( gsl_matrix *R ) = 0;
+  virtual void calcGammaCholesky( gsl_matrix *R, bool regularize = true ) = 0;
   /** Solve linear system with factor \f$C\f$.
    * Computes \f$ y_r \leftarrow C^{-1} y_r\f$  if trans = 0 or 
    * \f$ y_r \leftarrow C^{-T} y_r\f$  if trans = 1 */

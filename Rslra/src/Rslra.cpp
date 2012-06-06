@@ -36,11 +36,11 @@ static SEXP getListElement(SEXP list, const char *str) {
     }                                                        \
   } while(0)
 
-static void getRSLRADispOption( OptimizationOptions *popt, SEXP OPTS ) {
+static void getRSLRADispOption( SEXP OPTS ) {
   SEXP str_value_sexp;
   
   if (TYPEOF((str_value_sexp = getListElement(OPTS, "disp"))) == STRSXP) {
-    return popt->str2Disp(CHAR(STRING_ELT(str_value_sexp, 0)));    
+    Log::str2DispLevel(CHAR(STRING_ELT(str_value_sexp, 0)));    
   }
 }
 
@@ -87,7 +87,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
       compute_Rh = !!(*INTEGER(_compute_Rh)), compute_vh = 1;
   /* Optional parameters */
   OptimizationOptions opt;
-  getRSLRADispOption(&opt, _opt);
+  getRSLRADispOption(_opt);
   getRSLRAMethodOption(&opt, _opt);
   getRSLRAOption(opt, _opt, maxiter, asInteger);
   getRSLRAOption(opt, _opt, epsabs, asReal);
@@ -154,6 +154,8 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   SET_TAG(_res, install(PH_STR));
   SET_TAG(CDR(_res), install(INFO_STR));
   UNPROTECT(2 + compute_ph + compute_Rh + compute_vh);
+  
+  Log::deleteLog();
   
   return _res;
 }

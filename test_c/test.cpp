@@ -12,10 +12,10 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
 
-int read_mat( gsl_matrix *a, const char * filename, FILE * log ) {
+int read_mat( gsl_matrix *a, const char * filename ) {
   FILE *file = fopen(filename, "r");
   if (file == NULL) {
-    fprintf(log, "Error opening file %s\n", filename);
+    Log::lprintf("Error opening file %s\n", filename);
     return 0;
   }
   gsl_matrix_fscanf(file,a);
@@ -23,10 +23,10 @@ int read_mat( gsl_matrix *a, const char * filename, FILE * log ) {
   return 1;
 }
 
-int read_vec( gsl_vector *a, const char * filename, FILE * log ) {
+int read_vec( gsl_vector *a, const char * filename ) {
   FILE *file = fopen(filename, "r");
   if (file == NULL) {
-    fprintf(log, "Error opening file %s\n", filename);
+    Log::lprintf("Error opening file %s\n", filename);
     return 0;
   }
   gsl_vector_fscanf(file, a);
@@ -35,7 +35,7 @@ int read_vec( gsl_vector *a, const char * filename, FILE * log ) {
 }
 
 #define MAX_FN  60
-void run_test( FILE * log, const char * testname, double & time, double& fmin, 
+void run_test( const char * testname, double & time, double& fmin, 
          double &fmin2, int& iter, double& diff, const char* method = "l", 
          int ls_correction = 0, bool silent = false ) {
   gsl_matrix *Rt = NULL, *R = NULL, *v = NULL, *Phi = NULL;
@@ -56,17 +56,16 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
   OptimizationOptions opt;
   opt.maxiter = 500;
   
-  opt.disp = silent ? 0 : SLRA_OPT_DISP_ITER;
+  if (!silent) {
+    Log::setMaxLevel(Log::LOG_LEVEL_ITER);
+  }
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
   Structure *S = NULL;
   try {
     /* Read structure  and allocate structure object */
     file = fopen(fsname, "r");    
-    if (file == NULL) {
-      fprintf(log, "Error opening file %s\n", fsname);
-      throw 1;
-    }
+    Log::lprintf("Error opening file %s\n", fsname);
     fscanf(file, "%d %d %d %d %d", &s_k, &s_q, &m, &rk, &hasW); 
     gsl_vector *m_k = gsl_vector_alloc(s_k), *L_q = gsl_vector_alloc(s_q),
                *w_k = gsl_vector_alloc(s_q);
@@ -84,17 +83,17 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
     gsl_vector_free(L_q);  
     
     /* Compute invariants and read everything else */ 
-    read_vec(p = gsl_vector_alloc(S->getNp()), fpname, log);
+    read_vec(p = gsl_vector_alloc(S->getNp()), fpname);
     p2 = gsl_vector_alloc(S->getNp());
-    hasR = read_mat(R = gsl_matrix_calloc(m, m - rk), fnR, log);
-    hasPhi = read_mat(Phi=gsl_matrix_alloc(S->getM(), m), fnPhi, log);
-    read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname, log);
+    hasR = read_mat(R = gsl_matrix_calloc(m, m - rk), fnR);
+    hasPhi = read_mat(Phi = gsl_matrix_alloc(S->getM(), m), fnPhi);
+    read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname);
     /* call slra */  
     slra(p, S, m-rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), NULL,
          p2, R, v);
          
     { 
-      PRINTF("Test Cholesky factorization speed:\n");
+      Log::lprintf("Test Cholesky factorization speed:\n");
       int rep = 10000;     
       Cholesky *ch = S->createCholesky(m-rk, opt.reggamma);
       clock_t tm = clock();
@@ -153,6 +152,7 @@ void run_test( FILE * log, const char * testname, double & time, double& fmin,
     if (S != NULL) {
       delete S;
     }
+    Log::deleteLog();
   }
 }
 
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
   if (i >= 1) {
     printf("\n------------------ Testing example %d  ------------------\n",i);
     sprintf(num, "%d", i);
-    run_test(stdout, num, times[i], misfits[i], misfits2[i], 
+    run_test(num, times[i], misfits[i], misfits2[i], 
              iters[i], diffs[i], method, ls_correction);
 
     printf("\n------------ Results summary --------------------\n\n"
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
     for( i = 1; i <= TEST_NUM; i++ ) {
       sprintf(num, "%d", i);
       printf("Running test %s\n", num);  
-      run_test(stdout, num, times[i], misfits[i], misfits2[i], 
+      run_test(num, times[i], misfits[i], misfits2[i], 
                iters[i], diffs[i], method, ls_correction, false);
       printf("Result: (time, fmin, diff) = %10.8f %10.8f %f\n",
               times[i], misfits[i], diffs[i]);

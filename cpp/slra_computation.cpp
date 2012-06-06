@@ -98,9 +98,9 @@ CostFunction::~CostFunction() {
 }
 
 void CostFunction::computeRGammaSr( const gsl_vector *x, gsl_matrix *R, 
-         gsl_vector *Sr ) {
+         gsl_vector *Sr, bool regularize_gamma ) {
   computeR(x, myTmpR);
-  myGam->calcGammaCholesky(myTmpR);
+  myGam->calcGammaCholesky(myTmpR, regularize_gamma);
   computeSr(myTmpR, Sr);
 } 
 
@@ -313,7 +313,17 @@ void CostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R,
 }
 
 void CostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
-  computeRGammaSr(x, myTmpR, myTmpYr);
+  try  {
+    computeRGammaSr(x, myTmpR, myTmpYr, false);
+  } catch (Exception *e) {
+    if (!strncmp(e->getMessage(), "Gamma", 5)) {
+      delete e;
+      e = new Exception("Gamma is singular. Unable to compute correction.\n");
+    }
+  
+    throw e;
+  }
+  
   myGam->multInvGammaVector(myTmpYr);
   myStruct->correctP(p, myTmpR, myTmpYr);
 }
