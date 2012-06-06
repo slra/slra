@@ -318,7 +318,8 @@ void CostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   } catch (Exception *e) {
     if (!strncmp(e->getMessage(), "Gamma", 5)) {
       delete e;
-      e = new Exception("Gamma is singular. Unable to compute correction.\n");
+      e = new Exception("Gamma matrix is singular. "
+                        "Unable to compute the correction.\n");
     }
   
     throw e;
