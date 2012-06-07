@@ -20,7 +20,8 @@ BUILD_MODE=BUILD_DEFAULT
 matlab: clean $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra 
-	cp slra.mex* doc
+	-cp slra.mexa64 doc/slra_mex.mexa64
+	-cp slra.mexglx doc/slra_mex.mexglx
 
 octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \

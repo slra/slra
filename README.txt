@@ -77,10 +77,12 @@ Directories "test_m" and "test_r" contain demo files for MATLAB/Octave and R.
 
 If you use the package in your research, please cite the following reference:
 
-@article{slra-package,
+@@TechReport{slra-package,
   author      = {Markovsky, I. and Usevich, K.},
   title       = {Software for weighted structured low-rank approximation},
-  journal     = ??,
+  institution =  {ECS, Univ. of Southampton},
+  number = 	 {339974},
+  address =      {\url{http://eprints.ecs.soton.ac.uk/339974}},
   year        = {2012}
 }
 
