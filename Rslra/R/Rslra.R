@@ -30,6 +30,7 @@ slra <- function(p, s, r = dim(s$phi)[1] - 1, opt = list(),
   if (!is.list(s) || is.null(s$m)) {
     stop('Structure must be a list with "m" and "n" elements');
   } 
+  storage.mode(p)  <- 'double';
   storage.mode(s$m)  <- 'integer';
   storage.mode(s$m)  <- 'double';
   s$m <- as.vector(s$m);
