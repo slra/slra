@@ -45,7 +45,7 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
 }
 
 void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                 gsl_vector *yr, bool scaled ) {
+                                 gsl_vector *yr, int wdeg ) {
   size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector_view sub_p, sub_yr;
   
@@ -53,7 +53,7 @@ void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R,
        sum_np += myStripe[k]->getNp(), n_row += getBlock(k)->getN()*D, k++) {
     sub_yr = gsl_vector_subvector(yr, n_row, getBlock(k)->getN() * D);    
     sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
-    myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector, scaled);
+    myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector, wdeg);
   }
 }
 

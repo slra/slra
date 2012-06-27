@@ -191,7 +191,7 @@ void CostFunction::computeCorrectionAndJacobian( const gsl_vector* x,
     } else {
       gsl_vector_set_zero(res);
     }
-    myStruct->correctP(res, myTmpR, myTmpYr, false);
+    myStruct->correctP(res, myTmpR, myTmpYr, 1);
   }
   if (jac != NULL) {  
     computeJacobianOfCorrection(myTmpYr, myTmpR, jac);
@@ -277,13 +277,13 @@ void CostFunction::computeJacobianOfCorrection( gsl_vector* yr,
       /* Compute first term (correction of Gam^{-1} z_{ij}) */
       computeJacobianZij(myTmpJacobianCol, i, j, yr, R, 1);
       myGam->multInvGammaVector(myTmpJacobianCol);
-      myStruct->correctP(myTmpCorr, R, myTmpJacobianCol, false);
+      myStruct->correctP(myTmpCorr, R, myTmpJacobianCol, 1);
 
       /* Compute second term (gamma * dG_{ij} * yr) */ 
       gsl_matrix_set_zero(myTmpGradR);
       tmp_col = gsl_matrix_column(myPerm, i);
       gsl_matrix_set_col(myTmpGradR, j, &tmp_col.vector);
-      myStruct->correctP(myTmpCorr, myTmpGradR, yr, false);
+      myStruct->correctP(myTmpCorr, myTmpGradR, yr, 1);
 
       /* Set to zero used column * /
       tmp_col = gsl_matrix_column(myTmpGradR, j);
@@ -321,12 +321,16 @@ void CostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
       e = new Exception("Gamma matrix is singular. "
                         "Unable to compute the correction.\n");
     }
-  
     throw e;
   }
-  
   myGam->multInvGammaVector(myTmpYr);
-  myStruct->correctP(p, myTmpR, myTmpYr);
+  if (isGCD) {
+    gsl_vector_set_zero(p);
+    myStruct->correctP(p, myTmpR, myTmpYr, 0);
+    gsl_vector_scale(p, -1.0);
+  } else {
+    myStruct->correctP(p, myTmpR, myTmpYr);
+  }
 }
 
 void CostFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {

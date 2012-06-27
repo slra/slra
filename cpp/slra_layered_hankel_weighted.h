@@ -29,7 +29,7 @@ public:
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         bool scaled = true );
+                         int wdeg = 2 );
   /**@}*/
   
   /** @name Implementing SDependentStructure interface */

@@ -66,7 +66,7 @@ public:
    * Computes \f$ p \leftarrow p - G^T(R) y_r\f$,
    * where \f$y_r\f$ is a precomputed \f$\Gamma^{-1}(R) s(R)\f$. */
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         bool scaled = true ) = 0;
+                         int wdeg = 2 ) = 0;
   /** Creates Cholesky object for this structure and rank reduction */
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
   /** Creates DGamma object for this structure and rank reduction */

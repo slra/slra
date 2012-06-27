@@ -58,12 +58,8 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
     int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
     if (p_out != NULL) {
-      if (opt->gcd) {
-        gsl_vector_set_zero(p_out);
-      } else {
-        if (p_out != p_in) {
-          gsl_vector_memcpy(p_out, p_in);
-        }
+      if (p_out != p_in && !opt->gcd) {
+        gsl_vector_memcpy(p_out, p_in);
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
     }
