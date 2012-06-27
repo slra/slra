@@ -30,7 +30,7 @@ public:
   virtual int getM() const { return myStripe[0]->getM(); }
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         bool scaled );
+                         int wdeg = 2 );
   virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
   virtual DGamma *createDGamma( int D ) const;
   /**@}*/

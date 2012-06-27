@@ -90,7 +90,7 @@ void LayeredHStructure::computeStats() {
 }
 
 void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                  gsl_vector *yr, bool scaled ) {
+                                  gsl_vector *yr, int wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len, D = R->size2;
   gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), D).matrix, b_xext;
   gsl_vector yr_matr_row, res_sub, p_chunk_sub;
@@ -101,7 +101,8 @@ void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
        sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
     b_xext = gsl_matrix_submatrix(R, sum_nl, 0, getLayerLag(l), D).matrix; 
     res_sub = gsl_vector_subvector(res, 0, getLayerLag(l)).vector;
-    w_scale = scaled ? getLayerInvWeight(l) : sqrt(getLayerInvWeight(l));
+    w_scale = (wdeg == 2) ? getLayerInvWeight(l) :
+                (wdeg == 1 ? sqrt(getLayerInvWeight(l)) : 1.0);
     if (!isLayerExact(l)) {    /* Subtract correction if needed */
       for (k = 0; k < getN(); k++) {
         p_chunk_sub = gsl_vector_subvector(p, k + sum_np, 

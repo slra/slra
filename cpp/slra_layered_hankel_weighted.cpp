@@ -37,13 +37,13 @@ WLayeredHStructure::~WLayeredHStructure() {
 }
 
 void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                   gsl_vector *yr, bool scaled ) {
+                                   gsl_vector *yr, int wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), R->size2).matrix;
   gsl_vector yr_matr_row;
   gsl_vector_view res_sub, p_chunk_sub, inv_w_chunk;
   gsl_vector *res = gsl_vector_alloc(R->size1), 
-             *weights = scaled ? myInvWeights : myInvSqrtWeights;
+             *weights = (wdeg == 2) ? myInvWeights : myInvSqrtWeights;
 
   for (k = 0; k < getN(); k++) {
     yr_matr_row = gsl_matrix_row(&yr_matr, k).vector; 
@@ -53,9 +53,11 @@ void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
          sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
       res_sub = gsl_vector_subvector(res, sum_nl, getLayerLag(l));
       p_chunk_sub =  gsl_vector_subvector(p, k + sum_np, getLayerLag(l));
-      inv_w_chunk = gsl_vector_subvector(myInvWeights, k + sum_np, 
-                                         getLayerLag(l));
-      gsl_vector_mul(&res_sub.vector, &inv_w_chunk.vector);              
+      if (wdeg != 0) {
+        inv_w_chunk = gsl_vector_subvector(myInvWeights, k + sum_np, 
+                                           getLayerLag(l));
+        gsl_vector_mul(&res_sub.vector, &inv_w_chunk.vector);              
+      }
       gsl_vector_sub(&p_chunk_sub.vector, &res_sub.vector); 
     }
   }
