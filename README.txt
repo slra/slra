@@ -83,7 +83,7 @@ If you use the package in your research, please cite the following reference:
   title       = {Software for weighted structured low-rank approximation},
   institution =  {ECS, Univ. of Southampton},
   number = 	 {339974},
-  address =      {\url{http://eprints.soton.ac.uk/339974/}},
+  address =      {\url{http://eprints.soton.ac.uk/339974/ }},
   year        = {2012}
 }
 
