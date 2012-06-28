@@ -25,7 +25,8 @@ United Kingdom
 {im,kdu}@ecs.soton.ac.uk
 
 The package is primarily distributed in the form of source code and is hosted 
-at <http://github.com/slra/slra/>. 
+at <http://github.com/slra/slra/>. (Windows binaries for the R interface of 
+the package are provided on the "Downloads" page.)
 
 0) Prerequisites
 
@@ -82,7 +83,7 @@ If you use the package in your research, please cite the following reference:
   title       = {Software for weighted structured low-rank approximation},
   institution =  {ECS, Univ. of Southampton},
   number = 	 {339974},
-  address =      {\url{http://ecs.soton.ac.uk/339974}},
+  address =      {\url{http://eprints.soton.ac.uk/339974/}},
   year        = {2012}
 }
 
