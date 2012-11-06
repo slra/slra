@@ -11,6 +11,11 @@ Rslra*.tar.gz
 res_*.txt
 test_c/test
 test_c/gmon.out
+test_c/test_speed/*/*.txt
+test_c/test_speed/*/*.eps
+test_c/test_speed/*/.RData
+test_c/test_speed/*/*.Rout
+test_c/test_speed/gentest
 test_m/octave-core
 test_m/support/octave-core
 
