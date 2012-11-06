@@ -38,6 +38,11 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
     throw new Exception("Unknown optimization method.\n");   
   }
   
+  if (opt->maxiter < 0 || opt->maxiter > 5000) {
+    throw new Exception("opt.maxiter should be in [0;5000].\n");   
+  }
+  
+  
   /* LM */
   int ls_nfun = opt->ls_correction ? F->getNp() : F->getN() * F->getD();
   gsl_multifit_fdfsolver* solverlm;
@@ -101,7 +106,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
     x_norm = gsl_blas_dnrm2(solverlm->x);
     g_norm = gsl_blas_dnrm2(g);
-    Log::lprintf("  0: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
+    Log::lprintf("  0: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
                 opt->fmin, g_norm, x_norm);
   }
 
@@ -132,7 +137,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
 	x_norm = gsl_blas_dnrm2(solverlm->x);
 	g_norm = gsl_blas_dnrm2(g);
 	
-	Log::lprintf("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n",
+	Log::lprintf("%3u: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
                     opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
@@ -166,7 +171,7 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
 	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
 	x_norm = gsl_blas_dnrm2(solvernm->x);
 
-	Log::lprintf("%3u: f0 = %16.11f,  ||x|| = %10.8f\n", 
+	Log::lprintf("%3u: f0 = %15.10e,  ||x|| = %9.7e\n", 
 	            opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;

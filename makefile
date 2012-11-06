@@ -41,7 +41,7 @@ R:
 ## Targets for advanced users
 testc : clean test_c/test.o $(SLRA_OBJ_FILES) 
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test_c/test.o \
-	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm
+	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm -lrt
 
 # Targets with SLICOT
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  \
@@ -61,7 +61,7 @@ testc-slicot : BUILD_MODE=USE_SLICOT
 testc-slicot : test_c/test.o $(SLRA_OBJ_FILES) SLICOT.a
 	$(CCPP) $(INC_FLAGS) $(OPT_FLAGS) -DUSE_SLICOT -o test_c/test test_c/test.o \
 	$(SLRA_OBJ_FILES) SLICOT.a -lgsl -lcblas -llapack \
-	-latlas -lblas -lm -lgfortran
+	-latlas -lblas -lm -lgfortran -lrt
 
 # Advanced targets for static compilation
 mex-static : SLICOT.a $(MEX_SRC_FILES)
@@ -75,6 +75,11 @@ mex-slicot-static : SLICOT.a $(MEX_SRC_FILES)
 	SLICOT.a /usr/lib/libgsl.a /usr/lib/atlas-base/libcblas.a \
 	/usr/lib/atlas-base/atlas/liblapack.a \
 	/usr/lib/atlas-base/atlas/libblas.a -lgfortran -o slra 
+
+testcomp : clean test_comp/test.o $(SLRA_OBJ_FILES) 
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_comp/test test_comp/test.o \
+	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm
+
 
 # Targets for parts of the package
 %.o : %.cpp
