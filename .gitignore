@@ -7,6 +7,9 @@
 # Ignore R files and libraries
 Rslra.Rcheck
 Rslra*.tar.gz
+Rslra/src/*/*.*
+# Ignore SLICOT
+SLICOT
 # Ignore test results
 res_*.txt
 test_c/test

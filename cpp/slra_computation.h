@@ -1,11 +1,10 @@
 class CostFunction {
   Structure *myStruct;
-  int myRank;
+  int myD;
   Cholesky *myGam;
   DGamma *myDeriv;
   gsl_matrix *myMatr;
   gsl_matrix *myPerm;
-  gsl_matrix *myMatrMulPerm;
   
   gsl_matrix *myTmpThetaExt;
   gsl_matrix *myTmpGradR;
@@ -17,24 +16,22 @@ class CostFunction {
   gsl_vector *myTmpCorr;  
   const gsl_vector *myP;
   double myPNorm;
-  bool isGCD;
 
   gsl_vector *myTmpJacobianCol;  
   gsl_matrix *myTmpGrad;  
 public:
-  CostFunction( Structure *s, int d, const gsl_vector *p, 
-                OptimizationOptions *opt, gsl_matrix *perm  );
+  CostFunction( Structure *s, int d, const gsl_vector *p, gsl_matrix *perm, 
+                double reggamma );
   virtual ~CostFunction();
   
-  int getD() { return myPerm->size2 - myRank; }
+  int getD() { return myD; }
   int getM() { return myStruct->getM(); }
-  int getRank() { return myRank; }
+  int getRank() { return myPerm->size2 - myD; }
   int getRsize() { return myPerm->size2; }
   int getN() { return myStruct->getN(); }
   int getNp() { return myStruct->getNp(); }
   const gsl_matrix * getPerm() { return myPerm; }
-  const gsl_matrix * getSMart() { return myMatr; }
-  const gsl_matrix * getPhiSMatr() { return myMatrMulPerm; }
+  const gsl_matrix * getSMatr() { return myMatr; }
 
   void X2Rtheta( const gsl_matrix * x_mat, gsl_matrix *RTheta ); 
   void computeDefaultRTheta( gsl_matrix *RTheta ); 
@@ -50,11 +47,6 @@ public:
                            gsl_matrix *R, double factor = 0.5 );
   void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *R, 
                                       gsl_matrix *jac );
-
-  void computeJacobianZijOld( gsl_vector*res, int i, int j, gsl_vector* yr, 
-                           gsl_matrix *R, double factor = 0.5 );
-  void computePseudoJacobianLsFromYrOld( gsl_vector* yr, gsl_matrix *R, 
-                                       gsl_matrix *jac );
 
   void computeJacobianOfCorrection( gsl_vector* yr, gsl_matrix *R, 
                                     gsl_matrix *jac );

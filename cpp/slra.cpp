@@ -29,18 +29,9 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     }
   }
 
-  if (opt->gcd) { 
-    opt->ls_correction = 1; /* Only correction LS is allowed for GCD */
-    if (Rini == NULL) {
-      throw new Exception("GCD computation must have "
-                          "an initial approximation.\n");
-    }
-  }
-  
   try { 
     time_t t_b = clock();
-    myCostFun =  new CostFunction(s, d, p_in, opt, 
-                                  (tmpphi != NULL ? tmpphi : Phi));
+    myCostFun =  new CostFunction(s, d, p_in, (tmpphi != NULL ? tmpphi : Phi), opt->reggamma);
     Rtheta = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
 
     if (Rini == NULL) {  /* compute default initial approximation */

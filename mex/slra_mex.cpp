@@ -145,7 +145,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         MATStoreOption(prhs[3], opt, reggamma, 0, 
             numeric_limits<double>::max());
         MATStoreOption(prhs[3], opt, ls_correction, 0, 1);
-        MATStoreOption(prhs[3], opt, gcd, 0, 1);
       }
     }  
 

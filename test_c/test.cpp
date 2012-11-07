@@ -155,7 +155,7 @@ void run_test( const char * testname, double & time, double& fmin,
       fmin = opt.fmin;
       fmin2 = dp_norm * dp_norm;
     } else {
-      CostFunction mCostFun(S, m-rk, p, &opt, (hasPhi ? Phi : NULL));
+      CostFunction mCostFun(S, m-rk, p, (hasPhi ? Phi : NULL), opt.reggamma);
       meas_time(mCostFun, fmin, fmin2, diff);
     }          
 
