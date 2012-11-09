@@ -83,10 +83,10 @@ public:
 
   /** @name Implementing DGamma interface */
   /**@{*/
-  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
-                   gsl_vector *yr );
+  virtual void calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
+                   const gsl_vector *yr );
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   gsl_matrix *perm, int i, int j, gsl_vector *Yr );
+                   int i, int j, gsl_vector *Yr );
   /**@}*/
 };
 

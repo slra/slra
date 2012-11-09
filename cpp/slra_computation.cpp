@@ -9,27 +9,90 @@ extern "C" {
 
 #include "slra.h"
 
+
+OptFunctionSLRA::OptFunctionSLRA( CostFunction &fun, gsl_matrix *perm ) : myFun(fun) {
+  if (perm == NULL) {
+    myPerm = gsl_matrix_alloc(myFun.getM(), myFun.getM());
+    gsl_matrix_set_identity(myPerm);
+  } else {
+    if (perm->size1 != myFun.getM() || perm->size1 < perm->size2) {
+      throw new Exception("Incorrect sizes of permutation matrix.\n");   
+    }
+    myPerm = gsl_matrix_alloc(perm->size1, perm->size2);
+    gsl_matrix_memcpy(myPerm, perm);
+  }
+  myTmpR = gsl_matrix_alloc(myFun.getM(), myFun.getD());
+  myTmpGradR = gsl_matrix_alloc(myFun.getM(), myFun.getD());
+  myTmpThetaExt = gsl_matrix_alloc(myPerm->size2, myFun.getD());
+}
+
+OptFunctionSLRA::~OptFunctionSLRA()  {
+  gsl_matrix_free(myTmpR);
+  gsl_matrix_free(myTmpGradR);
+  gsl_matrix_free(myPerm);
+  gsl_matrix_free(myTmpThetaExt);
+}
+
+int OptFunctionSLRA::getNvar() { 
+  return myFun.getRank() * myFun.getD(); 
+}
+
+
+void OptFunctionSLRA::X2Rtheta( const gsl_matrix *x, gsl_matrix *RTheta ) { 
+  gsl_vector diag;
+  gsl_matrix submat;
+  int n = x->size1, d = x->size2;
+
+  /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
+  submat = gsl_matrix_submatrix(RTheta, 0, 0, n, d).matrix;
+  gsl_matrix_memcpy(&submat, x); 
+  submat = gsl_matrix_submatrix(RTheta, n, 0, d, d).matrix;
+  gsl_matrix_set_all(&submat, 0);
+  diag   = gsl_matrix_diagonal(&submat).vector;    
+  gsl_vector_set_all(&diag, -1);
+}
+
+
+void OptFunctionSLRA::computeR( const gsl_vector * x, gsl_matrix *R ) { 
+  gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector(x, myFun.getRank(), myFun.getD());
+
+  X2Rtheta(&x_mat.matrix, myTmpThetaExt);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPerm, myTmpThetaExt, 0, R);
+}
+
+void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad ) {
+  computeR(x, myTmpR);
+
+  if (grad == NULL) {
+    myFun.computeFuncAndGrad(myTmpR, f, NULL);
+  } else {
+    myFun.computeFuncAndGrad(myTmpR, f, myTmpGradR);
+
+    gsl_matrix_view grad_matr = gsl_matrix_view_vector(grad, myFun.getRank(), myFun.getD());
+    gsl_matrix_view perm_sub_matr = gsl_matrix_submatrix(myPerm, 0, 0, 
+                                      myFun.getM(), myFun.getRank());
+    /* Compute gradient of f_{\Phi}(X) */ 
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, 
+                   myTmpGradR, 0.0, &grad_matr.matrix);
+  }                   
+
+}   
+
+
+
+
 CostFunction::CostFunction( Structure *s, int d, const gsl_vector *p, 
                             gsl_matrix *perm, double reggamma ) :  
                             myP(p), myD(d), myStruct(s) {
-  gsl_blas_ddot(myP, myP, &myPNorm);
-
-
   myGam = myStruct->createCholesky(getD(), reggamma);
   myDeriv = myStruct->createDGamma(getD());
 
   myMatr = gsl_matrix_alloc(getN(), getM());
-
-
   myTmpGradR = gsl_matrix_alloc(getM(), getD());
-  myTmpGradR2 = gsl_matrix_alloc(getM(), getD());
 
   myTmpR = gsl_matrix_alloc(getM(), getD());
   myTmpYr = gsl_vector_alloc(getN() * getD());
   myTmpJacobianCol = gsl_vector_alloc(getN() * getD());
-
-  myEye = gsl_matrix_alloc(getM(), getM());
-  gsl_matrix_set_identity(myEye);
   myTmpJac = gsl_matrix_alloc(getM() * getD(), getN() * getD());
 
   if (myStruct->getNp() > p->size) {
@@ -68,14 +131,10 @@ CostFunction::~CostFunction() {
 
   gsl_matrix_free(myMatr);
   gsl_matrix_free(myTmpGradR);
-  gsl_matrix_free(myTmpGradR2);
   gsl_matrix_free(myTmpR);
-  
-  gsl_matrix_free(myEye);
-  gsl_matrix_free(myTmpJac);
-
   gsl_vector_free(myTmpYr);
 
+  gsl_matrix_free(myTmpJac);
   gsl_vector_free(myTmpJacobianCol);
   gsl_vector_free(myTmpCorr);
 
@@ -83,12 +142,6 @@ CostFunction::~CostFunction() {
   gsl_matrix_free(myTmpThetaExt);
 }
 
-void CostFunction::computeRGammaSr( const gsl_vector *x, gsl_matrix *R, 
-         gsl_vector *Sr, bool regularize_gamma ) {
-  computeR(x, myTmpR);
-  myGam->calcGammaCholesky(myTmpR, regularize_gamma);
-  computeSr(myTmpR, Sr);
-} 
 
 void CostFunction::X2Rtheta( const gsl_matrix *x, gsl_matrix *RTheta ) { 
   gsl_vector diag;
@@ -118,27 +171,39 @@ void CostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myMatr, R, 0, &SrMat.matrix);
 }
 
-void CostFunction::computeFuncAndGrad( const gsl_vector* x, double * f, 
-                                       gsl_vector *grad ) {
-  computeRGammaSr(x, myTmpR, myTmpYr);
+void CostFunction::computeGammaSr( const gsl_matrix *R, gsl_vector *Sr, bool regularize_gamma ) {
+  myGam->calcGammaCholesky(myTmpR, regularize_gamma);
+  computeSr(myTmpR, Sr);
+} 
+
+
+
+
+void CostFunction::computeFuncAndGrad( const gsl_matrix* R, double * f, 
+                                       gsl_matrix *gradR ) {
+  computeGammaSr(R, myTmpYr);
 
   if (f != NULL) {
     myGam->multInvCholeskyVector(myTmpYr, 1);
     gsl_blas_ddot(myTmpYr, myTmpYr, f);
   }
-  if (grad != NULL) {
+  if (gradR != NULL) {
     if (f != NULL) {
       myGam->multInvCholeskyVector(myTmpYr, 0);
     } else {
       myGam->multInvGammaVector(myTmpYr);
     }
-    computeGradFromYr(myTmpYr, myTmpR, grad);
+    gsl_matrix_view yr_matr = gsl_matrix_view_vector(myTmpYr, getN(), getD());
+    myDeriv->calcYrtDgammaYr(gradR, R, myTmpYr);
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix,
+                   -1.0, gradR);
   }
 }
 
 void CostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x, 
          gsl_vector *res, gsl_matrix *jac ) {
-  computeRGammaSr(x, myTmpR, myTmpYr);
+  computeR(x, myTmpR);
+  computeGammaSr(myTmpR, myTmpYr);
 
   if (res != NULL) {
     myGam->multInvCholeskyVector(myTmpYr, 1);
@@ -155,10 +220,10 @@ void CostFunction::computeFuncAndPseudoJacobianLs( const gsl_vector* x,
   } 
 }
 
-
 void CostFunction::computeCorrectionAndJacobian( const gsl_vector* x, 
          gsl_vector *res, gsl_matrix *jac ) {
-  computeRGammaSr(x, myTmpR, myTmpYr);
+  computeR(x, myTmpR);
+  computeGammaSr(myTmpR, myTmpYr);
   myGam->multInvGammaVector(myTmpYr);
 
   if (res != NULL) {
@@ -170,36 +235,37 @@ void CostFunction::computeCorrectionAndJacobian( const gsl_vector* x,
   } 
 }
 
-
-void CostFunction::computeJacobianZij( gsl_vector *res, int i, int j,
-         gsl_vector* yr, gsl_matrix *R, double factor ) {
-  myDeriv->calcDijGammaYr(res, R, myEye, i, j, yr);
-  gsl_vector_scale(res, -factor);
-  
-  for (int k = 0; k < getN(); k++) {  /* Convert to vector strides */
-    (*gsl_vector_ptr(res, j + k * getD())) += 
-          gsl_matrix_get(myMatr, k, i);
-  }  
-}
-
-void CostFunction::computePseudoJacobianLsFromYr( gsl_vector* yr, 
-         gsl_matrix *R, gsl_matrix *jac ) {
-  size_t i, j;
+void CostFunction::computeZmatTmpJac( gsl_vector* yr, gsl_matrix *R, double factor ) {
+  size_t i, j, k;
   for (i = 0; i < getM(); i++) {
     for (j = 0; j < getD(); j++) {
       gsl_vector tmpJacRow = gsl_matrix_row(myTmpJac, i + j * getM()).vector;
     
-      computeJacobianZij(&tmpJacRow, i, j, yr, R);
+      myDeriv->calcDijGammaYr(&tmpJacRow, R, i, j, yr);
+      gsl_vector_scale(&tmpJacRow, -factor);
+  
+      for (int k = 0; k < getN(); k++) {  /* Convert to vector strides */
+        (*gsl_vector_ptr(&tmpJacRow, j + k * getD())) += 
+             gsl_matrix_get(myMatr, k, i);
+      }  
     }
   }
+}
+
+void CostFunction::mulZmatPerm( gsl_vector* res, gsl_matrix *perm, size_t i, size_t j ) {
+  gsl_matrix subJ = gsl_matrix_submatrix(myTmpJac, j * getM(), 0, getM(),
+                         myTmpJac->size2).matrix;
+  gsl_vector phiCol = gsl_matrix_column(perm, i).vector;
+  gsl_blas_dgemv(CblasTrans, 1.0, &subJ, &phiCol, 0.0, res);
+}
+
+void CostFunction::computePseudoJacobianLsFromYr( gsl_vector* yr, 
+         gsl_matrix *R, gsl_matrix *jac ) {
+  computeZmatTmpJac(yr, R);
   
-  for (i = 0; i < getRank(); i++) {
-    for (j = 0; j < getD(); j++) {
-      gsl_matrix subJ = gsl_matrix_submatrix(myTmpJac, j * getM(), 0, getM(),
-                            myTmpJac->size2).matrix;
-      gsl_vector phiCol = gsl_matrix_column(myPerm, i).vector;
-      gsl_blas_dgemv(CblasTrans, 1.0, &subJ, &phiCol, 0.0, myTmpJacobianCol);
-    
+  for (size_t i = 0; i < getRank(); i++) {
+    for (size_t j = 0; j < getD(); j++) {
+      mulZmatPerm(myTmpJacobianCol, myPerm, i, j);
       myGam->multInvCholeskyVector(myTmpJacobianCol, 1);
       gsl_matrix_set_col(jac, i * getD() + j, myTmpJacobianCol);  
     }
@@ -214,13 +280,15 @@ void CostFunction::computeJacobianOfCorrection( gsl_vector* yr,
   gsl_matrix_set_zero(jac);
   gsl_matrix_set_zero(myTmpGradR);
 
+  computeZmatTmpJac(yr, R);
+
   for (i = 0; i < getRank(); i++) {
     for (j = 0; j < getD(); j++) {
       jac_col = gsl_matrix_column(jac, i * getD() + j);
       gsl_vector_set_zero(myTmpCorr);
 
       /* Compute first term (correction of Gam^{-1} z_{ij}) */
-      computeJacobianZij(myTmpJacobianCol, i, j, yr, R, 1);
+      mulZmatPerm(myTmpJacobianCol, myPerm, i, j);
       myGam->multInvGammaVector(myTmpJacobianCol);
       myStruct->correctP(myTmpCorr, R, myTmpJacobianCol, 1);
 
@@ -235,27 +303,10 @@ void CostFunction::computeJacobianOfCorrection( gsl_vector* yr,
   }
 }
 
-void CostFunction::computeGradFromYr( gsl_vector* yr, gsl_matrix *R, 
-                                      gsl_vector *grad ) {
-  gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getN(), getD());
-  gsl_matrix_view grad_matr = gsl_matrix_view_vector(grad, getRank(), getD());
-  gsl_matrix_view perm_sub_matr = gsl_matrix_submatrix(myPerm, 0, 0, 
-                                      getM(), getRank());
-
-  /* Compute gradient of f(R) */ 
-  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix,
-                 0.0, myTmpGradR);
-  myDeriv->calcYrtDgammaYr(myTmpGradR2, R, yr);
-  gsl_matrix_sub(myTmpGradR, myTmpGradR2);
-
-  /* Compute gradient of f_{\Phi}(X) */ 
-  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, 
-                 myTmpGradR, 0.0, &grad_matr.matrix);
-}
-
 void CostFunction::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
   try  {
-    computeRGammaSr(x, myTmpR, myTmpYr, false);
+    computeR(x, myTmpR);
+    computeGammaSr(myTmpR, myTmpYr, false);
   } catch (Exception *e) {
     if (!strncmp(e->getMessage(), "Gamma", 5)) {
       delete e;

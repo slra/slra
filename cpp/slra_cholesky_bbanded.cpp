@@ -110,7 +110,7 @@ void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R, double reg ) {
         gamma_ij = gsl_matrix_submatrix(&blk_row, j * getD(), 0, 
                                         getD(), getD()).matrix;
         if (j < getS()) {
-          myW->AtWijB(myTempGammaij, i, i+j, R, R, myTempWktR);  
+          myW->AtWijB(myTempGammaij, i+j, i, R, R, myTempWktR);  
         } else {
           gsl_matrix_set_zero(myTempGammaij);
         }

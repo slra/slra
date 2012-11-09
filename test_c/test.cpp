@@ -13,28 +13,6 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
 
-int read_mat( gsl_matrix *a, const char * filename ) {
-  FILE *file = fopen(filename, "r");
-  if (file == NULL) {
-    Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", filename);
-    return 0;
-  }
-  gsl_matrix_fscanf(file, a);
-  fclose(file);
-  return 1;
-}
-
-int read_vec( gsl_vector *a, const char * filename ) {
-  FILE *file = fopen(filename, "r");
-  if (file == NULL) {
-    Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", filename);
-    return 0;
-  }
-  gsl_vector_fscanf(file, a);
-  fclose(file);
-  return 1;
-}
-
 #define gsl_matrix_free_ifnull(M)    if (M != NULL) gsl_matrix_free(M)
 #define gsl_vector_free_ifnull(V)    if (V != NULL) gsl_vector_free(V)
 
@@ -42,6 +20,7 @@ void meas_time( CostFunction &mCostFun, double &tm_func, double &tm_grad, double
   gsl_matrix *x = gsl_matrix_alloc(mCostFun.getRank(), mCostFun.getD());
   gsl_vector x_vec = gsl_vector_view_array(x->data, x->size1*x->size2).vector;
   gsl_matrix *tmpR = gsl_matrix_alloc(mCostFun.getM(), mCostFun.getD());
+  gsl_matrix *tmpGradR = gsl_matrix_alloc(mCostFun.getM(), mCostFun.getD());
   gsl_vector tmpR_vec = gsl_vector_view_array(tmpR->data, tmpR->size1*tmpR->size2).vector;  
   gsl_matrix *jacb = gsl_matrix_alloc(mCostFun.getN()*mCostFun.getD(), 
                                       mCostFun.getRank()*mCostFun.getD());
@@ -56,17 +35,18 @@ void meas_time( CostFunction &mCostFun, double &tm_func, double &tm_grad, double
      clock_gettime(CLOCK_REALTIME, &st);                                    \
      for (int i = 0; i < rep; i++) { op; }                                  \
      clock_gettime(CLOCK_REALTIME, &et);                                    \
-     tm = (1E-9 * (et.tv_nsec - st.tv_nsec) + et.tv_sec - st.tv_sec) / rep; \  
+     tm = (1E-9 * (et.tv_nsec - st.tv_nsec) + et.tv_sec - st.tv_sec) / rep; \
    } while (0)  
 
   double res;      
-  meas_op(10, mCostFun.computeFuncAndGrad(&x_vec, &res, NULL), tm_func);
-  meas_op(10, mCostFun.computeFuncAndGrad(&x_vec, NULL, &tmpR_vec), tm_grad);
+  meas_op(10, mCostFun.computeFuncAndGrad(tmpR, &res, NULL), tm_func);
+  meas_op(10, mCostFun.computeFuncAndGrad(tmpR, NULL, tmpGradR), tm_grad);
   meas_op(1, mCostFun.computeFuncAndPseudoJacobianLs(&x_vec, NULL, jacb), tm_pjac);
 
   gsl_matrix_free(jacb);
   gsl_matrix_free(x);
   gsl_matrix_free(tmpR);
+  gsl_matrix_free(tmpGradR);
 }
 
 #define MAX_FN  60
@@ -109,18 +89,35 @@ void run_test( const char * testname, double & time, double& fmin,
     file = fopen(fsname, "r");    
     Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", fsname);
     fscanf(file, "%d %d %d %d %d", &s_N, &s_q, &m, &rk, &hasW); 
-    hasW *= (int)(!elementwise_w);
+   // hasW *= (int)(!elementwise_w);
     gsl_vector *n_l = gsl_vector_alloc(s_N), *m_k = gsl_vector_alloc(s_q),
                *w_k = gsl_vector_alloc(s_q);
     gsl_vector_fscanf(file, n_l);
     gsl_vector_fscanf(file, m_k);
     if (hasW) {
       gsl_vector_fscanf(file, w_k);
+      if (elementwise_w) {
+        gsl_vector *el_wk = gsl_vector_alloc(compute_np(m_k, n_l));
+        int i = 0;
+        size_t T;
+        gsl_vector sv;
+        for (size_t l = 0; l < s_N; l++) {
+          for (size_t k = 0; k < s_q; k++, i += T) {
+            T = gsl_vector_get(m_k, k) + gsl_vector_get(n_l, l) - 1;
+            sv = gsl_vector_subvector(el_wk, i, T).vector;
+            gsl_vector_set_all(&sv, gsl_vector_get(w_k, k));
+          }
+        }
+        gsl_vector_free(w_k);
+        w_k = el_wk;
+      }
     } else {  
       gsl_vector_free(w_k);
       w_k = NULL;
     }
     fclose(file);
+
+    
     S = elementwise_w ? (Structure *)new WMosaicHStructure(m_k, n_l, w_k) : 
                         (Structure *)new MosaicHStructure(m_k, n_l, w_k);
     gsl_vector_free(n_l);  

@@ -139,6 +139,42 @@ void print_vec(const gsl_vector* a)
   PRINTF("\n");
 }
 
+int read_mat( gsl_matrix *a, const char * filename ) {
+  FILE *file = fopen(filename, "r");
+  if (file == NULL) {
+    Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", filename);
+    return 0;
+  }
+  gsl_matrix_fscanf(file, a);
+  fclose(file);
+  return 1;
+}
+
+int read_vec( gsl_vector *a, const char * filename ) {
+  FILE *file = fopen(filename, "r");
+  if (file == NULL) {
+    Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", filename);
+    return 0;
+  }
+  gsl_vector_fscanf(file, a);
+  fclose(file);
+  return 1;
+}
+
+
+int read_vec_uint( gsl_vector_uint *a, const char * filename ) {
+  FILE *file = fopen(filename, "r");
+  if (file == NULL) {
+    Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", filename);
+    return 0;
+  }
+  gsl_vector_uint_fscanf(file, a);
+  fclose(file);
+  return 1;
+}
+
+
+
 int compute_np( gsl_vector* ml, gsl_vector *nk ) {
   int np = 0;
   int i;

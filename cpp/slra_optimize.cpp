@@ -8,7 +8,7 @@
 
 #include "slra.h"
 
-int gsl_optimize( CostFunction *F, OptimizationOptions *opt, 
+int gsl_optimize( OptFunction *F, OptimizationOptions *opt, 
                   gsl_vector* x_vec, gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     { gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder };
@@ -44,48 +44,41 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
   
   
   /* LM */
-  int ls_nfun = opt->ls_correction ? F->getNp() : F->getN() * F->getD();
   gsl_multifit_fdfsolver* solverlm;
-  gsl_multifit_function_fdf fdflm = { 
-      opt->ls_correction ? &(F->_f_cor) : &(F->_f_ls), 
-      opt->ls_correction ? &(F->_df_cor) : &(F->_df_ls), 
-      opt->ls_correction ? &(F->_fdf_cor) : &(F->_fdf_ls), 
-      ls_nfun, F->getRank() * F->getD(), F };
+  gsl_multifit_function_fdf fdflm = { &(F->_f_ls),  &(F->_df_ls), &(F->_fdf_ls), 
+                                       F->getNsq(), F->getNvar(), F };
   gsl_vector *g;
 
   /* QN */
   double stepqn = opt->step; 
   gsl_multimin_fdfminimizer* solverqn;
   gsl_multimin_function_fdf fdfqn = { 
-    &(F->_f), &(F->_df), &(F->_fdf), F->getRank() * F->getD(), F };
+    &(F->_f), &(F->_df), &(F->_fdf), F->getNvar(), F };
 
   /* NM */
   double size;
   gsl_vector *stepnm;
   gsl_multimin_fminimizer* solvernm;
-  gsl_multimin_function fnm = { &(CostFunction::_f), 
-      F->getRank() * F->getD(), F };
-
+  gsl_multimin_function fnm = { &(F->_f), F->getNvar(), F };
 
   /* initialize the optimization method */
   switch (opt->method) {
   case SLRA_OPT_METHOD_LM: /* LM */
-    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], ls_nfun, 
-                   F->getRank() * F->getD());
+    solverlm = gsl_multifit_fdfsolver_alloc(Tlm[opt->submethod], 
+                   F->getNsq(), F->getNvar());
     gsl_multifit_fdfsolver_set(solverlm, &fdflm, x_vec);
-    g = gsl_vector_alloc(F->getRank() * F->getD());
+    g = gsl_vector_alloc(F->getNvar());
     break;
   case SLRA_OPT_METHOD_QN: /* QN */
     solverqn = gsl_multimin_fdfminimizer_alloc(Tqn[opt->submethod], 
-						F->getRank() * F->getD() );
+						F->getNvar() );
     gsl_multimin_fdfminimizer_set(solverqn, &fdfqn, x_vec, 
 				  stepqn, opt->tol); 
     status_dx = GSL_CONTINUE;  
     break;
   case SLRA_OPT_METHOD_NM: /* NM */
-    solvernm = gsl_multimin_fminimizer_alloc( Tnm[opt->submethod], 
-                                              F->getRank() * F->getD() );
-    stepnm = gsl_vector_alloc( F->getRank() * F->getD() );
+    solvernm = gsl_multimin_fminimizer_alloc(Tnm[opt->submethod], F->getNvar());
+    stepnm = gsl_vector_alloc(F->getNvar());
     gsl_vector_set_all(stepnm, opt->step); 
     gsl_multimin_fminimizer_set( solvernm, &fnm, x_vec, stepnm );
     break;
@@ -118,12 +111,12 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
     opt->iter++;
     switch (opt->method) {
     case SLRA_OPT_METHOD_LM: /* Levenberge-Marquardt */
-      status = gsl_multifit_fdfsolver_iterate( solverlm );
+      status = gsl_multifit_fdfsolver_iterate(solverlm);
       /* check for convergence problems */
       if (status == GSL_ETOLF || 
-	  status == GSL_ETOLX || 
-	  status == GSL_ETOLG) {
-	break; /* <- THIS IS WRONG */
+          status == GSL_ETOLX || 
+          status == GSL_ETOLG) {
+        break; /* <- THIS IS WRONG */
       }
       /* check the convergence criteria */
       status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, 
@@ -132,14 +125,12 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
       status_grad = gsl_multifit_test_gradient(g, opt->epsgrad);
       /* print information */
       if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-	gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
-	
-	x_norm = gsl_blas_dnrm2(solverlm->x);
-	g_norm = gsl_blas_dnrm2(g);
-	
-	Log::lprintf("%3u: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
-                    opt->iter, opt->fmin, g_norm, x_norm);
-      }
+        gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
+        x_norm = gsl_blas_dnrm2(solverlm->x);
+        g_norm = gsl_blas_dnrm2(g);
+        Log::lprintf("%3u: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
+                     opt->iter, opt->fmin, g_norm, x_norm);
+      }  
       break;
     case SLRA_OPT_METHOD_QN:
       status = gsl_multimin_fdfminimizer_iterate( solverqn );
@@ -154,10 +145,10 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
       status_dx = gsl_multifit_test_delta(solverqn->dx, solverqn->x, 
 	 				 opt->epsabs, opt->epsrel);  		    
       if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-	opt->fmin = gsl_multimin_fdfminimizer_minimum( solverqn );
-	x_norm = gsl_blas_dnrm2(solverqn->x);
-	g_norm = gsl_blas_dnrm2(solverqn->gradient);
-	Log::lprintf("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
+        opt->fmin = gsl_multimin_fdfminimizer_minimum(solverqn);
+        x_norm = gsl_blas_dnrm2(solverqn->x);
+        g_norm = gsl_blas_dnrm2(solverqn->gradient);
+        Log::lprintf("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
                     opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;
@@ -168,10 +159,9 @@ int gsl_optimize( CostFunction *F, OptimizationOptions *opt,
       status_dx = gsl_multimin_test_size( size, opt->epsx );
       /* print information */
       if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-	opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
-	x_norm = gsl_blas_dnrm2(solvernm->x);
-
-	Log::lprintf("%3u: f0 = %15.10e,  ||x|| = %9.7e\n", 
+        opt->fmin = gsl_multimin_fminimizer_minimum( solvernm );
+        x_norm = gsl_blas_dnrm2(solvernm->x);
+        Log::lprintf("%3u: f0 = %15.10e,  ||x|| = %9.7e\n", 
 	            opt->iter, opt->fmin, g_norm, x_norm);
       }
       break;

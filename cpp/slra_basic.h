@@ -39,14 +39,14 @@ public:
    * Updates the gradient \f$grad \leftarrow grad + A\f$, where
    * \f$A\f$ is defined by \f$trace(A,H) = y_r d \Gamma(R, H) y_r\f$
    * */
-  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
-                   gsl_vector *yr ) = 0;
+  virtual void calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
+                   const gsl_vector *yr ) = 0;
   /** Calculate the nonlinear part of pseudojacobian.
-   * Calculates \f$\displaystyle res \leftarrow \frac{\partial}{\partial X_{ij}} 
-    \Gamma \left(\Phi \begin{bmatrix}X\\-I_d\end{bmatrix} \right)y_r\f$
+   * Calculates \f$\displaystyle res \leftarrow \frac{\partial}{\partial R_{ij}} 
+    \Gamma \left(R \right)y_r\f$
    * */
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   gsl_matrix *perm, int i, int j, gsl_vector *Yr ) = 0;
+                   int i, int j, gsl_vector *Yr ) = 0;
 };
 
 
