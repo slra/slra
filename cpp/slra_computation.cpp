@@ -9,7 +9,6 @@ extern "C" {
 
 #include "slra.h"
 
-
 OptFunctionSLRA::OptFunctionSLRA( CostFunction &fun, gsl_matrix *perm ) : myFun(fun) {
   if (perm == NULL) {
     myPerm = gsl_matrix_alloc(myFun.getM(), myFun.getM());
@@ -37,7 +36,6 @@ int OptFunctionSLRA::getNvar() {
   return myFun.getRank() * myFun.getD(); 
 }
 
-
 void OptFunctionSLRA::X2Rtheta( const gsl_matrix *x, gsl_matrix *RTheta ) { 
   gsl_vector diag;
   gsl_matrix submat;
@@ -51,7 +49,6 @@ void OptFunctionSLRA::X2Rtheta( const gsl_matrix *x, gsl_matrix *RTheta ) {
   diag   = gsl_matrix_diagonal(&submat).vector;    
   gsl_vector_set_all(&diag, -1);
 }
-
 
 void OptFunctionSLRA::computeR( const gsl_vector * x, gsl_matrix *R ) { 
   gsl_matrix_const_view x_mat = gsl_matrix_const_view_vector(x, myFun.getRank(), myFun.getD());
@@ -75,11 +72,7 @@ void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f, gsl_ve
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &perm_sub_matr.matrix, 
                    myTmpGradR, 0.0, &grad_matr.matrix);
   }                   
-
 }   
-
-
-
 
 CostFunction::CostFunction( Structure *s, int d, const gsl_vector *p, 
                             gsl_matrix *perm, double reggamma ) :  
@@ -166,18 +159,15 @@ void CostFunction::computeR( const gsl_vector * x, gsl_matrix *R ) {
   computeR(gsl_matrix_const_view_vector(x, getRank(), getD()), R);
 }
 
-void CostFunction::computeSr( gsl_matrix *R, gsl_vector *Sr ) {
+void CostFunction::computeSr( const gsl_matrix *R, gsl_vector *Sr ) {
   gsl_matrix_view SrMat = gsl_matrix_view_vector(Sr, getN(), getD()); 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myMatr, R, 0, &SrMat.matrix);
 }
 
 void CostFunction::computeGammaSr( const gsl_matrix *R, gsl_vector *Sr, bool regularize_gamma ) {
-  myGam->calcGammaCholesky(myTmpR, regularize_gamma);
-  computeSr(myTmpR, Sr);
+  myGam->calcGammaCholesky(R, regularize_gamma);
+  computeSr(R, Sr);
 } 
-
-
-
 
 void CostFunction::computeFuncAndGrad( const gsl_matrix* R, double * f, 
                                        gsl_matrix *gradR ) {

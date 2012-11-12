@@ -64,7 +64,7 @@ public:
 
   /** @name Implementing Cholesky interface */
   /**@{*/  
-  virtual void calcGammaCholesky( gsl_matrix *R, bool regularize = true );
+  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
   virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
   /**@}*/

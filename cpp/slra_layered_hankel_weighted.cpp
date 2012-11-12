@@ -66,12 +66,12 @@ void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
 }
 
 void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
-  size_t sum_np = i, sum_nl = 0, l, k;
+  size_t sum_np = i, sum_ml = 0, l, k;
   gsl_vector matr_row;
 
-  for (l = 0; l < getQ(); sum_np += getLayerNp(l), ++l) {
-    for (k = 0; k < getLayerLag(l); ++k, ++sum_nl) {
-      matr_row = gsl_matrix_row(matr, sum_nl).vector;
+  for (l = 0; l < getQ(); sum_np += getLayerNp(l), sum_ml += getLayerLag(l), ++l) {
+    for (k = 0; k < getLayerLag(l); ++k) {
+      matr_row = gsl_matrix_row(matr, sum_ml + k).vector;
       gsl_vector_scale(&matr_row, getInvWeight(sum_np + k));
     }
   }
@@ -79,15 +79,17 @@ void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
 
 void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j, 
          const gsl_matrix *B ) const {
+//  myBase.WkB(res, j-i, B);
+//  return;
   gsl_matrix_memcpy(res, B);
-  if (j >= i) {
+  if (i <= j) {
+    mulInvWij(res, j);
     gsl_blas_dtrmm(CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, 1.0, 
         myBase.getWk(j-i), res);
-    mulInvWij(res, i);
   } else {
-    mulInvWij(res, i);
     gsl_blas_dtrmm(CblasLeft, CblasLower, CblasTrans, CblasNonUnit, 1.0, 
         myBase.getWk(i-j), res);
+    mulInvWij(res, i);
   }
 }
 

@@ -3,7 +3,7 @@ CC  = gcc  -g -fPIC -static -Wno-write-strings
 CCPP  = g++  -g -fPIC -Wno-write-strings
 F77 = gcc -g -fPIC -static 
 INC_FLAGS = -I./$(SLRA_CPP_DIR) 
-OPT_FLAGS = -O # -pg 
+OPT_FLAGS = -O2 # -pg 
 
 OCTAVE_MEX = mkoctfile --mex -v -DBUILD_MEX_OCTAVE 
 MEX = mex -v -largeArrayDims -DBUILD_MEX_MATLAB

@@ -16,7 +16,6 @@ StationaryDGamma::StationaryDGamma( const StationaryStructure *s, int D ) :
   myDGamma = gsl_matrix_alloc(myD, myD * (2 * myW->getS() - 1));
   myTmpCol = gsl_vector_alloc(myW->getN());
   myWk_R =  gsl_matrix_alloc(myW->getM(), myD);
-  myWkT_R = gsl_matrix_alloc(myW->getM(), myD);
   myN_k = gsl_matrix_alloc(myD, myD);
   myEye = gsl_matrix_alloc(myW->getM(), myW->getM());
   gsl_matrix_set_identity(myEye);
@@ -29,31 +28,30 @@ StationaryDGamma::~StationaryDGamma() {
   gsl_matrix_free(myDGammaTrMat);
   gsl_matrix_free(myDGamma);
   gsl_matrix_free(myWk_R);
-  gsl_matrix_free(myWkT_R);
   gsl_matrix_free(myN_k);
   gsl_matrix_free(myEye);
 }
 
 void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r, 
          const gsl_matrix *R, const gsl_vector *yr ) {
-  int m = yr->size / myD;
-  gsl_matrix Yr = gsl_matrix_const_view_vector(yr, m, myD).matrix, YrL, YrR;
+  int n = yr->size / myD;
+  gsl_matrix Yr = gsl_matrix_const_view_vector(yr, n, myD).matrix, YrB, YrT;
 
   gsl_matrix_set_zero(mgrad_r);
+  
   for (int k = 0; k < myW->getS(); k++) {
-    YrL = gsl_matrix_submatrix(&Yr, 0, 0, m - k, myD).matrix;
-    YrR = gsl_matrix_submatrix(&Yr, k, 0, m - k, myD).matrix;
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &YrL, &YrR, 0.0, myN_k);
+    YrT = gsl_matrix_submatrix(&Yr, 0, 0, n - k, myD).matrix;
+    YrB = gsl_matrix_submatrix(&Yr, k, 0, n - k, myD).matrix;
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &YrB, &YrT, 0.0, myN_k);
 
     myW->WkB(myWk_R, k, R);
-    gsl_blas_dgemm(CblasNoTrans, CblasTrans, 2.0, myWk_R, myN_k, 1.0, mgrad_r);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myWk_R, myN_k, 1.0, mgrad_r);
 
     if (k > 0) {
       myW->WkB(myWk_R, -k, R);
-      gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myWkT_R, myN_k, 1.0, 
-          mgrad_r);
+      gsl_blas_dgemm(CblasNoTrans, CblasTrans, 2.0, myWk_R, myN_k, 1.0, mgrad_r);
     }
-  }       
+  }    
 }
 
 void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R, 

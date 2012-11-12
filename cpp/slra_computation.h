@@ -37,7 +37,7 @@ public:
   
   void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 
   void computeR( const gsl_vector *x, gsl_matrix *R ); 
-  void computeSr( gsl_matrix *R, gsl_vector *Sr );
+  void computeSr( const gsl_matrix *R, gsl_vector *Sr );
   void computeGammaSr( const gsl_matrix *R, gsl_vector *Sr, bool regularize_gamma = true ) ;
 
   void computeZmatTmpJac( gsl_vector* yr, gsl_matrix *R, double factor = 0.5 );
@@ -78,6 +78,7 @@ public:
 class OptFunctionSLRACholesky : public OptFunctionSLRA {
 public: 
   OptFunctionSLRACholesky( CostFunction &fun, gsl_matrix *perm  ) : OptFunctionSLRA(fun, perm) {}
+  virtual ~OptFunctionSLRACholesky() {}
   virtual int getNsq() { return myFun.getN() * myFun.getD(); }
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
     myFun.computeFuncAndPseudoJacobianLs(x, res, jac); 
@@ -87,6 +88,7 @@ public:
 class OptFunctionSLRACorrection : public OptFunctionSLRA {
 public: 
   OptFunctionSLRACorrection( CostFunction &fun, gsl_matrix *perm ) : OptFunctionSLRA(fun, perm)  {}
+  virtual ~OptFunctionSLRACorrection() {}
   virtual int getNsq() { return myFun.getNp(); }
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
     myFun.computeCorrectionAndJacobian(x, res, jac); 

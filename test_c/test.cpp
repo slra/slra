@@ -229,6 +229,7 @@ int main(int argc, char *argv[])
     if (silent != 2) {
       printf("Running test %s\n", num);  
     }
+    times[i] =  misfits[i] = misfits2[i] = diffs[i] = iters[i] = 0;
     run_test(num, times[i], misfits[i], misfits2[i],  iters[i], diffs[i], 
              test_type,  maxiter, method, elementwise_w, ls_correction, silent);
     if (silent != 2) {

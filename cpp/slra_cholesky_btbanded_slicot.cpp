@@ -25,7 +25,7 @@ StationaryCholeskySlicot::~StationaryCholeskySlicot() {
   free(myCholeskyWork);
 }
 
-void StationaryCholeskySlicot::calcGammaCholesky( gsl_matrix *R, bool regularize )  {
+void StationaryCholeskySlicot::calcGammaCholesky( const gsl_matrix *R, bool regularize )  {
   size_t info = 0;
   const size_t zero = 0;
 

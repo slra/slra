@@ -26,22 +26,22 @@ SDependentDGamma::~SDependentDGamma(){
 
  void SDependentDGamma::calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
                    const gsl_vector *yr ) {
-  int m = yr->size / myD;
-  gsl_matrix Y_r = gsl_matrix_const_view_vector(yr, m, myD).matrix;
+  int n = yr->size / myD, S = myW->getS();
+  gsl_matrix Y_r = gsl_matrix_const_view_vector(yr, n, myD).matrix;
   gsl_vector y_i, y_j;
   gsl_matrix tmp2_v = gsl_matrix_view_vector(myTmp2, myW->getM(), 1).matrix,
              tmp3_v = gsl_matrix_view_vector(myTmp3, myW->getM(), 1).matrix;
 
   gsl_matrix_set_zero(grad);
-
-  for (size_t i = 0; i < m; i++) {
+  for (int i = 0; i < n; i++) {
     y_i = gsl_matrix_row(&Y_r, i).vector;
-    gsl_blas_dgemv(CblasNoTrans,  1.0, R, &y_i, 0.0, myTmp2);
-    for (size_t j = 0; j < m; j++) {
-      myW->WijB(&tmp3_v, j, i, &tmp2_v);
+    
+    for (int j = mymax(0, i - S + 1); j < mymin(i + S, n); j++) {
       y_j = gsl_matrix_row(&Y_r, j).vector;
-      
-      gsl_blas_dger(1, myTmp3, &y_j, grad);
+
+      gsl_blas_dgemv(CblasNoTrans, 1.0, R, &y_i, 0.0, myTmp2);
+      myW->WijB(&tmp3_v, j, i, &tmp2_v);
+      gsl_blas_dger(2.0, myTmp3, &y_j, grad);
     }
   }
 }

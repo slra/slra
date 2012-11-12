@@ -110,6 +110,7 @@ public:
 
 class OptFunction {
 public:
+  virtual ~OptFunction() {}
   virtual int getNvar() = 0;
   virtual int getNsq() = 0;
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad ) = 0;

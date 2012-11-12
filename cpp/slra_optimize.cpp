@@ -41,8 +41,7 @@ int gsl_optimize( OptFunction *F, OptimizationOptions *opt,
   if (opt->maxiter < 0 || opt->maxiter > 5000) {
     throw new Exception("opt.maxiter should be in [0;5000].\n");   
   }
-  
-  
+
   /* LM */
   gsl_multifit_fdfsolver* solverlm;
   gsl_multifit_function_fdf fdflm = { &(F->_f_ls),  &(F->_df_ls), &(F->_fdf_ls), 
@@ -92,13 +91,19 @@ int gsl_optimize( OptFunction *F, OptimizationOptions *opt,
   status_grad = GSL_CONTINUE;  
   opt->iter = 0;
   
-  if (opt->method == SLRA_OPT_METHOD_LM && 
+  if ((opt->method == SLRA_OPT_METHOD_LM || 
+       opt->method == SLRA_OPT_METHOD_QN) && 
       Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-    gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
-
-    gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
-    x_norm = gsl_blas_dnrm2(solverlm->x);
-    g_norm = gsl_blas_dnrm2(g);
+    if (opt->method == SLRA_OPT_METHOD_LM) { 
+      gsl_blas_ddot(solverlm->f, solverlm->f, &opt->fmin);
+      gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
+      x_norm = gsl_blas_dnrm2(solverlm->x);
+      g_norm = gsl_blas_dnrm2(g);
+    } else {
+      opt->fmin = gsl_multimin_fdfminimizer_minimum(solverqn);
+      x_norm = gsl_blas_dnrm2(solverqn->x);
+      g_norm = gsl_blas_dnrm2(solverqn->gradient);
+    }
     Log::lprintf("  0: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
                 opt->fmin, g_norm, x_norm);
   }

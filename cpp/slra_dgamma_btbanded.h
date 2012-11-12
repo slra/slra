@@ -10,7 +10,6 @@ private:
   gsl_vector *myTmpCol;
   
   gsl_matrix *myWk_R;
-  gsl_matrix *myWkT_R;
   gsl_matrix *myN_k;
   gsl_matrix *myEye;
 public:

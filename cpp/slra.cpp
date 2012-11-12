@@ -17,6 +17,7 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
           gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
           gsl_matrix *vh ) { 
   CostFunction * myCostFun = NULL;
+  OptFunction *optFun = NULL;
   gsl_matrix *x = NULL, *Rtheta = NULL, *tmpphi = NULL;
   
   if (Psi != NULL) {
@@ -50,9 +51,12 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     myCostFun->Rtheta2X(Rtheta, x);
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
     
-    OptFunction *optFun = opt->ls_correction ? 
-       ((OptFunction *)new OptFunctionSLRACorrection(*myCostFun, (tmpphi != NULL ? tmpphi : Phi))) :
-       ((OptFunction *)new OptFunctionSLRACholesky(*myCostFun, (tmpphi != NULL ? tmpphi : Phi)));
+    
+    if ( opt->ls_correction) {
+      optFun = new OptFunctionSLRACorrection(*myCostFun, tmpphi != NULL ? tmpphi : Phi);
+    } else { 
+      optFun = new OptFunctionSLRACholesky(*myCostFun, tmpphi != NULL ? tmpphi : Phi);
+    }
     
     int status = gsl_optimize(optFun, opt, &(x_vec.vector), vh);
     if (p_out != NULL) {
@@ -64,7 +68,6 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
 
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
-    delete optFun;
     
     if (Rout != NULL) {
       myCostFun->X2Rtheta(x, Rtheta);
@@ -77,6 +80,10 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
 
     throw (Exception *)NULL; /* Throw NULL exception to unify deallocation */
   } catch ( Exception *e ) {
+    if (optFun != NULL)  {
+      delete optFun;
+    }
+
     if (myCostFun != NULL) {
       delete myCostFun;
     }

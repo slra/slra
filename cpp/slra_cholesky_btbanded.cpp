@@ -20,7 +20,7 @@ StationaryCholesky::~StationaryCholesky() {
   gsl_matrix_free(myWkTmp);
 }
 
-void StationaryCholesky::computeGammak( gsl_matrix *R ) {
+void StationaryCholesky::computeGammak( const gsl_matrix *R ) {
   size_t k;
   gsl_matrix_view submat;
   
@@ -32,7 +32,7 @@ void StationaryCholesky::computeGammak( gsl_matrix *R ) {
   gsl_matrix_set_zero(&submat.matrix);
 }
   
-void StationaryCholesky::computeGammaUpperPart( gsl_matrix *R, double reg ) {
+void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg ) {
   gsl_vector diag;
   
   computeGammak(R);
@@ -68,7 +68,7 @@ SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
   delete myBase;
 }
   
-void SameStripedStationaryCholesky::calcGammaCholesky( gsl_matrix *R, bool regularize ) {
+void SameStripedStationaryCholesky::calcGammaCholesky( const gsl_matrix *R, bool regularize ) {
   myBase->calcGammaCholesky(R, regularize);
 }
 

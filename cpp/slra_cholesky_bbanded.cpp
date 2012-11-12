@@ -68,7 +68,7 @@ void SDependentCholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr,
   }
 }
 
-void SDependentCholesky::calcGammaCholesky( gsl_matrix *R, bool regularize ) {
+void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, bool regularize ) {
   size_t info = 0;
   computeGammaUpperPart(R);
   
@@ -97,7 +97,7 @@ void SDependentCholesky::calcGammaCholesky( gsl_matrix *R, bool regularize ) {
   }
 }
 
-void SDependentCholesky::computeGammaUpperPart( gsl_matrix *R, double reg ) {
+void SDependentCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg ) {
   gsl_matrix gamma_ij;
   gsl_vector diag;
   double *diagPtr =  myPackedCholesky;
