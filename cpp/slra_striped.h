@@ -64,7 +64,7 @@ public:
 
   /** @name Implementing Cholesky interface */
   /**@{*/  
-  virtual void calcGammaCholesky( gsl_matrix *R, bool regularize = true );
+  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
   virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
   /**@}*/
@@ -83,10 +83,10 @@ public:
 
   /** @name Implementing DGamma interface */
   /**@{*/
-  virtual void calcYrtDgammaYr( gsl_matrix *grad, gsl_matrix *R, 
-                   gsl_vector *yr );
+  virtual void calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
+                   const gsl_vector *yr );
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   gsl_matrix *perm, int i, int j, gsl_vector *Yr );
+                   int i, int j, gsl_vector *Yr );
   /**@}*/
 };
 

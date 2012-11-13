@@ -6,6 +6,7 @@
 #ifndef _SLRA_H_
 #define _SLRA_H_
 
+#include <gsl/gsl_vector_uint.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_multifit_nlin.h> /* Levenberge-Marquardt */
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
@@ -65,13 +66,13 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
 
 /** Main function that runs GSL optimization
  * @ingroup MainFunctions 
- * @param [in]     F     CostFunction object
+ * @param [in]     F     OptFunction object
  * @param [in,out] opt   Optimization options
  * @param [in,out] x_vec Vector containing initial approximation and returning
  *                       the minimum point 
  * @param [out]    v     Covariance matrix for x
  */
-int gsl_optimize( CostFunction *F, OptimizationOptions *opt, 
+int gsl_optimize( OptFunction *F, OptimizationOptions *opt, 
                        gsl_vector* x_vec, gsl_matrix *v );
 
 /** @defgroup MainFunctions

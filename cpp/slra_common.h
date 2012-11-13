@@ -70,6 +70,10 @@ void print_arr(const double*, int);
 
 void print_vec(const gsl_vector*);
 
+int read_mat( gsl_matrix *a, const char * filename );
+int read_vec( gsl_vector *a, const char * filename );
+int read_vec_uint( gsl_vector_uint *a, const char * filename );
+
 void gsl_matrix_vectorize(double*, const gsl_matrix*);
 void gsl_matrix_vec_inv(gsl_matrix*, const double*);
 

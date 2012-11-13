@@ -17,6 +17,7 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
           gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
           gsl_matrix *vh ) { 
   CostFunction * myCostFun = NULL;
+  OptFunction *optFun = NULL;
   gsl_matrix *x = NULL, *Rtheta = NULL, *tmpphi = NULL;
   
   if (Psi != NULL) {
@@ -29,18 +30,9 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     }
   }
 
-  if (opt->gcd) { 
-    opt->ls_correction = 1; /* Only correction LS is allowed for GCD */
-    if (Rini == NULL) {
-      throw new Exception("GCD computation must have "
-                          "an initial approximation.\n");
-    }
-  }
-  
   try { 
     time_t t_b = clock();
-    myCostFun =  new CostFunction(s, d, p_in, opt, 
-                                  (tmpphi != NULL ? tmpphi : Phi));
+    myCostFun =  new CostFunction(s, d, p_in, (tmpphi != NULL ? tmpphi : Phi), opt->reggamma);
     Rtheta = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
 
     if (Rini == NULL) {  /* compute default initial approximation */
@@ -58,9 +50,17 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());
     myCostFun->Rtheta2X(Rtheta, x);
     gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
-    int status = gsl_optimize(myCostFun, opt, &(x_vec.vector), vh);
+    
+    
+    if ( opt->ls_correction) {
+      optFun = new OptFunctionSLRACorrection(*myCostFun, tmpphi != NULL ? tmpphi : Phi);
+    } else { 
+      optFun = new OptFunctionSLRACholesky(*myCostFun, tmpphi != NULL ? tmpphi : Phi);
+    }
+    
+    int status = gsl_optimize(optFun, opt, &(x_vec.vector), vh);
     if (p_out != NULL) {
-      if (p_out != p_in && !opt->gcd) {
+      if (p_out != p_in) {
         gsl_vector_memcpy(p_out, p_in);
       }
       myCostFun->computeCorrection(p_out, &(x_vec.vector));
@@ -68,6 +68,7 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
 
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
 
+    
     if (Rout != NULL) {
       myCostFun->X2Rtheta(x, Rtheta);
       if (Psi == NULL) {
@@ -79,6 +80,10 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
 
     throw (Exception *)NULL; /* Throw NULL exception to unify deallocation */
   } catch ( Exception *e ) {
+    if (optFun != NULL)  {
+      delete optFun;
+    }
+
     if (myCostFun != NULL) {
       delete myCostFun;
     }
