@@ -48,8 +48,8 @@ ip.addParamValue('Rini', [], @(Rini) isnumeric(Rini) && ...
                                      all(size(Rini) == [m - r m]));
 ip.addParamValue('solver', 'c', @(solver) solver == 'c' || solver == 'm'); 
 ip.addParamValue('method', 'll', ...
-       @(method) ischar(method) && length(method) <= 2 && ...
-       any(strcmpi(method(1), combine('lqn', {'ls', 'b2pf', 'n2r'}))));
+       @(method) ischar(method) && length(method) <= 3) % && ...
+       %any(strcmpi(method(1), ['reg' combine('lqn', {'ls', 'b2pf', 'n2r'})])));
 ip.addParamValue('disp', 'off', ...
        @(disp) any(strcmpi(disp, {'iter', 'notify', 'off'})));
 ip.addParamValue('maxiter', 100, @(maxiter) integer(maxiter) && maxiter >= 0);
@@ -64,12 +64,12 @@ ip.parse(varargin{:}); opt = ip.Results;
 s2np = @(s) sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
                                    - length(s.m) * length(s.n);, np = s2np(s); % = N * mp + q * n - q * N;
 if opt.solver == 'c', opt.psi = eye(m); else, eye((m - r) * m); end
-Im = unique([find(isnan(p)) find(s.w == 0)]); w(Im) = 0; p(Im) = NaN;
+if sum(size(s.w)) == np + 1, Im = unique([find(isnan(p)) find(s.w == 0)]); w(Im) = 0; p(Im) = NaN; else, Im = []; end
 if opt.solver == 'c' && ~isempty(Im), s.w(Im) = 1e-6; p(Im) = 0; end  
 if opt.solver == 'c'
   [ph, info] = slra_mex(p, s, r, opt); 
 else
-  [ph, info] = slra_ext(s2s(s), p, r, s.w, opt.Rini, s.phi, opt.psi, opt); 
+  [ph, info] = slra_ext(s2s(s), p, r, diag(s.w), opt.Rini, s.phi, opt.psi, opt); 
 end
 function c = combine(f, s)
 c = {};
