@@ -22,6 +22,7 @@
 #include "slra_dgamma_btbanded.h"
 
 #include "slra_computation.h"
+#include "slra_optfun.h"
 
 #include "slra_common.h"
 #include "slralapack.h"

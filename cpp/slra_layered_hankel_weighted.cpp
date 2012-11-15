@@ -79,8 +79,6 @@ void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
 
 void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j, 
          const gsl_matrix *B ) const {
-//  myBase.WkB(res, j-i, B);
-//  return;
   gsl_matrix_memcpy(res, B);
   if (i <= j) {
     mulInvWij(res, j);

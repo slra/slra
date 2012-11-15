@@ -16,17 +16,13 @@
 #define gsl_matrix_free_ifnull(M)    if (M != NULL) gsl_matrix_free(M)
 #define gsl_vector_free_ifnull(V)    if (V != NULL) gsl_vector_free(V)
 
-void meas_time( CostFunction &mCostFun, double &tm_func, double &tm_grad, double &tm_pjac ) {
-  gsl_matrix *x = gsl_matrix_alloc(mCostFun.getRank(), mCostFun.getD());
-  gsl_vector x_vec = gsl_vector_view_array(x->data, x->size1*x->size2).vector;
-  gsl_matrix *tmpR = gsl_matrix_alloc(mCostFun.getM(), mCostFun.getD());
-  gsl_matrix *tmpGradR = gsl_matrix_alloc(mCostFun.getM(), mCostFun.getD());
-  gsl_vector tmpR_vec = gsl_vector_view_array(tmpR->data, tmpR->size1*tmpR->size2).vector;  
-  gsl_matrix *jacb = gsl_matrix_alloc(mCostFun.getN()*mCostFun.getD(), 
-                                      mCostFun.getRank()*mCostFun.getD());
+void meas_time( OptFunctionSLRA &optFun,
+                double &tm_func, double &tm_grad, double &tm_pjac ) {
+  gsl_vector *x = gsl_vector_alloc(optFun.getNvar());
+  gsl_vector *grad = gsl_vector_alloc(optFun.getNvar());
+  gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNvar(), optFun.getNsq());
 
-  mCostFun.computeDefaultRTheta(tmpR);
-  mCostFun.Rtheta2X(tmpR, x);
+  optFun.computeDefaultx(x);
     
   Log::lprintf(Log::LOG_LEVEL_NOTIFY,"Test costfun evaluation:\n");
   timespec st, et;
@@ -39,14 +35,13 @@ void meas_time( CostFunction &mCostFun, double &tm_func, double &tm_grad, double
    } while (0)  
 
   double res;      
-  meas_op(10, mCostFun.computeFuncAndGrad(tmpR, &res, NULL), tm_func);
-  meas_op(10, mCostFun.computeFuncAndGrad(tmpR, NULL, tmpGradR), tm_grad);
-  meas_op(1, mCostFun.computeFuncAndPseudoJacobianLs(&x_vec, NULL, jacb), tm_pjac);
+  meas_op(10, optFun.computeFuncAndGrad(x, &res, NULL), tm_func);
+  meas_op(10, optFun.computeFuncAndGrad(x, NULL, grad), tm_grad);
+  meas_op(1, optFun.computeFuncAndJac(x, NULL, jacb), tm_pjac);
 
   gsl_matrix_free(jacb);
-  gsl_matrix_free(x);
-  gsl_matrix_free(tmpR);
-  gsl_matrix_free(tmpGradR);
+  gsl_vector_free(x);
+  gsl_vector_free(grad);
 }
 
 #define MAX_FN  60
@@ -152,8 +147,9 @@ void run_test( const char * testname, double & time, double& fmin,
       fmin = opt.fmin;
       fmin2 = dp_norm * dp_norm;
     } else {
-      CostFunction mCostFun(S, m-rk, p, (hasPhi ? Phi : NULL), opt.reggamma);
-      meas_time(mCostFun, fmin, fmin2, diff);
+      CostFunction mCostFun(S, m-rk, p, opt.reggamma);
+      OptFunctionSLRACholesky optFun(mCostFun, (hasPhi ? Phi : NULL), NULL);
+      meas_time(optFun,  fmin, fmin2, diff);
     }          
 
     throw 0;
