@@ -12,22 +12,22 @@
 
 #include "slra.h"
 
-void slra( const gsl_vector *p_in, Structure* s, int d, 
-          OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
-          gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
-          gsl_matrix *vh ) { 
+
+void slra( CostFunction *costFun, 
+           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
+           gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out ) { 
   OptFunctionSLRA *optFun = NULL;
-  CostFunction * myCostFun = NULL;
   gsl_vector *x = NULL;
+  double old_reg = costFun->getReggamma();
   
   try { 
     time_t t_b = clock();
-    myCostFun =  new CostFunction(s, d, p_in, opt->reggamma, Phi);
 
-    if ( opt->ls_correction) {
-      optFun = new OptFunctionSLRACorrection(*myCostFun, Psi);
+    costFun->setReggamma(opt->reggamma);
+    if (opt->ls_correction) {
+      optFun = new OptFunctionSLRACorrection(*costFun, Psi);
     } else { 
-      optFun = new OptFunctionSLRACholesky(*myCostFun, Psi);
+      optFun = new OptFunctionSLRACholesky(*costFun, Psi);
     }
 
     x = gsl_vector_alloc(optFun->getNvar());
@@ -40,27 +40,20 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
       optFun->RTheta2x(Rini, x);
     }
 
-    gsl_optimize(optFun, opt, x, vh);
-    if (p_out != NULL) {
-      if (p_out != p_in) {
-        gsl_vector_memcpy(p_out, p_in);
-      }
-      optFun->computeCorrection(p_out, x);
-    }
+    gsl_optimize(optFun, opt, x, v_out);
 
+    if (p_out != NULL) {
+      optFun->computePhat(p_out, x);
+    }
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
-    
-    if (Rout != NULL) {
-      optFun->x2RTheta(Rout, x);
+    if (r_out != NULL) {
+      optFun->x2RTheta(r_out, x);
     }
 
     throw (Exception *)NULL; /* Throw NULL exception to unify deallocation */
   } catch ( Exception *e ) {
     if (optFun != NULL)  {
       delete optFun;
-    }
-    if (myCostFun != NULL) {
-      delete myCostFun;
     }
     if (x != NULL) {
       gsl_vector_free(x);
@@ -69,5 +62,6 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     if (e != NULL) { /* Abnormal termination only if e is normal exception */
       throw;  
     }
+    costFun->setReggamma(old_reg);
   }
 }

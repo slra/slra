@@ -11,7 +11,7 @@ public:
   virtual int getNvar(); 
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad );
 
-  void computeCorrection( gsl_vector* p, const gsl_vector* x );
+  void computePhat( gsl_vector* p, const gsl_vector* x );
 
   
   int getRank() { return myPsi->size2 - myFun.getD(); }

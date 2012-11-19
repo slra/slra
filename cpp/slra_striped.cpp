@@ -57,8 +57,8 @@ void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R,
   }
 }
 
-Cholesky *StripedStructure::createCholesky( int D, double reg_gamma ) const {
-  return new StripedCholesky(this, D, reg_gamma);
+Cholesky *StripedStructure::createCholesky( int D ) const {
+  return new StripedCholesky(this, D);
 }
 
 DGamma *StripedStructure::createDGamma( int D ) const {
@@ -68,12 +68,11 @@ DGamma *StripedStructure::createDGamma( int D ) const {
 /* Cholesky striped classes */
 typedef Cholesky* pGammaCholesky;
 
-StripedCholesky::StripedCholesky( const StripedStructure *s, int D, 
-                                   double reg_gamma ) : myS(s) {
+StripedCholesky::StripedCholesky( const StripedStructure *s, int D ) : myS(s) {
   myD = D;
   myGamma = new pGammaCholesky[myS->getBlocksN()];
   for (int k = 0; k < myS->getBlocksN(); k++) {
-    myGamma[k] = myS->getBlock(k)->createCholesky(D, reg_gamma);
+    myGamma[k] = myS->getBlock(k)->createCholesky(D);
   }
 }    
 
@@ -108,9 +107,9 @@ void StripedCholesky::multInvGammaVector( gsl_vector * yr ) {
   }
 }
 
-void StripedCholesky::calcGammaCholesky( const gsl_matrix *R, bool regularize  ) {
+void StripedCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamma ) {
   for (size_t k = 0; k < myS->getBlocksN(); k++) {
-    myGamma[k]->calcGammaCholesky(R, regularize);  
+    myGamma[k]->calcGammaCholesky(R, reg_gamma);  
   }
 }
 

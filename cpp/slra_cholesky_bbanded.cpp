@@ -8,7 +8,7 @@ extern "C" {
 #include "slra.h"
 
 SDependentCholesky::SDependentCholesky( const SDependentStructure *s,
-     int D, double reg_gamma ) : myW(s), myD(D), my_reg_gamma(reg_gamma) {
+     int D ) : myW(s), myD(D) {
   /* Calculate variables for FORTRAN routines */     
   s_minus_1 =  myW->getS() - 1;
   d_times_s =  myD * myW->getS();
@@ -68,7 +68,7 @@ void SDependentCholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr,
   }
 }
 
-void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, bool regularize ) {
+void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamma ) {
   size_t info = 0;
   computeGammaUpperPart(R);
   
@@ -79,16 +79,14 @@ void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, bool regularize
   dpbtrf_("U", &d_times_n, &d_times_s_minus_1, myPackedCholesky, 
           &d_times_s, &info);
           
-  if (info && regularize) { 
-    if (my_reg_gamma > 0) {
-      Log::lprintf(Log::LOG_LEVEL_NOTIFY, 
-          "Gamma matrix is singular (DPBTRF info = %d), "
-          "adding regularization, reg = %f.\n", info, my_reg_gamma);
-      computeGammaUpperPart(R, my_reg_gamma);
+  if (info && reg_gamma > 0) {
+    Log::lprintf(Log::LOG_LEVEL_NOTIFY, 
+        "Gamma matrix is singular (DPBTRF info = %d), "
+        "adding regularization, reg = %f.\n", info, reg_gamma);
+    computeGammaUpperPart(R, reg_gamma);
 
-      dpbtrf_("U", &d_times_n, &d_times_s_minus_1,
-              myPackedCholesky, &d_times_s, &info);
-    }
+    dpbtrf_("U", &d_times_n, &d_times_s_minus_1,
+            myPackedCholesky, &d_times_s, &info);
   }
   
   if (info) {

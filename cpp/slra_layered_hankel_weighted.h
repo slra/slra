@@ -26,7 +26,7 @@ public:
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
     myBase.fillMatrixFromP(c, p); 
   }
-  virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
+  virtual Cholesky *createCholesky( int D ) const;
   virtual DGamma *createDGamma( int D ) const;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 );

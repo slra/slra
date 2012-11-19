@@ -16,8 +16,9 @@
 #define gsl_matrix_free_ifnull(M)    if (M != NULL) gsl_matrix_free(M)
 #define gsl_vector_free_ifnull(V)    if (V != NULL) gsl_vector_free(V)
 
-void meas_time( OptFunctionSLRA &optFun,
+void meas_time( CostFunction &costFun,
                 double &tm_func, double &tm_grad, double &tm_pjac ) {
+  OptFunctionSLRACholesky optFun(costFun, NULL);                
   gsl_vector *x = gsl_vector_alloc(optFun.getNvar());
   gsl_vector *grad = gsl_vector_alloc(optFun.getNvar());
   gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNvar(), optFun.getNsq());
@@ -77,6 +78,8 @@ void run_test( const char * testname, double & time, double& fmin,
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
   Structure *S = NULL;
+  CostFunction * myCostFun = NULL;
+
   try {
     /* Read structure  and allocate structure object */
     file = fopen(fsname, "r");    
@@ -126,8 +129,9 @@ void run_test( const char * testname, double & time, double& fmin,
     hasPhi = read_mat(Phi = gsl_matrix_alloc(S->getM(), m), fnPhi);
     read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname);
     /* call slra */  
-    slra(p, S, m-rk, &opt, (hasR ? R : NULL), (hasPhi ? Phi : NULL), NULL,
-         p2, R, v);
+
+    myCostFun = new CostFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
+    slra(myCostFun, &opt, (hasR ? R : NULL), NULL, p2, R, v);
     gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");
     fclose(file);
     gsl_vector_fprintf(file = fopen(fpresname, "w"), p2, "%.14f");
@@ -145,9 +149,7 @@ void run_test( const char * testname, double & time, double& fmin,
       fmin = opt.fmin;
       fmin2 = dp_norm * dp_norm;
     } else {
-      CostFunction mCostFun(S, m-rk, p, opt.reggamma, (hasPhi ? Phi : NULL));
-      OptFunctionSLRACholesky optFun(mCostFun, NULL);
-      meas_time(optFun,  fmin, fmin2, diff);
+      meas_time(*myCostFun,  fmin, fmin2, diff);
     }          
 
     throw 0;
@@ -158,6 +160,9 @@ void run_test( const char * testname, double & time, double& fmin,
     gsl_vector_free_ifnull(p);
     gsl_vector_free_ifnull(p2);
     gsl_matrix_free_ifnull(Phi);
+    if (myCostFun != NULL) {
+      delete myCostFun;
+    }
     if (S != NULL) {
       delete S;
     }

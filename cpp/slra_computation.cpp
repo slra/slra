@@ -9,9 +9,9 @@ extern "C" {
 
 #include "slra.h"
 
-CostFunction::CostFunction( Structure *s, int d, const gsl_vector *p, 
-                         double reggamma, gsl_matrix *Phi ) :  
-                         myP(p), myD(d), myStruct(s) {
+CostFunction::CostFunction( const gsl_vector *p, Structure *s, int d, 
+                         gsl_matrix *Phi ) :  
+                         myP(p), myD(d), myStruct(s), myReggamma(SLRA_DEF_reggamma) {
   if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
   }
@@ -37,7 +37,7 @@ CostFunction::CostFunction( Structure *s, int d, const gsl_vector *p,
 
   myRorig = gsl_matrix_alloc(getM(), getD());
   myPhiPermCol = gsl_vector_alloc(getM());
-  myGam = myStruct->createCholesky(getD(), reggamma);
+  myGam = myStruct->createCholesky(getD());
   myDeriv = myStruct->createDGamma(getD());
   myMatr = gsl_matrix_alloc(myStruct->getN(), myStruct->getM());
   myTmpGradR = gsl_matrix_alloc(getM(), getD());
@@ -67,7 +67,7 @@ CostFunction::~CostFunction() {
 void CostFunction::computeGammaSr( const gsl_matrix *R, 
                       gsl_matrix *Rorig, gsl_vector *Sr, bool regularize_gamma ) {
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPhi, R, 0, Rorig);
-  myGam->calcGammaCholesky(Rorig, regularize_gamma);
+  myGam->calcGammaCholesky(Rorig, regularize_gamma ? myReggamma : 0);
   gsl_matrix_view SrMat = gsl_matrix_view_vector(Sr, getN(), getD()); 
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myMatr, Rorig, 0, &SrMat.matrix);
 } 
@@ -129,11 +129,9 @@ void CostFunction::computeJacobianOfCorrection( gsl_vector* yr,
       gsl_matrix_set_zero(myTmpGradR);
       gsl_vector permCol = gsl_matrix_column(perm, i).vector;
       gsl_blas_dgemv(CblasNoTrans, 1.0, myPhi, &permCol, 0.0, myPhiPermCol);
-//      tmp_col = gsl_matrix_column(perm, i);
       gsl_matrix_set_col(myTmpGradR, j, myPhiPermCol);
       myStruct->correctP(myTmpCorr, myTmpGradR, yr, 1);
 
-//      gsl_vector_scale(myTmpCorr, -1);
       gsl_vector_memcpy(&jac_col.vector, myTmpCorr);
     }
   }
@@ -200,7 +198,7 @@ void CostFunction::computeCorrectionAndJacobian( gsl_matrix *R,
 
 void CostFunction::computeCorrection( gsl_vector* p, gsl_matrix *R ) {
   try  {
-    computeGammaSr(R, myRorig, myTmpYr, false);
+    computeGammaSr(R, myRorig, myTmpYr, true);
   } catch (Exception *e) {
     if (!strncmp(e->getMessage(), "Gamma", 5)) {
       delete e;

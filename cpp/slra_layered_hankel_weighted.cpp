@@ -148,8 +148,8 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
   }
 }   
 
-Cholesky *WLayeredHStructure::createCholesky( int D, double reg_gamma ) const {
-  return new SDependentCholesky(this, D, reg_gamma);
+Cholesky *WLayeredHStructure::createCholesky( int D ) const {
+  return new SDependentCholesky(this, D);
 }
 
 DGamma *WLayeredHStructure::createDGamma( int D ) const {

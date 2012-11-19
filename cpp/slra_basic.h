@@ -15,7 +15,7 @@ public:
   virtual  ~Cholesky() {}
   
   /** Computes Cholesky factorization */
-  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true ) = 0;
+  virtual void calcGammaCholesky( const gsl_matrix *R, double reg_gamma = 0 ) = 0;
   /** Solve linear system with factor \f$C\f$.
    * Computes \f$ y_r \leftarrow C^{-1} y_r\f$  if trans = 0 or 
    * \f$ y_r \leftarrow C^{-T} y_r\f$  if trans = 1 */
@@ -68,7 +68,7 @@ public:
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 ) = 0;
   /** Creates Cholesky object for this structure and rank reduction */
-  virtual Cholesky *createCholesky( int D, double reg_gamma ) const = 0;
+  virtual Cholesky *createCholesky( int D ) const = 0;
   /** Creates DGamma object for this structure and rank reduction */
   virtual DGamma *createDGamma( int D ) const = 0;
 };

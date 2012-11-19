@@ -15,8 +15,7 @@ protected:
   virtual void computeGammaUpperPart( const gsl_matrix *R, double reg = 0 );
 
 public:
-  SDependentCholesky( const SDependentStructure *s, int D,  
-                            double reg_gamma );
+  SDependentCholesky( const SDependentStructure *s, int D );
   virtual ~SDependentCholesky();
 
   int getD() const { return myD; }
@@ -25,7 +24,7 @@ public:
   int getS() const { return myW->getS(); }
 
 
-  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
+  virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
 
   
   virtual void multInvPartCholeskyArray( double * yr, int trans, 
@@ -40,7 +39,7 @@ public:
 
 class StationaryCholesky : public SDependentCholesky {
 public:
-  StationaryCholesky( const StationaryStructure *s, int D, double reg_gamma );
+  StationaryCholesky( const StationaryStructure *s, int D );
   virtual ~StationaryCholesky();
 
   virtual void computeGammaUpperPart( const gsl_matrix *R, double reg = 0 );
@@ -57,8 +56,7 @@ protected:
 #ifdef USE_SLICOT
 class StationaryCholeskySlicot : public StationaryCholesky {
 public:
-  StationaryCholeskySlicot( const StationaryStructure *s, int D, 
-                            double reg_gamma );
+  StationaryCholeskySlicot( const StationaryStructure *s, int D );
   virtual ~StationaryCholeskySlicot();
 
   virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
@@ -74,10 +72,10 @@ private:
 class SameStripedStationaryCholesky : public Cholesky {
 public:  
   SameStripedStationaryCholesky( const MosaicHStructure *s, 
-      int r, int use_slicot, double reg_gamma );
+      int r, int use_slicot );
   virtual ~SameStripedStationaryCholesky();
 
-  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
+  virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
   virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
   

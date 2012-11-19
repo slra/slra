@@ -60,10 +60,9 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
  *                       (not computed if <tt>R_out == NULL</tt> )
  * @param [out]    v_out Covariance matrix for X
  */
-void slra( const gsl_vector *p_in, Structure* s, int d, 
-          OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
-          gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *r_out, 
-          gsl_matrix *v_out );
+void slra( CostFunction *costFun, 
+          OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
+          gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out );
 
 /** Main function that runs GSL optimization
  * @ingroup MainFunctions 

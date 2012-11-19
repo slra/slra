@@ -9,8 +9,8 @@ extern "C" {
 }
 #include "slra.h"
 
-StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  int D, 
-    double reg_gamma  ) :  SDependentCholesky(s, D, reg_gamma), myWs(s)  {
+StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  int D ) : 
+                                      SDependentCholesky(s, D), myWs(s)  {
   myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
   myWkTmp = gsl_matrix_alloc(getM(), getD());
 }  
@@ -60,16 +60,15 @@ void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg 
 
 SameStripedStationaryCholesky::
     SameStripedStationaryCholesky( const MosaicHStructure *s, 
-         int D, int use_slicot, double reg_gamma  ) :  myS(s) {
-  myBase = (StationaryCholesky *)myS->getMaxBlock()->
-                createCholesky(D, reg_gamma);  
+         int D, int use_slicot  ) :  myS(s) {
+  myBase = (StationaryCholesky *)myS->getMaxBlock()->createCholesky(D);  
 }
 SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
   delete myBase;
 }
   
-void SameStripedStationaryCholesky::calcGammaCholesky( const gsl_matrix *R, bool regularize ) {
-  myBase->calcGammaCholesky(R, regularize);
+void SameStripedStationaryCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamma ) {
+  myBase->calcGammaCholesky(R, reg_gamma);
 }
 
   

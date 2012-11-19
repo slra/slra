@@ -4,6 +4,7 @@ class CostFunction  {
   int myD;
   Cholesky *myGam;
   DGamma *myDeriv;
+  double myReggamma;
 
   gsl_matrix *myPhi;
   gsl_matrix *myMatr;
@@ -32,13 +33,16 @@ protected:
   virtual void computeGradFromYr( gsl_vector* yr, const gsl_matrix *Rorig, 
                                   gsl_matrix *perm, gsl_matrix *grad );
 public:
-  CostFunction( Structure *s, int d, const gsl_vector *p, double reggamma, gsl_matrix *Phi );
+  CostFunction( const gsl_vector *p, Structure *s, int d, gsl_matrix *Phi );
   virtual ~CostFunction();
   
   int getD() { return myD; }
   int getN() { return myStruct->getN(); }
   int getNrow() { return myPhi->size2; }
   int getNp() { return myStruct->getNp(); }
+  const gsl_vector *getP() { return myP; }
+  double getReggamma() { return myReggamma; }
+  void setReggamma( double reg_gamma ) { myReggamma = reg_gamma; }
 
   void computeDefaultRTheta( gsl_matrix *RTheta ); 
 

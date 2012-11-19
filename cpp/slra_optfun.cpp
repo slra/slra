@@ -128,8 +128,9 @@ void OptFunctionSLRA::computeDefaultx( gsl_vector *x ) {
  gsl_matrix_free(Rtheta);
 }
 
-void OptFunctionSLRA::computeCorrection( gsl_vector* p, const gsl_vector* x ) {
+void OptFunctionSLRA::computePhat( gsl_vector* p, const gsl_vector* x ) {
   computeR(x, myTmpR);
+  gsl_vector_memcpy(p, myFun.getP());
   myFun.computeCorrection(p, myTmpR);
 }
 

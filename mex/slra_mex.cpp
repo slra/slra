@@ -71,6 +71,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
              vh_view = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 };
   double tmp_n;             
   Structure *myStruct = NULL;
+  CostFunction *myCostFun = NULL;
   OptimizationOptions opt;
   
   int was_error = 0;
@@ -105,6 +106,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       throw new Exception("Incorrect rank\n");   
     }
     
+    myCostFun = new CostFunction(vecChkNIL(p_in), myStruct, m-r, matChkNIL(perm));
     int mtheta = m;
     /* Parse user supplied options */
     if (nrhs > 3) {
@@ -163,8 +165,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       mxSetField(plhs[1], 0, VH_STR, vh);
     }
     /* Call slra solver and output info */
-    slra(vecChkNIL(p_in), myStruct, m-r, &opt, matChkNIL(rini), 
-         matChkNIL(perm), matChkNIL(psi), 
+    slra(myCostFun, &opt, matChkNIL(rini), matChkNIL(psi), 
          vecChkNIL(p_out), matChkNIL(rh_view), matChkNIL(vh_view));
     if (nlhs > 1) {
       mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
@@ -179,6 +180,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   } 
 
   gsl_set_error_handler(old_gsl_err_h);
+  if (myCostFun != NULL) {
+    delete myCostFun;
+  }
   if (myStruct != NULL) {
     delete myStruct;
   }

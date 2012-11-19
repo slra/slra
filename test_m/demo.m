@@ -134,7 +134,7 @@ s = struct('m', [2 6], 'n', 8);
 s.w = [Inf ones(1,length(a3)) Inf ones(1,length(b3)) Inf Inf * ones(1, 5) ones(1,length(c3)) Inf * ones(1, 5)];
 s.phi = [eye(2) zeros(2,6); zeros(2,2) eye(2) zeros(2,4); zeros(2,6) eye(2)];
 %opt.reggamma = 1;
-%opt.reggamma = 10000;
+opt.reggamma = 10000;
 [ph, info] = slra(p, s, 5, opt)
 
 
