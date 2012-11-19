@@ -73,8 +73,6 @@ void run_test( const char * testname, double & time, double& fmin,
   if (silent == 2) {
     Log::setMaxLevel(Log::LOG_LEVEL_OFF);
   }
-
-  
   
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
@@ -147,8 +145,8 @@ void run_test( const char * testname, double & time, double& fmin,
       fmin = opt.fmin;
       fmin2 = dp_norm * dp_norm;
     } else {
-      CostFunction mCostFun(S, m-rk, p, opt.reggamma);
-      OptFunctionSLRACholesky optFun(mCostFun, (hasPhi ? Phi : NULL), NULL);
+      CostFunction mCostFun(S, m-rk, p, opt.reggamma, (hasPhi ? Phi : NULL));
+      OptFunctionSLRACholesky optFun(mCostFun, NULL);
       meas_time(optFun,  fmin, fmin2, diff);
     }          
 

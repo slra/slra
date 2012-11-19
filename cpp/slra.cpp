@@ -22,12 +22,12 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
   
   try { 
     time_t t_b = clock();
-    myCostFun =  new CostFunction(s, d, p_in, opt->reggamma);
+    myCostFun =  new CostFunction(s, d, p_in, opt->reggamma, Phi);
 
     if ( opt->ls_correction) {
-      optFun = new OptFunctionSLRACorrection(*myCostFun, Phi, Psi);
+      optFun = new OptFunctionSLRACorrection(*myCostFun, Psi);
     } else { 
-      optFun = new OptFunctionSLRACholesky(*myCostFun, Phi, Psi);
+      optFun = new OptFunctionSLRACholesky(*myCostFun, Psi);
     }
 
     x = gsl_vector_alloc(optFun->getNvar());
