@@ -13,7 +13,7 @@ class CostFunction  {
   gsl_matrix *myTmpJac;  
   gsl_vector *myTmpYr;  
   gsl_vector *myTmpCorr;  
-  const gsl_vector *myP;
+  gsl_vector *myP;
 
   gsl_vector *myPhiPermCol;  
   gsl_vector *myTmpJacobianCol;  

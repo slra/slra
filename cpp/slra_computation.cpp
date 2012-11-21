@@ -10,8 +10,8 @@ extern "C" {
 #include "slra.h"
 
 CostFunction::CostFunction( const gsl_vector *p, Structure *s, int d, 
-                         gsl_matrix *Phi ) :  
-                         myP(p), myD(d), myStruct(s), myReggamma(SLRA_DEF_reggamma) {
+                         gsl_matrix *Phi ) : myP(NULL), myD(d), myStruct(s), 
+                         myReggamma(SLRA_DEF_reggamma) {
   if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
   }
@@ -35,6 +35,12 @@ CostFunction::CostFunction( const gsl_vector *p, Structure *s, int d,
     gsl_matrix_set_identity(myPhi);
   }
 
+  if (d >= getNrow() || d <= 0) {
+    throw new Exception("Incorrect rank given\n");
+  }
+
+  myP = gsl_vector_alloc(p->size);
+  gsl_vector_memcpy(myP, p);
   myRorig = gsl_matrix_alloc(getM(), getD());
   myPhiPermCol = gsl_vector_alloc(getM());
   myGam = myStruct->createCholesky(getD());
@@ -52,6 +58,7 @@ CostFunction::CostFunction( const gsl_vector *p, Structure *s, int d,
 CostFunction::~CostFunction() {
   delete myGam;
   delete myDeriv;
+  gsl_vector_free(myP);
   gsl_matrix_free(myPhi);
   gsl_matrix_free(myRorig);
   gsl_vector_free(myPhiPermCol);

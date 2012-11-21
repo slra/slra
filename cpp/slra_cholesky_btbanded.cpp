@@ -20,27 +20,24 @@ StationaryCholesky::~StationaryCholesky() {
   gsl_matrix_free(myWkTmp);
 }
 
-void StationaryCholesky::computeGammak( const gsl_matrix *R ) {
-  size_t k;
+void StationaryCholesky::computeGammak( const gsl_matrix *R, double reg ) {
   gsl_matrix_view submat;
   
-  for (k = 0; k < getS(); k++) { /* compute brgamma_k = R' * w_k * R */
+  for (size_t k = 0; k < getS(); k++) { /* compute brgamma_k = R' * w_k * R */
     submat = gsl_matrix_submatrix(myGamma, 0, k * getD(), getD(), getD());
     myWs->AtWkB(&submat.matrix, k, R, R, myWkTmp);
+ 
+    if (reg > 0) {
+      gsl_vector diag = gsl_matrix_diagonal(&submat.matrix).vector;
+      gsl_vector_add_constant(&diag, reg);
+    }    
   }
   submat = gsl_matrix_submatrix(myGamma, 0, getS() * getD(), getD(), getD());
   gsl_matrix_set_zero(&submat.matrix);
 }
   
 void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg ) {
-  gsl_vector diag;
-  
-  computeGammak(R);
-  
-  if (reg > 0) {
-    diag = gsl_matrix_diagonal(myGamma).vector;
-    gsl_vector_add_constant(&diag, reg);
-  }
+  computeGammak(R, reg);
   
   int row_gam, col_gam, icor;
   double *gp = myPackedCholesky;
@@ -97,5 +94,3 @@ void SameStripedStationaryCholesky::multInvGammaVector( gsl_vector * yr ) {
         sub_yr.vector.size, sub_yr.vector.size);
   }
 }
-
-

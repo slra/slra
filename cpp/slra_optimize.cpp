@@ -8,6 +8,15 @@
 
 #include "slra.h"
 
+OptimizationOptions::OptimizationOptions() : disp(SLRA_DEF_disp), 
+    method(SLRA_DEF_method),
+    submethod(SLRA_DEF_submethod),  maxiter(SLRA_DEF_maxiter),
+    epsabs(SLRA_DEF_epsabs), epsrel(SLRA_DEF_epsrel), 
+    epsgrad(SLRA_DEF_epsgrad), epsx(SLRA_DEF_epsx),
+    step(SLRA_DEF_step), tol(SLRA_DEF_tol), reggamma(SLRA_DEF_reggamma),
+    ls_correction(SLRA_DEF_ls_correction) {
+}
+
 int gsl_optimize( OptFunction *F, OptimizationOptions *opt, 
                   gsl_vector* x_vec, gsl_matrix *v ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =

@@ -49,7 +49,7 @@ protected:
   gsl_matrix *myGamma;
   gsl_matrix *myWkTmp;
   
-  virtual void computeGammak( const gsl_matrix *R );
+  virtual void computeGammak( const gsl_matrix *R, double reg = 0 );
 };
 
 
@@ -59,7 +59,7 @@ public:
   StationaryCholeskySlicot( const StationaryStructure *s, int D );
   virtual ~StationaryCholeskySlicot();
 
-  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
+  virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
 
 private:
   double *myGammaVec;

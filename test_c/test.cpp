@@ -13,8 +13,6 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
 
-#define gsl_matrix_free_ifnull(M)    if (M != NULL) gsl_matrix_free(M)
-#define gsl_vector_free_ifnull(V)    if (V != NULL) gsl_vector_free(V)
 
 void meas_time( CostFunction &costFun,
                 double &tm_func, double &tm_grad, double &tm_pjac ) {

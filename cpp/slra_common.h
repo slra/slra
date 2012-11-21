@@ -49,6 +49,9 @@
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
 #define mymin(a, b) ((a) < (b) ? (a) : (b))
          
+#define gsl_matrix_free_ifnull(M)    if (M != NULL) gsl_matrix_free(M)
+#define gsl_vector_free_ifnull(V)    if (V != NULL) gsl_vector_free(V)
+         
 /*
  * tmv_prod_new: block-Toeplitz banded matrix p =  T * v
  * T - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].

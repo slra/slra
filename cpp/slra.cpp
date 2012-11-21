@@ -55,9 +55,7 @@ void slra( CostFunction *costFun,
     if (optFun != NULL)  {
       delete optFun;
     }
-    if (x != NULL) {
-      gsl_vector_free(x);
-    }
+    gsl_vector_free_ifnull(x);
     
     if (e != NULL) { /* Abnormal termination only if e is normal exception */
       throw;  
