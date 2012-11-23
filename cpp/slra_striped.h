@@ -31,7 +31,7 @@ public:
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 );
-  virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
+  virtual Cholesky *createCholesky( int D) const;
   virtual DGamma *createDGamma( int D ) const;
   /**@}*/
   
@@ -59,12 +59,12 @@ class StripedCholesky : virtual public Cholesky {
 public:  
   /** Constructs a stripe of Cholesky objects
    * using createDGamma  for each block of the stripe */
-  StripedCholesky( const StripedStructure *s, int D, double reg_gamma );
+  StripedCholesky( const StripedStructure *s, int D );
   virtual ~StripedCholesky();
 
   /** @name Implementing Cholesky interface */
   /**@{*/  
-  virtual void calcGammaCholesky( const gsl_matrix *R, bool regularize = true );
+  virtual void calcGammaCholesky( const gsl_matrix *R, double reg_gamma );
   virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
   /**@}*/

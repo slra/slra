@@ -1,7 +1,6 @@
 /* size of the work array for mb02gd */
 #define EITER 1 /* maximum number of iterations reached */
 
-
 /** @memberof OptimizationOptions 
  * @name Output options
  * @{*/
@@ -62,14 +61,8 @@
 class OptimizationOptions {
 public:
   /** Constructor */
-  OptimizationOptions() : disp(SLRA_DEF_disp), method(SLRA_DEF_method),
-      submethod(SLRA_DEF_submethod),  maxiter(SLRA_DEF_maxiter),
-      epsabs(SLRA_DEF_epsabs), epsrel(SLRA_DEF_epsrel), 
-      epsgrad(SLRA_DEF_epsgrad), epsx(SLRA_DEF_epsx),
-      step(SLRA_DEF_step), tol(SLRA_DEF_tol), reggamma(SLRA_DEF_reggamma),
-      ls_correction(SLRA_DEF_ls_correction) {
-  }
-  
+  OptimizationOptions();
+
   /** Initialize method and submethod fields from string */
   void str2Method( const char *str );
 
@@ -108,41 +101,7 @@ public:
   ///@}
 };
 
-class OptFunction {
-public:
-  virtual ~OptFunction() {}
-  virtual int getNvar() = 0;
-  virtual int getNsq() = 0;
-  virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad ) = 0;
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) = 0;
 
-  static double _f( const gsl_vector* x, void* params ) {
-    double f;
-    ((OptFunction *)params)->computeFuncAndGrad(x, &f, NULL);
-    return f;
-  }
-  static void _df( const gsl_vector* x, void* params, gsl_vector *grad ) {
-    ((OptFunction *)params)->computeFuncAndGrad(x, NULL, grad);
-  }
-  static void _fdf( const gsl_vector* x, void* params, double* f, 
-                     gsl_vector* grad ) {
-    ((OptFunction *)params)->computeFuncAndGrad(x, f, grad);
-  }
-
-  static int _f_ls( const gsl_vector* x, void* params, gsl_vector* res ) {
-    ((OptFunction *)params)->computeFuncAndJac(x, res, NULL);
-    return GSL_SUCCESS;
-  }
-  static int _df_ls( const gsl_vector* x,  void* params, gsl_matrix* jac ) {
-    ((OptFunction *)params)->computeFuncAndJac(x, NULL, jac);
-    return GSL_SUCCESS;
-  }
-  static int _fdf_ls( const gsl_vector* x, void* params, gsl_vector*res, 
-                       gsl_matrix *jac ) {
-    ((OptFunction *)params)->computeFuncAndJac(x, res, jac);
-    return GSL_SUCCESS;
-  }
-};
 
 
 

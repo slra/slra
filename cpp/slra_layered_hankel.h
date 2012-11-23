@@ -38,7 +38,7 @@ public:
   virtual int getM() const { return myM; }
   virtual int getN() const { return myN; }
   virtual int getNp() const { return nvGetNp(); }
-  virtual Cholesky *createCholesky( int D, double reg_gamma ) const;
+  virtual Cholesky *createCholesky( int D ) const;
   virtual DGamma *createDGamma( int D ) const;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
@@ -117,7 +117,7 @@ public:
   virtual ~MosaicHStructure() {}
   /** @name Implementing Structure interface */
   /**@{*/
-  virtual Cholesky *createCholesky( int r, double reg_gamma ) const;
+  virtual Cholesky *createCholesky( int r ) const;
   /**@}*/
 };
 

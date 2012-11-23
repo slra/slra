@@ -1,98 +1,60 @@
-class CostFunction {
+
+class CostFunction  {
   Structure *myStruct;
   int myD;
   Cholesky *myGam;
   DGamma *myDeriv;
+  double myReggamma;
+
+  gsl_matrix *myPhi;
   gsl_matrix *myMatr;
-  gsl_matrix *myPerm;
-  
-  gsl_matrix *myTmpThetaExt;
-  gsl_matrix *myTmpGradR;
-  gsl_matrix *myTmpR;  
-  gsl_matrix *myEye;  
+  gsl_matrix *myRorig;
+  gsl_matrix *myTmpGradR, *myTmpGradR2;
   gsl_matrix *myTmpJac;  
   gsl_vector *myTmpYr;  
   gsl_vector *myTmpCorr;  
-  const gsl_vector *myP;
+  gsl_vector *myP;
 
+  gsl_vector *myPhiPermCol;  
   gsl_vector *myTmpJacobianCol;  
   gsl_matrix *myTmpGrad;  
+protected:  
+  virtual void computeZmatTmpJac( gsl_vector* yr, gsl_matrix *Rorig, double factor = 0.5 );
+  virtual void mulZmatPerm( gsl_vector* res, gsl_matrix *perm, size_t i, size_t j );
+
+  int getM() { return myStruct->getM(); }
+  
+  virtual void computeGammaSr( const gsl_matrix *R, gsl_matrix *Rorig, gsl_vector *Sr, 
+                               bool regularize_gamma );
+  virtual void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *Rorig, 
+                                      gsl_matrix *perm, gsl_matrix *jac );
+  virtual void computeJacobianOfCorrection( gsl_vector* yr, gsl_matrix *Rorig, 
+                                    gsl_matrix *perm, gsl_matrix *jac );
+  virtual void computeGradFromYr( gsl_vector* yr, const gsl_matrix *Rorig, 
+                                  gsl_matrix *perm, gsl_matrix *grad );
 public:
-  CostFunction( Structure *s, int d, const gsl_vector *p, gsl_matrix *perm, 
-                double reggamma );
+  CostFunction( const gsl_vector *p, Structure *s, int d, gsl_matrix *Phi );
   virtual ~CostFunction();
   
   int getD() { return myD; }
-  int getM() { return myStruct->getM(); }
-  int getRank() { return myPerm->size2 - myD; }
-  int getRsize() { return myPerm->size2; }
   int getN() { return myStruct->getN(); }
+  int getNrow() { return myPhi->size2; }
   int getNp() { return myStruct->getNp(); }
-  const gsl_matrix * getPerm() { return myPerm; }
-  const gsl_matrix * getSMatr() { return myMatr; }
+  const gsl_vector *getP() { return myP; }
+  double getReggamma() { return myReggamma; }
+  void setReggamma( double reg_gamma ) { myReggamma = reg_gamma; }
 
-  void X2Rtheta( const gsl_matrix * x_mat, gsl_matrix *RTheta ); 
   void computeDefaultRTheta( gsl_matrix *RTheta ); 
-  static void Rtheta2X( const gsl_matrix *R, gsl_matrix * x );
-  
-  void computeR( gsl_matrix_const_view x_mat, gsl_matrix *R ); 
-  void computeR( const gsl_vector *x, gsl_matrix *R ); 
-  void computeSr( const gsl_matrix *R, gsl_vector *Sr );
-  void computeGammaSr( const gsl_matrix *R, gsl_vector *Sr, bool regularize_gamma = true ) ;
 
-  void computeZmatTmpJac( gsl_vector* yr, gsl_matrix *R, double factor = 0.5 );
-  void mulZmatPerm( gsl_vector* res, gsl_matrix *perm, size_t i, size_t j );
-                           
-  void computePseudoJacobianLsFromYr( gsl_vector* yr, gsl_matrix *R, 
-                                      gsl_matrix *jac );
+  virtual void computeCorrection( gsl_vector* p, gsl_matrix* R );
+  virtual void computeCorrectionAndJacobian( gsl_matrix* R, gsl_matrix *perm,
+                                    gsl_vector *res, gsl_matrix *jac  );
+  virtual void computeFuncAndPseudoJacobianLs( gsl_matrix* R, gsl_matrix *perm,
+                                       gsl_vector *res, gsl_matrix *jac );
+  virtual void computeFuncAndGrad( const gsl_matrix* R, double* f, 
+                                   gsl_matrix *perm, gsl_matrix *gradR );
 
-  void computeJacobianOfCorrection( gsl_vector* yr, gsl_matrix *R, 
-                                    gsl_matrix *jac );
-  void computeCorrectionAndJacobian( const gsl_vector* x, gsl_vector *res, 
-                                     gsl_matrix *jac  );
-  void computeFuncAndPseudoJacobianLs( const gsl_vector* x, gsl_vector *res, 
-                                       gsl_matrix *jac );
-
-  void computeFuncAndGrad( const gsl_matrix* R, double* f, gsl_matrix *gradR );
-  
-  void computeCorrection( gsl_vector* p, const gsl_vector* x );
-};
-
-class OptFunctionSLRA : public OptFunction {
-protected:
-  CostFunction &myFun;
-  gsl_matrix *myTmpR;  
-  gsl_matrix *myTmpGradR;
-  gsl_matrix *myPerm;
-  gsl_matrix *myTmpThetaExt;
-  void computeR( const gsl_vector *x, gsl_matrix *R ); 
-  void X2Rtheta( const gsl_matrix *x, gsl_matrix *RTheta );
-public: 
-  OptFunctionSLRA( CostFunction &fun, gsl_matrix *perm );
-  virtual ~OptFunctionSLRA();
-  virtual int getNvar(); 
-  virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad );
-};
-
-
-class OptFunctionSLRACholesky : public OptFunctionSLRA {
-public: 
-  OptFunctionSLRACholesky( CostFunction &fun, gsl_matrix *perm  ) : OptFunctionSLRA(fun, perm) {}
-  virtual ~OptFunctionSLRACholesky() {}
-  virtual int getNsq() { return myFun.getN() * myFun.getD(); }
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
-    myFun.computeFuncAndPseudoJacobianLs(x, res, jac); 
-  }   
-};
-
-class OptFunctionSLRACorrection : public OptFunctionSLRA {
-public: 
-  OptFunctionSLRACorrection( CostFunction &fun, gsl_matrix *perm ) : OptFunctionSLRA(fun, perm)  {}
-  virtual ~OptFunctionSLRACorrection() {}
-  virtual int getNsq() { return myFun.getNp(); }
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) {
-    myFun.computeCorrectionAndJacobian(x, res, jac); 
-  }   
+  virtual const gsl_matrix * getOrigSMatr() { return myMatr; }
 };
 
 

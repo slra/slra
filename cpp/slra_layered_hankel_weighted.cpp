@@ -79,8 +79,6 @@ void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
 
 void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j, 
          const gsl_matrix *B ) const {
-//  myBase.WkB(res, j-i, B);
-//  return;
   gsl_matrix_memcpy(res, B);
   if (i <= j) {
     mulInvWij(res, j);
@@ -150,8 +148,8 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
   }
 }   
 
-Cholesky *WLayeredHStructure::createCholesky( int D, double reg_gamma ) const {
-  return new SDependentCholesky(this, D, reg_gamma);
+Cholesky *WLayeredHStructure::createCholesky( int D ) const {
+  return new SDependentCholesky(this, D);
 }
 
 DGamma *WLayeredHStructure::createDGamma( int D ) const {

@@ -12,7 +12,7 @@ SLRA_OBJ_FILES=$(shell cat SLRAOBJ.txt)
 SLRA_SRC_FILES=$(SLRA_OBJ_FILES:%o=%cpp)
 
 SLRA_CPP_DIR = cpp
-MEX_SRC_FILES = mex/slra_mex.cpp
+MEX_SRC_FILES = mex/slra_mex.cpp mex/slra_mex_fun.cpp
 
 BUILD_MODE=BUILD_DEFAULT
 

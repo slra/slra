@@ -12,70 +12,42 @@
 
 #include "slra.h"
 
-void slra( const gsl_vector *p_in, Structure* s, int d, 
-          OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Phi, 
-          gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *Rout, 
-          gsl_matrix *vh ) { 
-  CostFunction * myCostFun = NULL;
-  OptFunction *optFun = NULL;
-  gsl_matrix *x = NULL, *Rtheta = NULL, *tmpphi = NULL;
-  
-  if (Psi != NULL) {
-    if (Phi != NULL) {
-      tmpphi = gsl_matrix_alloc(Phi->size1, Psi->size2);
-      gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Phi, Psi, 0, tmpphi); 
-    } else {
-      tmpphi = gsl_matrix_alloc(Psi->size1, Psi->size2);
-      gsl_matrix_memcpy(tmpphi, Psi); 
-    }
-  }
 
+void slra( CostFunction *costFun, 
+           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
+           gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out ) { 
+  OptFunctionSLRA *optFun = NULL;
+  gsl_vector *x = NULL;
+  double old_reg = costFun->getReggamma();
+  
   try { 
     time_t t_b = clock();
-    myCostFun =  new CostFunction(s, d, p_in, (tmpphi != NULL ? tmpphi : Phi), opt->reggamma);
-    Rtheta = gsl_matrix_alloc(myCostFun->getRsize(), myCostFun->getD());
 
-    if (Rini == NULL) {  /* compute default initial approximation */
+    costFun->setReggamma(opt->reggamma);
+    if (opt->ls_correction) {
+      optFun = new OptFunctionSLRACorrection(*costFun, Psi);
+    } else { 
+      optFun = new OptFunctionSLRACholesky(*costFun, Psi);
+    }
+
+    x = gsl_vector_alloc(optFun->getNvar());
+
+    if (Rini == NULL) {  
       Log::lprintf(Log::LOG_LEVEL_ITER, 
            "R not given - computing initial approximation.\n");    
-      myCostFun->computeDefaultRTheta(Rtheta);
+      optFun->computeDefaultx(x);
     } else {
-      if (tmpphi == NULL) {
-        gsl_matrix_memcpy(Rtheta, Rini);
-      } else {
-        ls_solve(Psi, Rini, Rtheta);
-      }      
+      optFun->RTheta2x(Rini, x);
     }
 
-    x = gsl_matrix_alloc(myCostFun->getRank(), myCostFun->getD());
-    myCostFun->Rtheta2X(Rtheta, x);
-    gsl_vector_view x_vec = gsl_vector_view_array(x->data, x->size1*x->size2);
-    
-    
-    if ( opt->ls_correction) {
-      optFun = new OptFunctionSLRACorrection(*myCostFun, tmpphi != NULL ? tmpphi : Phi);
-    } else { 
-      optFun = new OptFunctionSLRACholesky(*myCostFun, tmpphi != NULL ? tmpphi : Phi);
-    }
-    
-    int status = gsl_optimize(optFun, opt, &(x_vec.vector), vh);
+    gsl_optimize(optFun, opt, x, v_out);
+
     if (p_out != NULL) {
-      if (p_out != p_in) {
-        gsl_vector_memcpy(p_out, p_in);
-      }
-      myCostFun->computeCorrection(p_out, &(x_vec.vector));
+      optFun->computePhat(p_out, x);
     }
-
     opt->time = (double) (clock() - t_b) / (double) CLOCKS_PER_SEC;
-
-    
-    if (Rout != NULL) {
-      myCostFun->X2Rtheta(x, Rtheta);
-      if (Psi == NULL) {
-        gsl_matrix_memcpy(Rout, Rtheta);
-      } else {
-        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, Psi, Rtheta, 0, Rout);
-      }
+    if (r_out != NULL) {
+      optFun->x2RTheta(r_out, x);
     }
 
     throw (Exception *)NULL; /* Throw NULL exception to unify deallocation */
@@ -83,22 +55,11 @@ void slra( const gsl_vector *p_in, Structure* s, int d,
     if (optFun != NULL)  {
       delete optFun;
     }
-
-    if (myCostFun != NULL) {
-      delete myCostFun;
-    }
-    if (x != NULL) {
-      gsl_matrix_free(x);
-    }
-    if (Rtheta != NULL) {
-      gsl_matrix_free(Rtheta);
-    }
-    if (tmpphi != NULL) {
-      gsl_matrix_free(tmpphi);
-    }
+    gsl_vector_free_ifnull(x);
     
     if (e != NULL) { /* Abnormal termination only if e is normal exception */
       throw;  
     }
+    costFun->setReggamma(old_reg);
   }
 }

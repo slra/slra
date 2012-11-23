@@ -63,8 +63,6 @@ void OptimizationOptions::str2Method( const char *str )  {
   }
 }
 
-
-
 /* gsl_matrix_vectorize: vectorize column-wise a gsl_matrix */
 void gsl_matrix_vectorize(double* v, const gsl_matrix* m)
 {
@@ -161,7 +159,6 @@ int read_vec( gsl_vector *a, const char * filename ) {
   return 1;
 }
 
-
 int read_vec_uint( gsl_vector_uint *a, const char * filename ) {
   FILE *file = fopen(filename, "r");
   if (file == NULL) {
@@ -172,8 +169,6 @@ int read_vec_uint( gsl_vector_uint *a, const char * filename ) {
   fclose(file);
   return 1;
 }
-
-
 
 int compute_np( gsl_vector* ml, gsl_vector *nk ) {
   int np = 0;
@@ -236,10 +231,10 @@ void id_kron_a( const gsl_matrix *A, int d,  gsl_matrix *IkronA ) {
   }
 }
 
-
 void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ) {
   size_t d = B->size2, i, j, one = 1, lwork = -1, info;
   gsl_matrix *IkronA = gsl_matrix_alloc(A->size1 * d, A->size2 * d);
+  size_t vecBsize = B->size2 * B->size1; 
   double tmp;
   
   double *vecIkronA = new double[IkronA->size1 * IkronA->size2],
@@ -250,10 +245,10 @@ void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ) {
   gsl_matrix_vectorize(vecB, B);
   
   dgels_("N", &IkronA->size1, &IkronA->size2, &one, vecIkronA,
-         &IkronA->size1, vecB, &B->size1, &tmp, &lwork, &info);
+         &IkronA->size1, vecB, &vecBsize, &tmp, &lwork, &info);
   double *work = new double[lwork = tmp];
   dgels_("N", &IkronA->size1, &IkronA->size2, &one, vecIkronA,
-         &IkronA->size1, vecB, &B->size1, work, &lwork, &info);
+         &IkronA->size1, vecB, &vecBsize, work, &lwork, &info);
 
   delete [] work;
   
@@ -264,9 +259,6 @@ void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ) {
   delete [] vecIkronA;
 }
 
-
-
-  
 void Log::lprintf( Level level, char *format, ... ) {
   va_list vl;
   va_start(vl, format);  

@@ -118,11 +118,11 @@ void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
   gsl_vector_free(res);
 }
 
-Cholesky *LayeredHStructure::createCholesky( int D, double reg_gamma ) const {
+Cholesky *LayeredHStructure::createCholesky( int D ) const {
 #ifdef USE_SLICOT 
-  return new StationaryCholeskySlicot(this, D, reg_gamma);
+  return new StationaryCholeskySlicot(this, D);
 #else  /* USE_SLICOT */
-  return new StationaryCholesky(this, D, reg_gamma);
+  return new StationaryCholesky(this, D);
 #endif /* USE_SLICOT */
 }
 
@@ -152,11 +152,11 @@ void LayeredHStructure::AtWkV( gsl_vector *res, int k, const gsl_matrix *A,
   gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
 }
 
-Cholesky *MosaicHStructure::createCholesky( int D, double reg_gamma ) const {
+Cholesky *MosaicHStructure::createCholesky( int D ) const {
   if (myWkIsCol) {
-    return new SameStripedStationaryCholesky(this, D, 1, reg_gamma);
+    return new SameStripedStationaryCholesky(this, D, 1);
   } else {
-    return new StripedCholesky(this, D, reg_gamma);
+    return new StripedCholesky(this, D);
   }
 }
 
