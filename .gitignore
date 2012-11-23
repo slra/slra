@@ -21,5 +21,4 @@ test_c/test_speed/*/*.Rout
 test_c/test_speed/gentest
 test_m/octave-core
 test_m/support/octave-core
-
-
+*.eps

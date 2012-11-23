@@ -4,7 +4,7 @@ if exist('phi', 'var') && ~isempty(phi), m = size(phi, 1); else m = mp; end
 vec_tts = tts(:); NP = 1:np;
 bfs = vec_tts(:, ones(1, np)) == NP(ones(mp * n, 1), :);
 if ~exist('phi', 'var') | isempty(phi), phi = eye(size(tts, 1)); end
-if ~exist('s0') || isempty(s0), s0 = zeros(m, n); end
+if ~exist('s0') || isempty(s0), s0 = zeros(mp, n); end
 if ~exist('psi', 'var') | isempty(psi), psi = eye(m * (m - r)); end
 if ~exist('th2R') || isempty(th2R), th2R = @(th) reshape(th * psi, m - r, m); end 
 if ~exist('C') || isempty(C), C = @(th) th2R(th) * th2R(th)' - eye(m - r); end  
@@ -19,21 +19,21 @@ if reg
 else
   prob.solver = 'fmincon'; 
 end
-prob.options = optimset('disp', 'iter'); 
+prob.options = optimset('disp', 'off'); 
 pext = [0; p];
 prob.x0 = R2th(Rini, phi * (s0 + pext(tts + 1)), psi); 
 Im = find(isnan(p)); Ig = setdiff(1:np, Im); 
 if exist('w') & ~isempty(w)
   if any(size(w) == 1), w = diag(w); end
   if size(w, 1) == np, w = w(Ig, Ig); end  
-  If = isinf(diag(w)); 
+  If = find(isinf(diag(w))); 
   if ~isempty(If)
     pf = p(Ig(If));
-    s0 = s0 + reshape(bfs(:, Ig(If)) * pf, m, n);
+    s0 = s0 + reshape(bfs(:, Ig(If)) * pf, mp, n);
     w(If, :) = []; w(:, If) = []; p(Ig(If)) = []; 
     bfs(:, Ig(If)) = []; 
     Ig_ = Ig; np_ = np; np = length(p); 
-    tts = reshape(bfs * vec(1:np), m, n);
+    tts = reshape(bfs * vec(1:np), mp, n);
     Im = find(isnan(p)); Ig = setdiff(1:np, Im); 
   end
   sqrt_w = sqrtm(w); inv_sqrt_w = pinv(sqrt_w);

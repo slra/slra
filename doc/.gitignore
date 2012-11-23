@@ -13,3 +13,12 @@
 !lra.m
 !aut_sys_traj.mat
 !.gitignore
+!example_aut_sysid_siam.m
+!example_sysid_siam.m
+!example_ddsim_siam.m
+!example_gcd_siam.m
+!mult_mat.m
+!vec.m
+!blkhank.m
+!h2ss.m
+!siam-rev-readme.txt

@@ -63,13 +63,15 @@ ip.parse(varargin{:}); opt = ip.Results;
 [m, mp] = size(s.phi); q = length(s.m); N = length(s.n); n = sum(s.n); 
 s2np = @(s) sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
                                    - length(s.m) * length(s.n);, np = s2np(s); % = N * mp + q * n - q * N;
-if opt.solver == 'c', opt.psi = eye(m); else, eye((m - r) * m); end
+if ~isfield(opt, 'psi') || isempty(opt.psi)
+  if opt.solver == 'c', opt.psi = eye(m); else, eye((m - r) * m); end
+end  
 if sum(size(s.w)) == np + 1, Im = unique([find(isnan(p)) find(s.w == 0)]); w(Im) = 0; p(Im) = NaN; else, Im = []; end
 if opt.solver == 'c' && ~isempty(Im), s.w(Im) = 1e-6; p(Im) = 0; end  
 if opt.solver == 'c'
   [ph, info] = slra_mex(p, s, r, opt); 
 else
-  [ph, info] = slra_ext(s2s(s), p, r, diag(s.w), opt.Rini, s.phi, opt.psi, opt); 
+  [ph, info] = slra_ext(s2s(s), p, r, s.w, opt.Rini, s.phi, opt.psi, opt); 
 end
 function c = combine(f, s)
 c = {};
