@@ -12,7 +12,7 @@ OptimizationOptions::OptimizationOptions() : disp(SLRA_DEF_disp),
     method(SLRA_DEF_method),
     submethod(SLRA_DEF_submethod),  maxiter(SLRA_DEF_maxiter),
     epsabs(SLRA_DEF_epsabs), epsrel(SLRA_DEF_epsrel), 
-    epsgrad(SLRA_DEF_epsgrad), epsx(SLRA_DEF_epsx),
+    epsgrad(SLRA_DEF_epsgrad), epsx(SLRA_DEF_epsx), maxx(SLRA_DEF_maxx),
     step(SLRA_DEF_step), tol(SLRA_DEF_tol), reggamma(SLRA_DEF_reggamma),
     ls_correction(SLRA_DEF_ls_correction) {
 }
@@ -114,17 +114,24 @@ int gsl_optimize( OptFunction *F, OptimizationOptions *opt,
       g_norm = gsl_blas_dnrm2(solverqn->gradient);
     }
     Log::lprintf("  0: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
-                opt->fmin, g_norm, x_norm);
+                opt->fmin, sqrt(2) * g_norm, x_norm);
   }
 
   while (status_dx == GSL_CONTINUE && 
 	 status_grad == GSL_CONTINUE &&
 	 status == GSL_SUCCESS &&
 	 opt->iter < opt->maxiter) {
+  	if (opt->method == SLRA_OPT_METHOD_LM && opt->maxx > 0) {
+  	  if (gsl_vector_max(solverlm->x) > opt->maxx || gsl_vector_min(solverlm->x) < -opt->maxx){
+  	    break;
+	    }
+	  }
+
     /* print_vec(solverlm->x); */
     opt->iter++;
     switch (opt->method) {
     case SLRA_OPT_METHOD_LM: /* Levenberge-Marquardt */
+
       status = gsl_multifit_fdfsolver_iterate(solverlm);
       /* check for convergence problems */
       if (status == GSL_ETOLF || 
@@ -133,8 +140,12 @@ int gsl_optimize( OptFunction *F, OptimizationOptions *opt,
         break; /* <- THIS IS WRONG */
       }
       /* check the convergence criteria */
-      status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, 
-					  opt->epsabs, opt->epsrel);
+      if (opt->epsabs != 0 || opt->epsrel != 0) {
+        status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, 
+	  				  opt->epsabs, opt->epsrel);
+	  	} else {
+	  	  status_dx = GSL_CONTINUE;
+	  	}
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
       status_grad = gsl_multifit_test_gradient(g, opt->epsgrad);
       /* print information */
@@ -143,7 +154,7 @@ int gsl_optimize( OptFunction *F, OptimizationOptions *opt,
         x_norm = gsl_blas_dnrm2(solverlm->x);
         g_norm = gsl_blas_dnrm2(g);
         Log::lprintf("%3u: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
-                     opt->iter, opt->fmin, g_norm, x_norm);
+                     opt->iter, opt->fmin, sqrt(2) * g_norm, x_norm);
       }  
       break;
     case SLRA_OPT_METHOD_QN:

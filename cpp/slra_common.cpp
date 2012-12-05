@@ -222,6 +222,12 @@ void tolowerstr( char * str ) {
   }
 } 
 
+char *strncpy0( char *dest, const char * src, size_t buf_len ) {
+  char *res = strncpy(dest, src, buf_len - 1);
+  dest[buf_len - 1] = 0;
+  return res;
+}
+
 void id_kron_a( const gsl_matrix *A, int d,  gsl_matrix *IkronA ) {
   gsl_matrix_set_zero(IkronA);
   for (int  k = 0; k < d; k++) {
@@ -280,6 +286,7 @@ void Log::lprintf( char *format, ... ) {
   log->myMsg[MSG_MAX-1] = 0;
   vsnprintf(log->myMsg, MSG_MAX-1, format, vl); 
   PRINTF(log->myMsg);
+  FLUSH();
 }
 
   

@@ -49,6 +49,7 @@
 #define SLRA_DEF_epsrel   1e-5
 #define SLRA_DEF_epsgrad  1e-5
 #define SLRA_DEF_epsx     1e-5
+#define SLRA_DEF_maxx     0
 #define SLRA_DEF_step     0.001
 #define SLRA_DEF_tol      1e-6
 #define SLRA_DEF_reggamma 0.000
@@ -79,6 +80,7 @@ public:
   double epsabs, epsrel; ///< Eps for 'gsl_multifit_test_delta' criterion
   double epsgrad;        ///< Eps for 'gsl_multi..._test_gradient' criteria
   double epsx;           ///< Eps for Nead-Melder method
+  double maxx;           ///< Maximum X value
   ///@}
   
   /** @name Method-specific parameters */  

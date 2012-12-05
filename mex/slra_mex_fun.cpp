@@ -61,10 +61,10 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
     MATStoreOption(Mopt, opt, epsrel, 0, 1);
     MATStoreOption(Mopt, opt, epsgrad, 0, 1);
     MATStoreOption(Mopt, opt, epsx, 0, 1);
+    MATStoreOption(Mopt, opt, maxx, 0, numeric_limits<double>::max());
     MATStoreOption(Mopt, opt, step, 0, 1);
     MATStoreOption(Mopt, opt, tol, 0, 1);
-    MATStoreOption(Mopt, opt, reggamma, 0,
-        numeric_limits<double>::max());
+    MATStoreOption(Mopt, opt, reggamma, 0, numeric_limits<double>::max());
     MATStoreOption(Mopt, opt, ls_correction, 0, 1);
   }
 }
@@ -101,7 +101,7 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
 }
 
 SLRAObject::~SLRAObject() {
-  delete myS;
   delete myF;
+  delete myS;
 }
 

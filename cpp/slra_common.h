@@ -4,17 +4,20 @@
 #include <R.h>
 #define PRINTF Rprintf
 #define MYWARNING Rprintf
+#define FLUSH()
 
 #elif defined(BUILD_MEX_OCTAVE) || defined(BUILD_MEX_MATLAB)
 
 #include "mex.h"
 #define PRINTF mexPrintf
+#define FLUSH() mexEvalString("drawnow;")
 #define MYWARNING mexWarnMsgTxt
 
 #else
 
 #include <stdio.h>
 #define PRINTF printf
+#define FLUSH()
 #define MYWARNING printf
 
 #endif
@@ -91,6 +94,8 @@ gsl_vector *vecChkNIL( gsl_vector &vec  );
 gsl_matrix *matChkNIL( gsl_matrix &mat_vw );
 
 void tolowerstr( char * str );
+
+char *strncpy0( char *dest, const char * src, size_t buf_len );
 
 
 /** Class for logging */

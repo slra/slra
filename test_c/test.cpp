@@ -53,7 +53,7 @@ void run_test( const char * testname, double & time, double& fmin,
   int rk = 1, s_N, s_q, hasR, hasPhi, hasW, m;
   FILE *file;
   char fnR[MAX_FN], fpname[MAX_FN], fRtname[MAX_FN], fsname[MAX_FN], 
-       fRresname[MAX_FN], fpresname[MAX_FN], fnPhi[MAX_FN];
+       fRresname[MAX_FN], fpresname[MAX_FN], fnPhi[MAX_FN], fnW[MAX_FN];
   /* default file names */
   sprintf(fnR, "r%s.txt", testname);
   sprintf(fpname, "p%s.txt", testname);
@@ -62,6 +62,7 @@ void run_test( const char * testname, double & time, double& fmin,
   sprintf(fRresname, "res_r%s.txt", testname);
   sprintf(fpresname, "res_p%s.txt", testname);
   sprintf(fnPhi, "phi%s.txt", testname);
+  sprintf(fnW, "w%s.txt", testname);
 
   OptimizationOptions opt;
   opt.maxiter = maxiter;
@@ -82,14 +83,16 @@ void run_test( const char * testname, double & time, double& fmin,
     /* Read structure  and allocate structure object */
     file = fopen(fsname, "r");    
     Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", fsname);
-    fscanf(file, "%d %d %d %d %d", &s_N, &s_q, &m, &rk, &hasW); 
-   // hasW *= (int)(!elementwise_w);
+    fscanf(file, "%d %d %d %d", &s_N, &s_q, &m, &rk); 
     gsl_vector *n_l = gsl_vector_alloc(s_N), *m_k = gsl_vector_alloc(s_q),
                *w_k = gsl_vector_alloc(s_q);
     gsl_vector_fscanf(file, n_l);
     gsl_vector_fscanf(file, m_k);
+    fclose(file);
+    hasW = ((file = fopen(fnW, "r")) != NULL);
     if (hasW) {
       gsl_vector_fscanf(file, w_k);
+      fclose(file);
       if (elementwise_w) {
         gsl_vector *el_wk = gsl_vector_alloc(compute_np(m_k, n_l));
         int i = 0;
@@ -109,8 +112,6 @@ void run_test( const char * testname, double & time, double& fmin,
       gsl_vector_free(w_k);
       w_k = NULL;
     }
-    fclose(file);
-
     
     S = elementwise_w ? (Structure *)new WMosaicHStructure(m_k, n_l, w_k) : 
                         (Structure *)new MosaicHStructure(m_k, n_l, w_k);
