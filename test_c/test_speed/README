@@ -1,0 +1,12 @@
+This directory contains source files for numerical experiments in the paper
+
+@UNPUBLISHED{arxiv.org.1211.3938,
+  author = {Konstantin Usevich and Ivan Markovsky},
+  title = {Variable projection methods for affinely structured low-rank approximation
+	in weighted $2$-norm},
+  note = {(submitted, November, 2012)},
+  url = {http://arxiv.org/abs/1211.3938}
+}
+
+
+

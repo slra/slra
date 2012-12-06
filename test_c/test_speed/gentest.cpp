@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     FILE *F = fopen(fname, "wt");
     
     if (F != NULL) {
-      fprintf(F, "%d %d %d %d %d\n", 1 + (n2 > 0), 1 + (m2 > 0), m + m2, m + m2 - 1, 0);
+      fprintf(F, "%d %d %d %d\n", 1 + (n2 > 0), 1 + (m2 > 0), m + m2, m + m2 - 1);
       fprintf(F, "%d", n);
       if (n2 > 0) {
         fprintf(F, " %d", n2);

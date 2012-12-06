@@ -19,7 +19,7 @@ void meas_time( CostFunction &costFun,
   OptFunctionSLRACholesky optFun(costFun, NULL);                
   gsl_vector *x = gsl_vector_alloc(optFun.getNvar());
   gsl_vector *grad = gsl_vector_alloc(optFun.getNvar());
-  gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNvar(), optFun.getNsq());
+  gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNsq(), optFun.getNvar());
 
   optFun.computeDefaultx(x);
     
@@ -130,15 +130,15 @@ void run_test( const char * testname, double & time, double& fmin,
     /* call slra */  
 
     myCostFun = new CostFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
-    slra(myCostFun, &opt, (hasR ? R : NULL), NULL, p2, R, v);
-    gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");
-    fclose(file);
-    gsl_vector_fprintf(file = fopen(fpresname, "w"), p2, "%.14f");
-    fclose(file);
-    time = opt.time;
-    iter = opt.iter;
 
     if (test_type[0] == 'd') {
+      slra(myCostFun, &opt, (hasR ? R : NULL), NULL, p2, R, v);
+      gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");
+      fclose(file);
+      gsl_vector_fprintf(file = fopen(fpresname, "w"), p2, "%.14f");
+      fclose(file);
+      time = opt.time;
+      iter = opt.iter;
       gsl_matrix_sub(Rt, R);
       gsl_vector Rvec = 
           gsl_vector_view_array(Rt->data, Rt->size1 * Rt->size2).vector;
