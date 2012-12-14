@@ -42,17 +42,17 @@ public:
   virtual DGamma *createDGamma( size_t D ) const;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         int wdeg = 2 );
+                         long wdeg = 2 );
   /**@}*/
  
   /** @name Implementing StationaryStructure interface */
   /**@{*/
   virtual size_t getS() const { return myMaxLag; }
-  virtual void WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const;
-  virtual void AtWkB( gsl_matrix *res, int k, 
+  virtual void WkB( gsl_matrix *res, long k, const gsl_matrix *B ) const;
+  virtual void AtWkB( gsl_matrix *res, long k, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWkB, double beta = 0 ) const;
-  virtual void AtWkV( gsl_vector *res, int k,
+  virtual void AtWkV( gsl_vector *res, long k,
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWkV, double beta = 0 ) const;
   /**@}*/

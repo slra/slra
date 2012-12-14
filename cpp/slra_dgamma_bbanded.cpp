@@ -26,7 +26,7 @@ SDependentDGamma::~SDependentDGamma(){
 
  void SDependentDGamma::calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
                    const gsl_vector *yr ) {
-  size_t n = yr->size / myD; int S = myW->getS();
+  size_t n = yr->size / myD; long S = myW->getS();
   gsl_matrix Y_r = gsl_matrix_const_view_vector(yr, n, myD).matrix;
   gsl_vector y_i, y_j;
   gsl_matrix tmp2_v = gsl_matrix_view_vector(myTmp2, myW->getM(), 1).matrix,
@@ -49,7 +49,7 @@ SDependentDGamma::~SDependentDGamma(){
 void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
                    size_t i, size_t j, gsl_vector *Yr ) {
   gsl_vector perm_col = gsl_matrix_column(myEye, i).vector, yr_sub, res_sub;
-  size_t k, l, n = Yr->size / myD; int S = myW->getS();
+  size_t k, l, n = Yr->size / myD; long S = myW->getS();
   double tmp;
 
   gsl_vector_set_zero(res); 

@@ -57,7 +57,7 @@ void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg 
 
 SameStripedStationaryCholesky::
     SameStripedStationaryCholesky( const MosaicHStructure *s, 
-         size_t D, int use_slicot  ) :  myS(s) {
+         size_t D, long use_slicot  ) :  myS(s) {
   myBase = (StationaryCholesky *)myS->getMaxBlock()->createCholesky(D);  
 }
 SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
@@ -70,7 +70,7 @@ void SameStripedStationaryCholesky::calcGammaCholesky( const gsl_matrix *R, doub
 
   
 void SameStripedStationaryCholesky::
-         multInvCholeskyVector( gsl_vector * yr, int trans ) {
+         multInvCholeskyVector( gsl_vector * yr, long trans ) {
   size_t n_row = 0, k;
   gsl_vector_view sub_yr;
   

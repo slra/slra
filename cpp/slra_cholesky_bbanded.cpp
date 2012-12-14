@@ -30,7 +30,7 @@ SDependentCholesky::~SDependentCholesky() {
 }
 
 void SDependentCholesky::multInvPartCholeskyArray( double * yr,
-         int trans, size_t size, size_t chol_size ) {
+         long trans, size_t size, size_t chol_size ) {
   size_t info, total_cols = size / chol_size;
   dtbtrs_("U", (trans ? "T" : "N"), "N", 
           &chol_size, &d_times_s_minus_1, &total_cols, 
@@ -44,7 +44,7 @@ void SDependentCholesky::multInvPartGammaArray( double * yr, size_t size,
           myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
 }
 
-void SDependentCholesky::multInvCholeskyVector( gsl_vector * yr, int trans ) {
+void SDependentCholesky::multInvCholeskyVector( gsl_vector * yr, long trans ) {
   if (yr->stride != 1) {
     throw new Exception("Cannot mult vectors with stride != 1\n");
   }
@@ -59,7 +59,7 @@ void SDependentCholesky::multInvGammaVector( gsl_vector * yr ) {
 }
 
 void SDependentCholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr,
-         int trans ) {
+         long trans ) {
   if (yr_matr->size2 != yr_matr->tda) {
     Cholesky::multInvCholeskyTransMatrix(yr_matr, trans);
   } else {

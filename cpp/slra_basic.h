@@ -19,11 +19,11 @@ public:
   /** Solve linear system with factor \f$C\f$.
    * Computes \f$ y_r \leftarrow C^{-1} y_r\f$  if trans = 0 or 
    * \f$ y_r \leftarrow C^{-T} y_r\f$  if trans = 1 */
-  virtual void multInvCholeskyVector( gsl_vector * yr, int trans ) = 0;  
+  virtual void multInvCholeskyVector( gsl_vector * yr, long trans ) = 0;  
   /** Solves linear system with factor \f$C\f$. 
    * Computes \f$M_r^T \leftarrow C^{-1} M_r^T\f$  if trans = 0 or 
    * \f$M_r^T \leftarrow C^{-T} M_r^T\f$  if trans = 1 */
-  virtual void multInvCholeskyTransMatrix( gsl_matrix * M_r, int trans );
+  virtual void multInvCholeskyTransMatrix( gsl_matrix * M_r, long trans );
   /** Solves linear system with \f$\Gamma(R)\f$ . 
    * Computes \f$y_r \leftarrow \Gamma^{-1} y_r\f$ 
    * using Cholesky factorization */
@@ -66,7 +66,7 @@ public:
    * Computes \f$ p \leftarrow p - G^T(R) y_r\f$,
    * where \f$y_r\f$ is a precomputed \f$\Gamma^{-1}(R) s(R)\f$. */
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         int wdeg = 2 ) = 0;
+                         long wdeg = 2 ) = 0;
   /** Creates Cholesky object for this structure and rank reduction */
   virtual Cholesky *createCholesky( size_t D ) const = 0;
   /** Creates DGamma object for this structure and rank reduction */
@@ -89,14 +89,14 @@ public:
   virtual size_t getS() const = 0; 
   
   /** Returns \f$res \leftarrow W_{i,j} B\f$ */
-  virtual void WijB( gsl_matrix *res, int i, int j, 
+  virtual void WijB( gsl_matrix *res, long i, long j, 
                      const gsl_matrix *B ) const = 0;
   /** Returns \f$res \leftarrow \beta res + A^{\rm T} W_{i,j} B\f$ */
-  virtual void AtWijB( gsl_matrix *res, int i, int j, 
+  virtual void AtWijB( gsl_matrix *res, long i, long j, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWjiB, double beta = 0 ) const = 0;
   /** Returns \f$res \leftarrow \beta res + A^{\rm T} W_{i,j} V\f$ */
-  virtual void AtWijV( gsl_vector *res, int i, int j,
+  virtual void AtWijV( gsl_vector *res, long i, long j,
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWijV, double beta = 0 ) const = 0;
 };
@@ -113,27 +113,27 @@ class StationaryStructure : public SDependentStructure {
 
 public:
   /** Returns \f$res \leftarrow W_{k} B\f$ */
-  virtual void WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const = 0;
+  virtual void WkB( gsl_matrix *res, long k, const gsl_matrix *B ) const = 0;
   /** Returns \f$res \leftarrow \beta res + A^{\rm T} W_{k} B\f$ */
-  virtual void AtWkB( gsl_matrix *res, int k, 
+  virtual void AtWkB( gsl_matrix *res, long k, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWkB, double beta = 0 ) const = 0;
   /** Returns \f$res \leftarrow \beta res + A^{\rm T} W_{k} B\f$ */
-  virtual void AtWkV( gsl_vector *res, int k,
+  virtual void AtWkV( gsl_vector *res, long k,
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWkV, double beta = 0 ) const = 0;
                       
-  virtual void WijB( gsl_matrix *res, int i, int j, 
+  virtual void WijB( gsl_matrix *res, long i, long j, 
                      const gsl_matrix *B ) const {
     WkB(res, j- i, B);
   }
-  virtual void AtWijB( gsl_matrix *res, int i, int j, 
+  virtual void AtWijB( gsl_matrix *res, long i, long j, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWijB, double beta = 0 ) const {
     AtWkB(res, j - i, A, B, tmpWijB, beta);
   }
 
-  virtual void AtWijV( gsl_vector *res, int i, int j, 
+  virtual void AtWijV( gsl_vector *res, long i, long j, 
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWijV, double beta = 0 ) const {
     AtWkV(res, j - i, A, V, tmpWijV, beta);

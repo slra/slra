@@ -37,7 +37,7 @@ WLayeredHStructure::~WLayeredHStructure() {
 }
 
 void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                   gsl_vector *yr, int wdeg ) {
+                                   gsl_vector *yr, long wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), R->size2).matrix;
   gsl_vector yr_matr_row;
@@ -65,7 +65,7 @@ void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
   gsl_vector_free(res);
 }
 
-void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
+void WLayeredHStructure::mulInvWij( gsl_matrix *matr, long i  ) const {
   size_t sum_np = i, sum_ml = 0, l, k;
   gsl_vector matr_row;
 
@@ -77,7 +77,7 @@ void WLayeredHStructure::mulInvWij( gsl_matrix *matr, int i  ) const {
   }
 }
 
-void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j, 
+void WLayeredHStructure::WijB( gsl_matrix *res, long i, long j, 
          const gsl_matrix *B ) const {
   gsl_matrix_memcpy(res, B);
   if (i <= j) {
@@ -91,7 +91,7 @@ void WLayeredHStructure::WijB( gsl_matrix *res, int i, int j,
   }
 }
 
-void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j, 
+void WLayeredHStructure::AtWijB( gsl_matrix *res, long i, long j, 
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWijB, 
          double beta ) const {
   gsl_matrix_scale(res, beta);
@@ -99,24 +99,24 @@ void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j,
   size_t l, k;
 
   if (i <= j) {
-    int diff = j - i;
+    long diff = j - i;
   
     sum_nl = 0;
     for (l = 0, sum_np = j; l < getQ(); 
          sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-      for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
+      for (k = 0; k < ((long)getLayerLag(l)) - diff; ++k) {
         const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl+k+diff).vector;
         const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl+k).vector;
         gsl_blas_dger(getInvWeight(sum_np + k), &A_row, &B_row, res);
       }
     }
   } else {
-    int diff = i - j;
+    long diff = i - j;
   
     sum_nl = 0;
     for (l = 0, sum_np = i; l < getQ(); 
          sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-      for (k = 0; k < ((int)getLayerLag(l))-diff; ++k) {
+      for (k = 0; k < ((long)getLayerLag(l))-diff; ++k) {
         const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl+k).vector;
         const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl+k+diff).vector;
         gsl_blas_dger(getInvWeight(sum_np + k), &A_row, &B_row, res);
@@ -125,12 +125,12 @@ void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j,
   }
 }   
 
-void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j, 
+void WLayeredHStructure::AtWijV( gsl_vector *res, long i, long j, 
          const gsl_matrix *A, const gsl_vector *V, 
                      gsl_vector *tmpWijV, double beta ) const {
   gsl_vector_scale(res, beta);
   size_t sum_np, ind_a, ind_v;
-  int diff, l, k;
+  long diff, l, k;
 
   diff = (j >= i ? j - i : i - j);
   ind_a = j - mymin(i, j);
@@ -140,7 +140,7 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
        sum_np += getLayerNp(l), 
        ind_a += getLayerLag(l),
        ind_v += getLayerLag(l), ++l) {
-    for (k = 0; k < ((int)getLayerLag(l)) - diff; ++k) {
+    for (k = 0; k < ((long)getLayerLag(l)) - diff; ++k) {
       const gsl_vector A_row = gsl_matrix_const_row(A, ind_a + k).vector;
       gsl_blas_daxpy(getInvWeight(sum_np + k) * 
                      gsl_vector_get(V, ind_v + k), &A_row, res);

@@ -27,14 +27,14 @@ public:
   virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
 
   
-  virtual void multInvPartCholeskyArray( double * yr, int trans, 
+  virtual void multInvPartCholeskyArray( double * yr, long trans, 
                    size_t size, size_t chol_size );
   virtual void multInvPartGammaArray( double * yr, size_t size, 
                    size_t chol_size );
 
-  virtual void multInvCholeskyVector( gsl_vector * yr, int trans );
+  virtual void multInvCholeskyVector( gsl_vector * yr, long trans );
   virtual void multInvGammaVector( gsl_vector * yr );
-  virtual void multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans );
+  virtual void multInvCholeskyTransMatrix( gsl_matrix * yr_matr, long trans );
 };
 
 class StationaryCholesky : public SDependentCholesky {
@@ -72,11 +72,11 @@ private:
 class SameStripedStationaryCholesky : public Cholesky {
 public:  
   SameStripedStationaryCholesky( const MosaicHStructure *s, 
-      size_t r, int use_slicot );
+      size_t r, long use_slicot );
   virtual ~SameStripedStationaryCholesky();
 
   virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
-  virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
+  virtual void multInvCholeskyVector( gsl_vector * yr, long trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
   
 private:

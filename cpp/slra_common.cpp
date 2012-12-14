@@ -35,7 +35,7 @@ void OptimizationOptions::str2Method( const char *str )  {
     sizeof(sm_codes_nm) / sizeof(sm_codes_nm[0]) - 1
   };
   size_t meth_code_max = sizeof(submeth_codes_max) / sizeof(submeth_codes_max[0]);
-  int i;
+  long i;
   
   if (str[0] == 0) {
     return;
@@ -196,7 +196,7 @@ size_t compute_n( gsl_vector* ml, size_t np ) {
   return np / ml->size;
 }
 
-void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, int trans ) { 
+void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, long trans ) { 
   for (size_t i = 0; i < yr_matr->size1; i++) {
     gsl_vector_view row = gsl_matrix_row(yr_matr, i);
     multInvCholeskyVector(&row.vector, trans);

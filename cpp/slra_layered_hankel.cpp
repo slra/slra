@@ -90,7 +90,7 @@ void LayeredHStructure::computeStats() {
 }
 
 void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                  gsl_vector *yr, int wdeg ) {
+                                  gsl_vector *yr, long wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len, D = R->size2;
   gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), D).matrix, b_xext;
   gsl_vector yr_matr_row, res_sub, p_chunk_sub;
@@ -131,20 +131,20 @@ DGamma *LayeredHStructure::createDGamma( size_t D ) const {
 }
 
 
-void LayeredHStructure::WkB( gsl_matrix *res, int k, 
+void LayeredHStructure::WkB( gsl_matrix *res, long k, 
                              const gsl_matrix *B ) const {
   gsl_matrix_memcpy(res, B);
   gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), 
                  CblasNonUnit, 1.0, getWk(abs(k)), res);
 }
 
-void LayeredHStructure::AtWkB( gsl_matrix *res, int k, const gsl_matrix *A,
+void LayeredHStructure::AtWkB( gsl_matrix *res, long k, const gsl_matrix *A,
          const gsl_matrix *B, gsl_matrix *tmpWkB, double beta ) const {
   WkB(tmpWkB, k, B);
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpWkB, beta, res);       
 }
 
-void LayeredHStructure::AtWkV( gsl_vector *res, int k, const gsl_matrix *A,
+void LayeredHStructure::AtWkV( gsl_vector *res, long k, const gsl_matrix *A,
          const gsl_vector *V, gsl_vector *tmpWkV, double beta ) const {
   gsl_blas_dcopy(V, tmpWkV);
   gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans),

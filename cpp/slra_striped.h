@@ -30,7 +30,7 @@ public:
   virtual size_t getM() const { return myStripe[0]->getM(); }
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         int wdeg = 2 );
+                         long wdeg = 2 );
   virtual Cholesky *createCholesky( size_t D) const;
   virtual DGamma *createDGamma( size_t D ) const;
   /**@}*/
@@ -65,7 +65,7 @@ public:
   /** @name Implementing Cholesky interface */
   /**@{*/  
   virtual void calcGammaCholesky( const gsl_matrix *R, double reg_gamma );
-  virtual void multInvCholeskyVector( gsl_vector * yr, int trans );  
+  virtual void multInvCholeskyVector( gsl_vector * yr, long trans );  
   virtual void multInvGammaVector( gsl_vector * yr );                
   /**@}*/
 };

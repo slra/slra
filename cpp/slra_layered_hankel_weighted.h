@@ -5,7 +5,7 @@ class WLayeredHStructure : public SDependentStructure {
   LayeredHStructure myBase;
   gsl_vector *myInvWeights;
   gsl_vector *myInvSqrtWeights;
-  void mulInvWij( gsl_matrix * res, int i ) const;
+  void mulInvWij( gsl_matrix * res, long i ) const;
 public:  
   /** Constructs WLayeredHStructure object.
    * @param m_l \f${\bf m} = \begin{bmatrix}m_1 & \cdots & m_q\end{bmatrix}\f$
@@ -29,18 +29,18 @@ public:
   virtual Cholesky *createCholesky( size_t D ) const;
   virtual DGamma *createDGamma( size_t D ) const;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         int wdeg = 2 );
+                         long wdeg = 2 );
   /**@}*/
   
   /** @name Implementing SDependentStructure interface */
   /**@{*/
   virtual size_t getS() const { return myBase.getS(); }
-  virtual void WijB( gsl_matrix *res, int i, int j, 
+  virtual void WijB( gsl_matrix *res, long i, long j, 
                      const gsl_matrix *B ) const;
-  virtual void AtWijB( gsl_matrix *res, int i, int j, 
+  virtual void AtWijB( gsl_matrix *res, long i, long j, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpWjiB, double beta = 0 ) const;
-  virtual void AtWijV( gsl_vector *res, int i, int j,
+  virtual void AtWijV( gsl_vector *res, long i, long j,
                       const gsl_matrix *A, const gsl_vector *V, 
                       gsl_vector *tmpWijV, double beta = 0 ) const;
   /**@}*/

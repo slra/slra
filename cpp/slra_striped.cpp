@@ -45,7 +45,7 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
 }
 
 void StripedStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                 gsl_vector *yr, int wdeg ) {
+                                 gsl_vector *yr, long wdeg ) {
   size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector_view sub_p, sub_yr;
   
@@ -87,7 +87,7 @@ StripedCholesky::~StripedCholesky() {
   }
 }
 
-void StripedCholesky::multInvCholeskyVector( gsl_vector * yr, int trans ) {
+void StripedCholesky::multInvCholeskyVector( gsl_vector * yr, long trans ) {
   size_t n_row = 0, k;
   gsl_vector_view yr_b;
   

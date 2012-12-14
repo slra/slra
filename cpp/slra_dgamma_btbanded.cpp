@@ -58,9 +58,9 @@ void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R,
          size_t i, size_t j,  gsl_vector *yr ) {
   gsl_vector gv_sub, perm_col = gsl_matrix_column(myEye, i).vector, dgammajrow,
              res_stride, yr_stride;
-  int S = myW->getS();           
+  long S = myW->getS();           
 
-  for (int k = 1 - S; k < S; k++) {
+  for (long k = 1 - S; k < S; k++) {
     gv_sub = gsl_vector_subvector(myDGammaVec, (k + S - 1) * myD, 
               myD).vector;
     myW->AtWkV(&gv_sub, -k, R, &perm_col, myTempWkColRow);
