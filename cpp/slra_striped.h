@@ -25,19 +25,19 @@ public:
 
   /** @name Implementing Structure interface */
   /**@{*/
-  virtual int getN() const { return myN; }
-  virtual int getNp() const { return myNp; }
-  virtual int getM() const { return myStripe[0]->getM(); }
+  virtual size_t getN() const { return myN; }
+  virtual size_t getNp() const { return myNp; }
+  virtual size_t getM() const { return myStripe[0]->getM(); }
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 );
-  virtual Cholesky *createCholesky( int D) const;
-  virtual DGamma *createDGamma( int D ) const;
+  virtual Cholesky *createCholesky( size_t D) const;
+  virtual DGamma *createDGamma( size_t D ) const;
   /**@}*/
   
   /** @name Structure-specific methods */
   /**@{*/
-  int getBlocksN() const { return myBlocksN; } /**< Returns \f$N\f$ */
+  size_t getBlocksN() const { return myBlocksN; } /**< Returns \f$N\f$ */
   /** Returns \f$\mathcal{S}_{k}\f$ */
   const Structure *getBlock( size_t k ) const { 
     return myStripe[k]; 
@@ -54,12 +54,12 @@ public:
 /** Implementation of Cholesky for StripedStructure. */
 class StripedCholesky : virtual public Cholesky {
   Cholesky **myGamma;
-  int myD;
+  size_t myD;
   const StripedStructure *myS;
 public:  
   /** Constructs a stripe of Cholesky objects
    * using createDGamma  for each block of the stripe */
-  StripedCholesky( const StripedStructure *s, int D );
+  StripedCholesky( const StripedStructure *s, size_t D );
   virtual ~StripedCholesky();
 
   /** @name Implementing Cholesky interface */
@@ -78,7 +78,7 @@ class StripedDGamma : virtual public DGamma {
 public:  
   /** Constructs a stripe of DGamma objects
    * using createDGamma  for each block of the stripe */
-  StripedDGamma( const StripedStructure *s, int D  ) ;
+  StripedDGamma( const StripedStructure *s, size_t D  ) ;
   virtual ~StripedDGamma();
 
   /** @name Implementing DGamma interface */
@@ -86,7 +86,7 @@ public:
   virtual void calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
                    const gsl_vector *yr );
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   int i, int j, gsl_vector *Yr );
+                   size_t i, size_t j, gsl_vector *Yr );
   /**@}*/
 };
 

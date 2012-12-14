@@ -10,7 +10,7 @@ extern "C" {
 }
 #include "slra.h"
 
-WLayeredHStructure::WLayeredHStructure( const double *m_l, size_t q, int n, 
+WLayeredHStructure::WLayeredHStructure( const double *m_l, size_t q, size_t n, 
     const gsl_vector *w ) : myBase(m_l, q, n, NULL) {
   myInvWeights = gsl_vector_alloc(myBase.getNp());
   myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
@@ -96,7 +96,7 @@ void WLayeredHStructure::AtWijB( gsl_matrix *res, int i, int j,
          double beta ) const {
   gsl_matrix_scale(res, beta);
   size_t sum_np, sum_nl = 0;
-  int l, k;
+  size_t l, k;
 
   if (i <= j) {
     int diff = j - i;
@@ -148,11 +148,11 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, int i, int j,
   }
 }   
 
-Cholesky *WLayeredHStructure::createCholesky( int D ) const {
+Cholesky *WLayeredHStructure::createCholesky( size_t D ) const {
   return new SDependentCholesky(this, D);
 }
 
-DGamma *WLayeredHStructure::createDGamma( int D ) const {
+DGamma *WLayeredHStructure::createDGamma( size_t D ) const {
   return new SDependentDGamma(this, D);
 }
 

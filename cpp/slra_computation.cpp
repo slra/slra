@@ -9,7 +9,7 @@ extern "C" {
 
 #include "slra.h"
 
-CostFunction::CostFunction( const gsl_vector *p, Structure *s, int d, 
+CostFunction::CostFunction( const gsl_vector *p, Structure *s, size_t d, 
                          gsl_matrix *Phi ) : myP(NULL), myD(d), myStruct(s), 
                          myReggamma(SLRA_DEF_reggamma) {
   if (myStruct->getNp() > p->size) {
@@ -219,7 +219,7 @@ void CostFunction::computeCorrection( gsl_vector* p, gsl_matrix *R ) {
 }
 
 void CostFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
-  int c_size1 = getN(), c_size2 = getNrow();
+  size_t c_size1 = getN(), c_size2 = getNrow();
   size_t status = 0;
   size_t minus1 = -1;
   double tmp;

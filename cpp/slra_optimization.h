@@ -76,7 +76,7 @@ public:
   
   /** @name Stopping criteria parameters */  
   ///@{
-  int maxiter;           ///< Maximal number of iterations 
+  size_t maxiter;           ///< Maximal number of iterations 
   double epsabs, epsrel; ///< Eps for 'gsl_multifit_test_delta' criterion
   double epsgrad;        ///< Eps for 'gsl_multi..._test_gradient' criteria
   double epsx;           ///< Eps for Nead-Melder method
@@ -97,7 +97,7 @@ public:
 
   /** @name Output info */  
   ///@{
-  int iter;     ///< Total number of iterations 
+  size_t iter;     ///< Total number of iterations 
   double fmin;  ///< Value of the cost function 
   double time;  ///< Time spent on local optimization 
   ///@}

@@ -60,9 +60,9 @@
  * T - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].
  * m = number of block rows / columns
  */ 
-void tmv_prod_vector( gsl_vector *T, int s, gsl_vector* v, int m, 
+void tmv_prod_vector( gsl_vector *T, size_t s, gsl_vector* v, size_t m, 
          gsl_vector* p );
-void tmv_prod_new( gsl_matrix *T, int s,  gsl_vector *v, int m, gsl_vector *p, 
+void tmv_prod_new( gsl_matrix *T, size_t s,  gsl_vector *v, size_t m, gsl_vector *p, 
          double beta = 0.0 );
 
 void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ); 
@@ -72,7 +72,7 @@ void shiftLowerTrg( gsl_matrix * dest, const gsl_matrix *src  );
 
 void print_mat(const gsl_matrix*);
 void print_mat_tr(const gsl_matrix*);
-void print_arr(const double*, int);
+void print_arr(const double*, size_t);
 
 void print_vec(const gsl_vector*);
 
@@ -85,8 +85,8 @@ void gsl_matrix_vec_inv(gsl_matrix*, const double*);
 
 
                
-int compute_np( gsl_vector* ml, gsl_vector *nk );               
-int compute_n( gsl_vector* ml, int np );               
+size_t compute_np( gsl_vector* ml, gsl_vector *nk );               
+size_t compute_n( gsl_vector* ml, size_t np );               
 
 
 const gsl_vector *vecChkNIL( const gsl_vector &vec );
@@ -119,7 +119,7 @@ public:
   static void deleteLog();
   
 private:
-  static const int MSG_MAX = 200;
+  static const size_t MSG_MAX = 200;
   char myMsg[MSG_MAX];
   Level myMaxLevel;
 

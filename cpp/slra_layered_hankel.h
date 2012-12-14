@@ -10,7 +10,7 @@ class LayeredHStructure : public StationaryStructure {
     double inv_w;            /* Square root of inverse of the weight */
   } Layer;
 
-  int myQ;	                /* number of layers */
+  size_t myQ;	                /* number of layers */
   size_t myN;
   size_t myM;
   size_t myMaxLag;
@@ -20,7 +20,7 @@ class LayeredHStructure : public StationaryStructure {
   void computeStats();
   void computeWkParams(); 
 protected:
-  int nvGetNp() const { return (myN - 1) * myQ + myM; }  
+  size_t nvGetNp() const { return (myN - 1) * myQ + myM; }  
 public:
   /** Constructs layered Hankel structure.
    * @param m_l \f${\bf m} = \begin{bmatrix}m_1 & \cdots & m_q\end{bmatrix}\f$
@@ -30,16 +30,16 @@ public:
    * If w_l == NULL then \f${\bf w}\f$ is set to be
    * \f$\begin{bmatrix}1&\cdots&1\end{bmatrix}\f$. 
    */
-  LayeredHStructure( const double *m_l, size_t q, int n, 
+  LayeredHStructure( const double *m_l, size_t q, size_t n, 
                      const double *w_l = NULL );
   virtual ~LayeredHStructure();
   /** @name Implementing Structure interface */
   /**@{*/
-  virtual int getM() const { return myM; }
-  virtual int getN() const { return myN; }
-  virtual int getNp() const { return nvGetNp(); }
-  virtual Cholesky *createCholesky( int D ) const;
-  virtual DGamma *createDGamma( int D ) const;
+  virtual size_t getM() const { return myM; }
+  virtual size_t getN() const { return myN; }
+  virtual size_t getNp() const { return nvGetNp(); }
+  virtual Cholesky *createCholesky( size_t D ) const;
+  virtual DGamma *createDGamma( size_t D ) const;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 );
@@ -47,7 +47,7 @@ public:
  
   /** @name Implementing StationaryStructure interface */
   /**@{*/
-  virtual int getS() const { return myMaxLag; }
+  virtual size_t getS() const { return myMaxLag; }
   virtual void WkB( gsl_matrix *res, int k, const gsl_matrix *B ) const;
   virtual void AtWkB( gsl_matrix *res, int k, 
                       const gsl_matrix *A, const gsl_matrix *B, 
@@ -60,19 +60,19 @@ public:
   /** @name Layered-Hankel-specific methods */
   /**@{*/
   /** Returns a pointer to Wk matrix.  @todo remove.*/
-  const gsl_matrix *getWk( int l ) const { return myA[l]; } 
+  const gsl_matrix *getWk( size_t l ) const { return myA[l]; } 
   /** Returns \f$q\f$. */
-  int getQ() const { return myQ; }
+  size_t getQ() const { return myQ; }
   /** Returns \f$\max \{m_l\}_{l=1}^{q}\f$ */
-  int getMaxLag() const { return myMaxLag; }
+  size_t getMaxLag() const { return myMaxLag; }
   /** Returns \f$m_l\f$ */
-  int getLayerLag( int l ) const { return mySA[l].blocks_in_row; }
+  size_t getLayerLag( size_t l ) const { return mySA[l].blocks_in_row; }
   /** Checks whether \f$w_l=\infty\f$ (block is fixed) */
-  bool isLayerExact( int l ) const { return (mySA[l].inv_w == 0.0); }
+  bool isLayerExact( size_t l ) const { return (mySA[l].inv_w == 0.0); }
   /** Returns \f$w_l^{-1}\f$ */
-  double getLayerInvWeight( int l ) const { return mySA[l].inv_w; }
+  double getLayerInvWeight( size_t l ) const { return mySA[l].inv_w; }
   /** Returns number of parameters in each block: \f$m_l +n- 1\f$ */
-  int getLayerNp( int l ) const { return getLayerLag(l) + getN() - 1; }
+  size_t getLayerNp( size_t l ) const { return getLayerLag(l) + getN() - 1; }
   /**@}*/
 };
 
@@ -117,7 +117,7 @@ public:
   virtual ~MosaicHStructure() {}
   /** @name Implementing Structure interface */
   /**@{*/
-  virtual Cholesky *createCholesky( int r ) const;
+  virtual Cholesky *createCholesky( size_t r ) const;
   /**@}*/
 };
 

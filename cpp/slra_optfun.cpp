@@ -32,7 +32,7 @@ OptFunctionSLRA::~OptFunctionSLRA()  {
   gsl_matrix_free(myPsi);
 }
 
-int OptFunctionSLRA::getNvar() { 
+size_t OptFunctionSLRA::getNvar() { 
   return getRank() * myFun.getD(); 
 }
 
@@ -77,7 +77,7 @@ void OptFunctionSLRACorrection::computeFuncAndJac( const gsl_vector* x,
 void OptFunctionSLRA::X2XId( const gsl_matrix *x, gsl_matrix *XId ) { 
   gsl_vector diag;
   gsl_matrix sm;
-  int n = x->size1, d = x->size2;
+  size_t n = x->size1, d = x->size2;
 
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
   gsl_matrix_memcpy(&(sm = gsl_matrix_submatrix(XId, 0, 0, n, d).matrix), x); 

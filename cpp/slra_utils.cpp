@@ -8,7 +8,7 @@ extern "C" {
 }
 #include "slra.h"
 
-void tmv_prod_vector( gsl_vector *T, int s, gsl_vector* v, int m, 
+void tmv_prod_vector( gsl_vector *T, size_t s, gsl_vector* v, size_t m, 
                       gsl_vector* p ) {
   double res;
   size_t i, temp, s_1 = s - 1;
@@ -37,8 +37,8 @@ void tmv_prod_vector( gsl_vector *T, int s, gsl_vector* v, int m,
   }
 }
 
-void tmv_prod_new( gsl_matrix *T, int s, gsl_vector* v, 
-                   int m, gsl_vector* p, double beta ) {
+void tmv_prod_new( gsl_matrix *T, size_t s, gsl_vector* v, 
+                   size_t m, gsl_vector* p, double beta ) {
   size_t i, temp, s_1 = s - 1;
   size_t D = T->size1;
   size_t bCols = T->size2 / (2 * s - 1), corner_row_lim = GSL_MIN(s_1, m/2); 
@@ -67,8 +67,8 @@ void tmv_prod_new( gsl_matrix *T, int s, gsl_vector* v,
 }
 
 void copyLowerTrg( gsl_matrix * dest, const gsl_matrix *src  ) {
-  for (int i = 0; i < dest->size1; i++) {
-    for (int j = 0; (j < dest->size2) && (j <= i); j++) {
+  for (size_t i = 0; i < dest->size1; i++) {
+    for (size_t j = 0; (j < dest->size2) && (j <= i); j++) {
       gsl_matrix_set(dest, i, j, gsl_matrix_get(src, i, j));
     }
   }
@@ -77,8 +77,8 @@ void copyLowerTrg( gsl_matrix * dest, const gsl_matrix *src  ) {
 
 void shiftLowerTrg( gsl_matrix * dest, const gsl_matrix *src  ) {
   gsl_matrix_set_zero(dest);
-  for (int i = 0; i < dest->size1; i++) {
-    for (int j = 0; (j < dest->size2) && (j <= i); j++) {
+  for (size_t i = 0; i < dest->size1; i++) {
+    for (size_t j = 0; (j < dest->size2) && (j <= i); j++) {
       gsl_matrix_set(dest, i, (dest->size2 - 1 - i) + j, 
           gsl_matrix_get(src, i, j));
     }

@@ -8,7 +8,7 @@ extern "C" {
 }
 #include "slra.h"
 
-StationaryDGamma::StationaryDGamma( const StationaryStructure *s, int D ) :
+StationaryDGamma::StationaryDGamma( const StationaryStructure *s, size_t D ) :
     myD(D), myW(s) {
   myTempWkColRow = gsl_vector_alloc(myW->getM());
   myDGammaVec = gsl_vector_alloc(myD * (2 * myW->getS() - 1));
@@ -34,12 +34,12 @@ StationaryDGamma::~StationaryDGamma() {
 
 void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r, 
          const gsl_matrix *R, const gsl_vector *yr ) {
-  int n = yr->size / myD;
+  size_t n = yr->size / myD;
   gsl_matrix Yr = gsl_matrix_const_view_vector(yr, n, myD).matrix, YrB, YrT;
 
   gsl_matrix_set_zero(mgrad_r);
   
-  for (int k = 0; k < myW->getS(); k++) {
+  for (size_t k = 0; k < myW->getS(); k++) {
     YrT = gsl_matrix_submatrix(&Yr, 0, 0, n - k, myD).matrix;
     YrB = gsl_matrix_submatrix(&Yr, k, 0, n - k, myD).matrix;
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &YrB, &YrT, 0.0, myN_k);
@@ -55,18 +55,19 @@ void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r,
 }
 
 void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R, 
-         int i, int j,  gsl_vector *yr ) {
+         size_t i, size_t j,  gsl_vector *yr ) {
   gsl_vector gv_sub, perm_col = gsl_matrix_column(myEye, i).vector, dgammajrow,
              res_stride, yr_stride;
+  int S = myW->getS();           
 
-  for (int k = 1 - myW->getS(); k < myW->getS(); k++) {
-    gv_sub = gsl_vector_subvector(myDGammaVec, (k + myW->getS() - 1) * myD, 
+  for (int k = 1 - S; k < S; k++) {
+    gv_sub = gsl_vector_subvector(myDGammaVec, (k + S - 1) * myD, 
               myD).vector;
     myW->AtWkV(&gv_sub, -k, R, &perm_col, myTempWkColRow);
     gsl_matrix_set_col(myDGammaTrMat, -k + myW->getS() - 1, &gv_sub);
   }
 
-  int n = yr->size / myD;
+  size_t n = yr->size / myD;
   if (myD == 1) {
     dgammajrow = gsl_matrix_row(myDGammaTrMat, 0).vector;
     gsl_vector_add (myDGammaVec, &dgammajrow);

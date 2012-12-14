@@ -1,7 +1,7 @@
 
 class CostFunction  {
   Structure *myStruct;
-  int myD;
+  size_t myD;
   Cholesky *myGam;
   DGamma *myDeriv;
   double myReggamma;
@@ -22,7 +22,7 @@ protected:
   virtual void computeZmatTmpJac( gsl_vector* yr, gsl_matrix *Rorig, double factor = 0.5 );
   virtual void mulZmatPerm( gsl_vector* res, gsl_matrix *perm, size_t i, size_t j );
 
-  int getM() { return myStruct->getM(); }
+  size_t getM() { return myStruct->getM(); }
   
   virtual void computeGammaSr( const gsl_matrix *R, gsl_matrix *Rorig, gsl_vector *Sr, 
                                bool regularize_gamma );
@@ -33,13 +33,13 @@ protected:
   virtual void computeGradFromYr( gsl_vector* yr, const gsl_matrix *Rorig, 
                                   gsl_matrix *perm, gsl_matrix *grad );
 public:
-  CostFunction( const gsl_vector *p, Structure *s, int d, gsl_matrix *Phi );
+  CostFunction( const gsl_vector *p, Structure *s, size_t d, gsl_matrix *Phi );
   virtual ~CostFunction();
   
-  int getD() { return myD; }
-  int getN() { return myStruct->getN(); }
-  int getNrow() { return myPhi->size2; }
-  int getNp() { return myStruct->getNp(); }
+  size_t getD() { return myD; }
+  size_t getN() { return myStruct->getN(); }
+  size_t getNrow() { return myPhi->size2; }
+  size_t getNp() { return myStruct->getNp(); }
   const gsl_vector *getP() { return myP; }
   double getReggamma() { return myReggamma; }
   void setReggamma( double reg_gamma ) { myReggamma = reg_gamma; }

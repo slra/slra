@@ -1,5 +1,5 @@
 class Exception {
-  static const int MSG_MAX = 200;
+  static const size_t MSG_MAX = 200;
 
   char myMsg[MSG_MAX];
 public:
@@ -46,7 +46,7 @@ public:
     \Gamma \left(R \right)y_r\f$
    * */
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   int i, int j, gsl_vector *Yr ) = 0;
+                   size_t i, size_t j, gsl_vector *Yr ) = 0;
 };
 
 
@@ -56,9 +56,9 @@ public:
 class Structure {
 public:
   virtual ~Structure() {}
-  virtual int getNp() const = 0;     ///< Returns \f$n_p\f$
-  virtual int getM() const = 0;      ///< Returns \f$m\f$
-  virtual int getN() const = 0;      ///< Returns \f$n\f$
+  virtual size_t getNp() const = 0;     ///< Returns \f$n_p\f$
+  virtual size_t getM() const = 0;      ///< Returns \f$m\f$
+  virtual size_t getN() const = 0;      ///< Returns \f$n\f$
   
   /** Fills matrix from given parameter vector */
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )  = 0; 
@@ -68,9 +68,9 @@ public:
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 ) = 0;
   /** Creates Cholesky object for this structure and rank reduction */
-  virtual Cholesky *createCholesky( int D ) const = 0;
+  virtual Cholesky *createCholesky( size_t D ) const = 0;
   /** Creates DGamma object for this structure and rank reduction */
-  virtual DGamma *createDGamma( int D ) const = 0;
+  virtual DGamma *createDGamma( size_t D ) const = 0;
 };
 
 /** Abstract class for s-dependent structure.
@@ -86,7 +86,7 @@ public:
 class SDependentStructure : public Structure {
 public:
   /** Returns \f$s\f$. */
-  virtual int getS() const = 0; 
+  virtual size_t getS() const = 0; 
   
   /** Returns \f$res \leftarrow W_{i,j} B\f$ */
   virtual void WijB( gsl_matrix *res, int i, int j, 

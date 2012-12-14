@@ -11,7 +11,7 @@ extern "C" {
 #include "slra.h"
 
 LayeredHStructure::LayeredHStructure( const double *m_l, 
-    size_t q, int n, const double *w_l  ) : myQ(q), myN(n), mySA(NULL)  {
+    size_t q, size_t n, const double *w_l  ) : myQ(q), myN(n), mySA(NULL)  {
   mySA = new Layer[myQ];
  
   for (size_t l = 0; l < myQ; l++) {
@@ -32,7 +32,7 @@ LayeredHStructure::~LayeredHStructure() {
     delete[] mySA;
   }
   if (myA != NULL) {
-    for (int k = 0; k < myMaxLag; k++) {
+    for (size_t k = 0; k < myMaxLag; k++) {
       gsl_matrix_free(myA[k]);
     }
     free(myA);
@@ -56,7 +56,7 @@ void LayeredHStructure::fillMatrixFromP( gsl_matrix* c,
 }
 
 void LayeredHStructure::computeWkParams() {
-  int k, l, i, imax, sum_nl, rep;
+  size_t k, l, i, imax, sum_nl, rep;
   gsl_matrix *zk;
   gsl_matrix_view wi, zkl;
 
@@ -80,7 +80,7 @@ void LayeredHStructure::computeWkParams() {
 }
 
 void LayeredHStructure::computeStats() {
-  int l;
+  size_t l;
   for (l = 0, myM = 0, myMaxLag = 1; l < myQ; 
        myM += getLayerLag(l), ++l) {
     if ((!isLayerExact(l)) && getLayerLag(l) > myMaxLag) {
@@ -118,7 +118,7 @@ void LayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R,
   gsl_vector_free(res);
 }
 
-Cholesky *LayeredHStructure::createCholesky( int D ) const {
+Cholesky *LayeredHStructure::createCholesky( size_t D ) const {
 #ifdef USE_SLICOT 
   return new StationaryCholeskySlicot(this, D);
 #else  /* USE_SLICOT */
@@ -126,7 +126,7 @@ Cholesky *LayeredHStructure::createCholesky( int D ) const {
 #endif /* USE_SLICOT */
 }
 
-DGamma *LayeredHStructure::createDGamma( int D ) const {
+DGamma *LayeredHStructure::createDGamma( size_t D ) const {
   return new StationaryDGamma(this, D);
 }
 
@@ -152,7 +152,7 @@ void LayeredHStructure::AtWkV( gsl_vector *res, int k, const gsl_matrix *A,
   gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
 }
 
-Cholesky *MosaicHStructure::createCholesky( int D ) const {
+Cholesky *MosaicHStructure::createCholesky( size_t D ) const {
   if (myWkIsCol) {
     return new SameStripedStationaryCholesky(this, D, 1);
   } else {

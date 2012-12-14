@@ -8,7 +8,7 @@ extern "C" {
 }
 #include "slra.h"
 
-SDependentDGamma::SDependentDGamma( const SDependentStructure *s, int D ) :
+SDependentDGamma::SDependentDGamma( const SDependentStructure *s, size_t D ) :
    myD(D), myW(s) {
   myTmp1 = gsl_vector_alloc(myD);  
   myTmp2 = gsl_vector_alloc(myW->getM());  
@@ -26,17 +26,17 @@ SDependentDGamma::~SDependentDGamma(){
 
  void SDependentDGamma::calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
                    const gsl_vector *yr ) {
-  int n = yr->size / myD, S = myW->getS();
+  size_t n = yr->size / myD; int S = myW->getS();
   gsl_matrix Y_r = gsl_matrix_const_view_vector(yr, n, myD).matrix;
   gsl_vector y_i, y_j;
   gsl_matrix tmp2_v = gsl_matrix_view_vector(myTmp2, myW->getM(), 1).matrix,
              tmp3_v = gsl_matrix_view_vector(myTmp3, myW->getM(), 1).matrix;
 
   gsl_matrix_set_zero(grad);
-  for (int i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     y_i = gsl_matrix_row(&Y_r, i).vector;
     
-    for (int j = mymax(0, i - S + 1); j < mymin(i + S, n); j++) {
+    for (size_t j = mymax(0, i - S + 1); j < mymin(i + S, n); j++) {
       y_j = gsl_matrix_row(&Y_r, j).vector;
 
       gsl_blas_dgemv(CblasNoTrans, 1.0, R, &y_i, 0.0, myTmp2);
@@ -47,9 +47,9 @@ SDependentDGamma::~SDependentDGamma(){
 }
 
 void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   int i, int j, gsl_vector *Yr ) {
+                   size_t i, size_t j, gsl_vector *Yr ) {
   gsl_vector perm_col = gsl_matrix_column(myEye, i).vector, yr_sub, res_sub;
-  int k, l, S = myW->getS(), n = Yr->size / myD;
+  size_t k, l, n = Yr->size / myD; int S = myW->getS();
   double tmp;
 
   gsl_vector_set_zero(res); 

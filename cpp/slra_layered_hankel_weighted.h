@@ -14,27 +14,27 @@ public:
    * If w_l == NULL then \f${\bf w}\f$ is set to be
    * \f$\begin{bmatrix}1&\cdots&1\end{bmatrix}\f$. 
    */
-  WLayeredHStructure( const double *m_l, size_t q, int n, 
+  WLayeredHStructure( const double *m_l, size_t q, size_t n, 
                      const gsl_vector *w = NULL );
   virtual ~WLayeredHStructure();
 
   /** @name Implementing Structure interface */
   /**@{*/
-  virtual int getM() const { return myBase.getM(); }
-  virtual int getN() const { return myBase.getN(); }
-  virtual int getNp() const { return myBase.getNp(); }
+  virtual size_t getM() const { return myBase.getM(); }
+  virtual size_t getN() const { return myBase.getN(); }
+  virtual size_t getNp() const { return myBase.getNp(); }
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
     myBase.fillMatrixFromP(c, p); 
   }
-  virtual Cholesky *createCholesky( int D ) const;
-  virtual DGamma *createDGamma( int D ) const;
+  virtual Cholesky *createCholesky( size_t D ) const;
+  virtual DGamma *createDGamma( size_t D ) const;
   virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
                          int wdeg = 2 );
   /**@}*/
   
   /** @name Implementing SDependentStructure interface */
   /**@{*/
-  virtual int getS() const { return myBase.getS(); }
+  virtual size_t getS() const { return myBase.getS(); }
   virtual void WijB( gsl_matrix *res, int i, int j, 
                      const gsl_matrix *B ) const;
   virtual void AtWijB( gsl_matrix *res, int i, int j, 
@@ -48,15 +48,15 @@ public:
   /** @name Structure-specific methods */
   /**@{*/
   /** @brief @copybrief LayeredHStructure::getQ()*/
-  int getQ() const { return myBase.getQ(); }
+  size_t getQ() const { return myBase.getQ(); }
   /** @brief @copybrief LayeredHStructure::getMaxLag()*/
-  int getMaxLag() const { return myBase.getMaxLag(); }
+  size_t getMaxLag() const { return myBase.getMaxLag(); }
   /** @brief @copybrief LayeredHStructure::getLayerLag()*/
-  int getLayerLag( int l ) const { return myBase.getLayerLag(l); }
+  size_t getLayerLag( size_t l ) const { return myBase.getLayerLag(l); }
   /** @brief @copybrief LayeredHStructure::getLayerNp()*/
-  int getLayerNp( int l ) const { return myBase.getLayerNp(l); }
+  size_t getLayerNp( size_t l ) const { return myBase.getLayerNp(l); }
   /** Returns \f$w_k\f$ */
-  double getInvWeight( int i ) const { 
+  double getInvWeight( size_t i ) const { 
     return gsl_vector_get(myInvWeights, i); 
   }
   /**@}*/

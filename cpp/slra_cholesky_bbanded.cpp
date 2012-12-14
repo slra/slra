@@ -8,7 +8,7 @@ extern "C" {
 #include "slra.h"
 
 SDependentCholesky::SDependentCholesky( const SDependentStructure *s,
-     int D ) : myW(s), myD(D) {
+     size_t D ) : myW(s), myD(D) {
   /* Calculate variables for FORTRAN routines */     
   s_minus_1 =  myW->getS() - 1;
   d_times_s =  myD * myW->getS();

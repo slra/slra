@@ -13,24 +13,24 @@ private:
   gsl_matrix *myN_k;
   gsl_matrix *myEye;
 public:
-  StationaryDGamma( const StationaryStructure *s, int D );
+  StationaryDGamma( const StationaryStructure *s, size_t D );
   virtual ~StationaryDGamma();
-  int getD() const { return myD; }
+  size_t getD() const { return myD; }
 
   
   virtual void calcYrtDgammaYr( gsl_matrix *mgrad_r, const gsl_matrix *R, 
                    const gsl_vector *yr );
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                    int i, int j, gsl_vector *Yr );
+                    size_t i, size_t j, gsl_vector *Yr );
 };
 
 
 class SDependentDGamma : public DGamma {
 public:  
-  SDependentDGamma( const SDependentStructure *s, int D );
+  SDependentDGamma( const SDependentStructure *s, size_t D );
   virtual ~SDependentDGamma();
   virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   int i, int j, gsl_vector *Yr );
+                   size_t i, size_t j, gsl_vector *Yr );
   virtual void calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
                    const gsl_vector *yr );
                    

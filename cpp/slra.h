@@ -39,7 +39,7 @@
  * @param [in]     np_comp Value of \f$n_p\f$
  */                
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
-               gsl_vector * wk, int np_comp );
+               gsl_vector * wk, size_t np_comp );
 
 
 

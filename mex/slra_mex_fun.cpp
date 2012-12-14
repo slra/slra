@@ -1,7 +1,9 @@
 #include "slra_mex_fun.h"
 
 void myMexErrorH( const char *reason, const char *F, int ln, int gsl_err ) {
-  throw new Exception("GSL error #%d at %s:%d: %s", F, ln, gsl_err, reason);
+  throw new Exception("GSL error #%d at %s:%d: %s", ln, 
+                      (F != NULL ? F : "<unknown>"),  gsl_err,
+                      (reason != NULL ? reason : "<unknown reason>"));
 }
 
 gsl_matrix M2trmat( mxArray * mat ) {
@@ -21,7 +23,7 @@ gsl_vector M2vec( const mxArray * mat ) {
   return res;
 }
 
-char *M2Str( mxArray *myMat, char *str, int max_len ) {
+char *M2Str( mxArray *myMat, char *str, size_t max_len ) {
   if (myMat == NULL) {
     *str = 0;
   } else {   
@@ -31,7 +33,7 @@ char *M2Str( mxArray *myMat, char *str, int max_len ) {
 }
 
 void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt, 
-                 gsl_matrix & Rini, gsl_matrix &Psi, int m, int r ) {
+                 gsl_matrix & Rini, gsl_matrix &Psi, size_t m, size_t r ) {
   char str_buf[STR_MAX_LEN];
   if (! mxIsStruct(Mopt)) {
     mexWarnMsgTxt("Ignoring 'opt'. The optimization options "
@@ -80,7 +82,7 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
     tmp_n = compute_n(&ml, p_in.size);
     nk = gsl_vector_view_array(&tmp_n, 1).vector;
   }    
-  int np = compute_np(&ml, &nk);
+  size_t np = compute_np(&ml, &nk);
 
   if (p_in.size < np) {
     throw new Exception("Size of vector p less than needed");   
@@ -89,7 +91,7 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
   } 
 
   myS = createMosaicStructure(&ml, &nk, vecChkNIL(wk), p_in.size);
-  int m = (perm.data == NULL ? myS->getM() : perm.size2);
+  size_t m = (perm.data == NULL ? myS->getM() : perm.size2);
   
   int r = (rvec.size == 0 ? m - 1 : gsl_vector_get(&rvec, 0));
   

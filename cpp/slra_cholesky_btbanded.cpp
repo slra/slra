@@ -9,7 +9,7 @@ extern "C" {
 }
 #include "slra.h"
 
-StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  int D ) : 
+StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  size_t D ) : 
                                       SDependentCholesky(s, D), myWs(s)  {
   myGamma = gsl_matrix_alloc(getD(), getD() * (getS() + 1));
   myWkTmp = gsl_matrix_alloc(getM(), getD());
@@ -39,17 +39,17 @@ void StationaryCholesky::computeGammak( const gsl_matrix *R, double reg ) {
 void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg ) {
   computeGammak(R, reg);
   
-  int row_gam, col_gam, icor;
+  size_t row_gam, col_gam, icor;
   double *gp = myPackedCholesky;
     
-  for (int i = 0; i < d_times_s; i++) {
-    for (int j = 0; j < getD(); j++) {
+  for (size_t i = 0; i < d_times_s; i++) {
+    for (size_t j = 0; j < getD(); j++) {
       icor = i + j + 1;
       gp[i + j * d_times_s] = gsl_matrix_get(myGamma, 
           icor % getD(), j + (getS() - (icor / getD())) * getD());
     }
   }
-  for (int r = 1; r < getN(); r++) {
+  for (size_t r = 1; r < getN(); r++) {
     gp +=  d_times_s * getD();
     memcpy(gp, myPackedCholesky, d_times_s * getD() * sizeof(double));
   }
@@ -57,7 +57,7 @@ void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg 
 
 SameStripedStationaryCholesky::
     SameStripedStationaryCholesky( const MosaicHStructure *s, 
-         int D, int use_slicot  ) :  myS(s) {
+         size_t D, int use_slicot  ) :  myS(s) {
   myBase = (StationaryCholesky *)myS->getMaxBlock()->createCholesky(D);  
 }
 SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
@@ -71,7 +71,7 @@ void SameStripedStationaryCholesky::calcGammaCholesky( const gsl_matrix *R, doub
   
 void SameStripedStationaryCholesky::
          multInvCholeskyVector( gsl_vector * yr, int trans ) {
-  int n_row = 0, k;
+  size_t n_row = 0, k;
   gsl_vector_view sub_yr;
   
   for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
@@ -84,7 +84,7 @@ void SameStripedStationaryCholesky::
 }
 
 void SameStripedStationaryCholesky::multInvGammaVector( gsl_vector * yr ) {
-  int n_row = 0, k;
+  size_t n_row = 0, k;
   gsl_vector_view sub_yr;
   
   for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {

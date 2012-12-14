@@ -1,8 +1,8 @@
 class OptFunction {
 public:
   virtual ~OptFunction() {}
-  virtual int getNvar() = 0;
-  virtual int getNsq() = 0;
+  virtual size_t getNvar() = 0;
+  virtual size_t getNsq() = 0;
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad ) = 0;
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) = 0;
 
@@ -44,13 +44,13 @@ protected:
 public: 
   OptFunctionSLRA( CostFunction &fun, gsl_matrix *Psi );
   virtual ~OptFunctionSLRA();
-  virtual int getNvar(); 
+  virtual size_t getNvar(); 
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad );
 
   void computePhat( gsl_vector* p, const gsl_vector* x );
 
   
-  int getRank() { return myPsi->size2 - myFun.getD(); }
+  size_t getRank() { return myPsi->size2 - myFun.getD(); }
   void computeDefaultx( gsl_vector *x ); 
 
   void RTheta2x( gsl_matrix *RTheta, gsl_vector *x ); 
@@ -67,7 +67,7 @@ public:
   OptFunctionSLRACholesky( CostFunction &fun, gsl_matrix *psi ) : 
       OptFunctionSLRA(fun, psi) {}
   virtual ~OptFunctionSLRACholesky() {}
-  virtual int getNsq() { return myFun.getN() * myFun.getD(); }
+  virtual size_t getNsq() { return myFun.getN() * myFun.getD(); }
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac );
 };
 
@@ -76,7 +76,7 @@ public:
   OptFunctionSLRACorrection( CostFunction &fun, gsl_matrix *psi ) : 
       OptFunctionSLRA(fun, psi)  {}
   virtual ~OptFunctionSLRACorrection() {}
-  virtual int getNsq() { return myFun.getNp(); }
+  virtual size_t getNsq() { return myFun.getNp(); }
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac );
 };
 

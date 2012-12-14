@@ -11,7 +11,7 @@ extern "C" {
 
 #ifdef USE_SLICOT
 StationaryCholeskySlicot::
-    StationaryCholeskySlicot( const StationaryStructure *s, int D ) :  
+    StationaryCholeskySlicot( const StationaryStructure *s, size_t D ) :  
       StationaryCholesky(s, D)  {
   myGammaVec = (double*)malloc(getD() * getD() * (getS()+1) * sizeof(double));
   myCholeskyWorkSize = 1 + getS() * getD() * getD() + /* pDW */ 

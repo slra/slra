@@ -19,7 +19,7 @@ gsl_matrix M2trmat( mxArray * mat );
 
 gsl_vector M2vec( const mxArray * mat );
 
-char *M2Str( mxArray *myMat, char *str, int max_len );
+char *M2Str( mxArray *myMat, char *str, size_t max_len );
 
 #define MATStoreOption(MAT, opt, name, lvalue, uvalue)  \
   do {                                                   \
@@ -41,7 +41,7 @@ char *M2Str( mxArray *myMat, char *str, int max_len );
 #define STR_MAX_LEN 200
 
 void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt, 
-                 gsl_matrix & Rini, gsl_matrix &Psi, int m, int r );
+                 gsl_matrix & Rini, gsl_matrix &Psi, size_t m, size_t r );
 
 
 class SLRAObject {
