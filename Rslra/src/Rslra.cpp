@@ -98,13 +98,14 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   getRSLRAOption(opt, _opt, tol, asReal);
   getRSLRAOption(opt, _opt, reggamma, asReal);
   getRSLRAOption(opt, _opt, ls_correction, asReal);
-  getRSLRAOption(opt, _opt, gcd, asReal);
+  getRSLRAOption(opt, _opt, maxx, asReal);
   SEXP _r_ini = getListElement(_opt, RINI_STR);
 
   /* Create output values */  
   SEXP _p_out = R_NilValue, _r_out = R_NilValue, _v_out = R_NilValue;
   
   Structure *myStruct = NULL;
+  CostFunction *myF = NULL;
   int was_error = 0;
   try {
     /* Create output info */
@@ -126,8 +127,10 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
     if (rini.data != NULL && (rini.size2 != (m - r) || rini.size1 != m)) {
       throw new Exception("Incorrect Rini\n");   
     }
-
-    slra(&p_in, myStruct, m-r, &opt, matChkNIL(rini), &phi, NULL,
+ 
+    myF = new CostFunction(vecChkNIL(p_in), myStruct, m-r, &phi);
+    
+    slra(myF, &opt, matChkNIL(rini), NULL, 
          vecChkNIL(p_out), matChkNIL(r_out), matChkNIL(v_out));
   } catch (Exception *e) {
     strncpy(str_buf, e->getMessage(), STR_MAX_LEN - 1);
@@ -138,6 +141,10 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   
   if (myStruct != NULL) {
     delete myStruct;
+  }
+  
+  if (myF != NULL) {
+    delete myF;
   }
   
   if (was_error) {
