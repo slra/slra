@@ -6,8 +6,9 @@ opt.gradtol = 1e-5;
 opt.disp = 'off';
 opt.Display = 'off';
 
-[methods, fields, res] = run_tests(1:7, opt);
-methods
+methods = {'slra'};
+[fields, res] = run_tests(1:7, methods, opt);
 fields
-res{:}
+cell2mat(res)
+%{:}
 

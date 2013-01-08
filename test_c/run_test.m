@@ -22,5 +22,18 @@ function myinf = run_test(slra_fun, num, opt)
   myinf.m = m;
   myinf.d = m-r;
   myinf.q = s_raw(2);
-  myinf.fit = (1 - sqrt(myinf.fmin) / (norm(p(:) - mean(p(:))))) * 100;
+  
+  pos = 1;
+  mnrm = 0;
+  p = p(:);
+  for l=1:length(s.n)
+    for k=1:length(s.m)
+      T = s.m(k) + s.n(l)-1;
+      tp = p(pos:(pos+T-1));
+      mnrm = mnrm + norm(tp - mean(tp))^2;
+      pos = pos+T;
+    end
+  end    
+    
+  myinf.fit = (1 - sqrt(myinf.fmin) / sqrt(mnrm)) * 100;
 end

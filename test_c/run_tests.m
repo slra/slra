@@ -1,5 +1,5 @@
-function [methods, fields, res] = run_tests(testnos, opt)
-	methods = {'slra_mex'  'slra_mex_chp'  'slra_grass'  'slra_fmincon' 'slra_reg'};
+function [fields, res] = run_tests(testnos, methods, opt)
+%	methods = {'slra_mex'  'slra_mex_chp'  'slra_grass'  'slra_fmincon' 'slra_reg'};
 	fields = {'iter'  'fmin'  'time' 'switches' 'fit'};
 
 	for k = 1:length(fields)

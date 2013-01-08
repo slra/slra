@@ -1,0 +1,5 @@
+This directory contains the comparison of methods for Grassmann manifold
+optimization, in the case of the structured low-rank approximation problem for
+system identification.
+
+The GenRTR package should be installed as well.
