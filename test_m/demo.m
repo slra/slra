@@ -1,5 +1,5 @@
 % DEMO - Demo file for structured low rank approximation
-clear all, rand('state', 0), randn('state', 0), addpath '..';
+clear all, rand('state', 0), randn('state', 0), addpath '../doc';
 
 opt.disp = 'iter';
 
@@ -70,7 +70,7 @@ tic, [p_slra, i_slra] = slra([p_a; b], s, n, opt); t_slra = toc
 % Compare the relative errors of estimation 
 e_ls   = norm(xh_ls - x0) / norm(x0)
 e_tls  = norm(xh_tls - x0) / norm(x0)
-e_slra = norm((i_slra.Rh(n:-1:1))' - x0) / norm(x0)
+e_slra = norm((i_slra.Rh(1:n))' - x0) / norm(x0)
 
 pause
 %% Hankel structured low rank approximation problem
@@ -132,7 +132,7 @@ c3 = conv([-1 1], [-5.2 1])
 p = [0 a3 0 b3 0 zeros(1,5) c3 zeros(1,5)]
 s = struct('m', [2 6], 'n', 8);
 s.w = [Inf ones(1,length(a3)) Inf ones(1,length(b3)) Inf Inf * ones(1, 5) ones(1,length(c3)) Inf * ones(1, 5)];
-s.phi = [eye(2) zeros(2,6); zeros(2,2) eye(2) zeros(2,4); zeros(2,6) eye(2)];
+s.phi = [eye(2) zeros(2,6); zeros(2,2) eye(2) zeros(2,4); zeros(2,6) eye(2)]
 %opt.reggamma = 1;
 opt.reggamma = 10000;
 [ph, info] = slra(p, s, 5, opt)

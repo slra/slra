@@ -61,7 +61,7 @@ void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f, gsl_ve
 void OptFunctionSLRACholesky::computeFuncAndJac( const gsl_vector* x, 
          gsl_vector *res, gsl_matrix *jac ) {
   gsl_matrix psi_sub_matr = gsl_matrix_submatrix(myPsi, 0, 0, 
-                                 myFun.getNrow(), getRank()).matrix;         
+                                 myFun.getNrow(), getRank()).matrix;   
   computeR(x, myTmpR);
   myFun.computeFuncAndPseudoJacobianLs(myTmpR, &psi_sub_matr, res, jac); 
 }   
@@ -130,8 +130,7 @@ void OptFunctionSLRA::computeDefaultx( gsl_vector *x ) {
 
 void OptFunctionSLRA::computePhat( gsl_vector* p, const gsl_vector* x ) {
   computeR(x, myTmpR);
-  gsl_vector_memcpy(p, myFun.getP());
-  myFun.computeCorrection(p, myTmpR);
+  myFun.computePhat(p, myTmpR);
 }
 
 
