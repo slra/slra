@@ -39,15 +39,11 @@ the package are provided on the "Downloads" page.)
 
 Package consists of a single `slra` function, which is documented in the
 supplied manual `doc/slra.pdf`. An experimental MATLAB version described
-in the manual is available in [doc] directory.
+in the manual is available in `doc` directory.
 
 A standard help for the function is also available by typing:
-
-    help slra			% in MATLAB/Octave
-    
-or    
-
-    ?slra				 # in R
+* `help slra` in MATLAB/Octave
+* `?slra` in R
 
 Directories `test_m` and `test_r` contain demo files for MATLAB/Octave and R.
 
@@ -92,20 +88,18 @@ Linux distributions.
    Download from <http://github.com/slra/slra/> and unpack to a directory
 
 2. Compile
-* type `make matlab` to produce a MEX binary file for MATLAB
-* type `make octave` to produce a MEX binary file for Octave
-* type `make octave` to produce an R package and install it 
+	 * type `make matlab` to produce a MEX binary file for MATLAB
+	 * type `make octave` to produce a MEX binary file for Octave
+	 * type `make octave` to produce an R package and install it 
 
 3. Install
    * MATLAB/Octave MEX files (slra.mex<xxx>) can be installed by copying them
      to directory of your *.m scripts or by using "addpath" command.
-  
    * If you downloaded a precompiled R package, you should run
   
         install.packages(repos=NULL, pkgs="Rslra_x.x.xxx"); 
   
      in the R console launched in the same directory where the package is.
-  
    * The R package should be loaded each time before using it by typing
 
         library(Rslra);
