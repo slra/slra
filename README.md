@@ -1,4 +1,4 @@
-SLRA: package for mosaic Hankel structured low-rank approximation 
+SLRA: package for weighted mosaic Hankel structured low-rank approximation 
 ==============================================================================
 ### with interfaces to MATLAB/Octave and R
 
@@ -124,7 +124,7 @@ Advanced compilation options can be found in other targets of makefile, but
 not all of targets may run on your machine "as is".
 
 If you wish to try the SLICOT library, download it and copy to SLICOT
-subdirectory. You can copy only a few needed files (see makefile). 
+subdirectory. You can copy only a few needed files (see `makefile`). 
 Use  `make xxx-slicot-xxx`.
 
 Depending on the version of MATLAB, static binding to non-default 
