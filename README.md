@@ -2,7 +2,10 @@ SLRA package - a package for mosaic Hankel structured low-rank approximation
 with interfaces to MATLAB/Octave and R
 ==============================================================================
 
-Copyright (C) 2012 Ivan Markovsky and Konstantin Usevich 
+License
+_______
+
+Copyright (C) 2012-13 Ivan Markovsky and Konstantin Usevich 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,10 +31,45 @@ The package is primarily distributed in the form of source code and is hosted
 at <http://github.com/slra/slra/>. (Windows binaries for the R interface of 
 the package are provided on the "Downloads" page.)
 
-0) Prerequisites
 
-GSL library should be installed. To use MATLAB/Octave or R interfaces,
-the corresponding environments should also be installed.
+Using the package
+_________________
+
+Package consists of a single "slra" function, which is documented in the
+supplied manual (manual.pdf). An experimental MATLAB version described
+in the manual is available in "doc" directory.
+
+A standard help for the function is also available by typing:
+
+    help slra			% in MATLAB/Octave
+    
+or    
+
+    ?slra				  # in R
+
+Directories "test_m" and "test_r" contain demo files for MATLAB/Octave and R.
+
+If you use the package in your research, please cite the following reference:
+
+    @@TechReport{slra-package,
+      author      = {Markovsky, I. and Usevich, K.},
+      title       = {Software for weighted structured low-rank approximation},
+      institution =  {ECS, Univ. of Southampton},
+      number = 	 {339974},
+      address =      {\url{http://eprints.soton.ac.uk/339974/ }},
+      year        = {2012}
+    }
+
+
+Installation instructions
+_________________________
+
+
+### Prerequisites
+
+GSL library should be installed (if not using a precompiled Windows package
+for R). To use MATLAB/Octave or R interfaces, the corresponding environments
+should also be installed.
 
 SLRA package uses LAPACK and BLAS libraries, which are included in MATLAB, 
 Octave and R installations, so if you have MATLAB, Octave or R installed, you 
@@ -45,49 +83,43 @@ The source files of the libraries can be obtained at
 GSL, BLAS and LAPACK libraries are also included in repositories for popular 
 Linux distributions.
 
-1) Installation instructions
+### Installation from source
 
-1.1) Get source
-  Download from <http://github.com/slra/slra/> and unpack to a directory
-1.2) Compile
-  Type in the directory:
-    make matlab			--- produces MEX binary file for MATLAB
-    make octave			--- produces MEX binary file for Octave
-    make R			--- produces R package and installs it
-1.3) Install
-  MATLAB/Octave MEX files (slra.mex<xxx>) can be installed by copying them
-  to directory of your *.m scripts or by using "addpath" command.
+1. Get source
+Download from <http://github.com/slra/slra/> and unpack to a directory
+2. Compile
+
+To produces a MEX binary file for MATLAB type
+
+    make matlab
+
+To produces a MEX binary file for Octave type
   
-  If you downloaded a precompiled R package, you should run
-    install.packages(repos=NULL, pkgs="Rslra_x.x.xxx"); 
-  in R console launched in the same directory where the package is.
-  
-  The R package should be loaded each time before using it by typing
-    library(Rslra);
-  in R console.    
+    make octave
     
-2) Using the package
-Package consists of a single "slra" function, which is documented in the
-supplied manual (manual.pdf). An experimental MATLAB version described
-in the manual is available in "doc" directory.
+To produce an R package and install it type
 
-A standard help for the function is also available by typing:
-  help slra			--- in MATLAB/Octave
-  ?slra				--- in R
-Directories "test_m" and "test_r" contain demo files for MATLAB/Octave and R.
+    make R
 
-If you use the package in your research, please cite the following reference:
+3. Install
+* MATLAB/Octave MEX files (slra.mex<xxx>) can be installed by copying them
+to directory of your *.m scripts or by using "addpath" command.
+  
+* If you downloaded a precompiled R package, you should run
+  
+    install.packages(repos=NULL, pkgs="Rslra_x.x.xxx"); 
+  
+in the R console launched in the same directory where the package is.
+  
+* The R package should be loaded each time before using it by typing
 
-@@TechReport{slra-package,
-  author      = {Markovsky, I. and Usevich, K.},
-  title       = {Software for weighted structured low-rank approximation},
-  institution =  {ECS, Univ. of Southampton},
-  number = 	 {339974},
-  address =      {\url{http://eprints.soton.ac.uk/339974/ }},
-  year        = {2012}
-}
+    library(Rslra);
 
-3) Notes for advanced users
+in the R console.
+    
+
+Notes for advanced users
+________________________
 
 The package contains a demo C++ program, which gives an example of using 
 C++ interface and tests various SLRA problems (make target "testc"). 
