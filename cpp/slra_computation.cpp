@@ -24,6 +24,10 @@ CostFunction::CostFunction( const gsl_vector *p, Structure *s, size_t d,
         "n * (m-r) = %d, n_p = %d.\n", myStruct->getN() * getD(), myStruct->getNp());
   }
 
+  if (myStruct->getN() * getD() * myStruct->getM() * getD() >= 10000000L) {
+    throw new Exception("Too much memory required: the Jacobian would have more than 10^8 elements. This is currently not allowed.\n");
+  }
+
   if (Phi != NULL) {
     if (Phi->size1 != myStruct->getM() || Phi->size2 > Phi->size1) {
       throw new Exception("Incompatible Phi matrix\n");

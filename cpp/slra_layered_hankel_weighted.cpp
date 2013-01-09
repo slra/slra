@@ -95,19 +95,20 @@ void WLayeredHStructure::AtWijB( gsl_matrix *res, long i, long j,
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWijB, 
          double beta ) const {
   gsl_matrix_scale(res, beta);
-  size_t sum_np, sum_nl = 0;
-  size_t diff, ind_a, ind_b;
+  size_t sum_np, ind_a, ind_b;
+  size_t diff;
   
   diff = (j >= i ? j - i : i - j);
   ind_a = j - mymin(i, j);
   ind_b = i - mymin(i, j);
 
-  sum_nl = 0;
-  for (size_t l = 0, sum_np = j; l < getQ(); 
-       sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
+  for (size_t l = 0, sum_np = mymax(j, i); l < getQ(); 
+       sum_np += getLayerNp(l), 
+       ind_a += getLayerLag(l),
+       ind_b += getLayerLag(l), ++l) {
     for (size_t k = 0; k + diff < getLayerLag(l); ++k) {
-      const gsl_vector A_row = gsl_matrix_const_row(A, sum_nl+k+ind_a).vector;
-      const gsl_vector B_row = gsl_matrix_const_row(B, sum_nl+k+ind_b).vector;
+      const gsl_vector A_row = gsl_matrix_const_row(A, ind_a + k).vector;
+      const gsl_vector B_row = gsl_matrix_const_row(B, ind_b + k).vector;
       gsl_blas_dger(getInvWeight(sum_np + k), &A_row, &B_row, res);
     }
   }
@@ -124,7 +125,7 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, long i, long j,
   ind_a = j - mymin(i, j);
   ind_v = i - mymin(i, j);
     
-  for (l = 0, sum_np = j; l < getQ(); 
+  for (l = 0, sum_np = mymax(j,i); l < getQ(); 
        sum_np += getLayerNp(l), 
        ind_a += getLayerLag(l),
        ind_v += getLayerLag(l), ++l) {
