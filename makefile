@@ -20,12 +20,13 @@ BUILD_MODE=BUILD_DEFAULT
 matlab: clean $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra_mex_obj 
-	-cp slra_mex_obj.mexa64 doc/slra_mex_obj.mexa64
-	-cp slra_mex_obj.mexglx doc/slra_mex_obj.mexglx
+	-mv slra_mex_obj.mexa64 doc/slra_mex_obj.mexa64
+	-mv slra_mex_obj.mexglx doc/slra_mex_obj.mexglx
 
 octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
-	-lgsl -lgslcblas -o slra.mex
+	-lgsl -lgslcblas -o slra_mex_obj.mex
+	-mv slra_mex_obj.mex doc/slra_mex_obj.mex
 
 R: BUILD_MODE=BUILD_R_PACKAGE
 R: 
@@ -90,5 +91,5 @@ SLICOT.a : $(SLICOT_SRC_FILES)
 	ar -r SLICOT.a $(SLICOT_OBJ_FILES)
 
 clean : 
-	rm -f -r */*.o *.o *.a *.mexa64 *.mexglx *.mex doc/*.mexa64 doc/*.mexglx doc/*.mex
+	rm -f -r */*.o *.o *.a slra.mex* */slra_mex.mex*
 

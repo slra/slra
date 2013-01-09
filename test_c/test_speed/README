@@ -8,5 +8,7 @@ This directory contains source files for numerical experiments in the paper
   url = {http://arxiv.org/abs/1211.3938}
 }
 
+In order to use it, you need to compile with the target testc-slicot.
+
 
 
