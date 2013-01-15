@@ -1,4 +1,5 @@
 function [M, ph] = misfit_ext(R, tts, p, w, bfs, phi, s0)
+p = p(:);
 [mp, n] = size(tts); np = max(max(tts));
 if exist('phi', 'var') && ~isempty(phi), m = size(phi, 1); else m = mp; end
 if ~exist('phi', 'var') | isempty(phi), phi = eye(size(tts, 1)); end

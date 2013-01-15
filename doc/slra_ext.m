@@ -1,4 +1,5 @@
 function [ph, info] = slra_ext(tts, p, r, w, Rini, phi, psi, opt, th2R, C, s0)
+p = p(:);
 [mp, n] = size(tts); np = max(max(tts));
 if exist('phi', 'var') && ~isempty(phi), m = size(phi, 1); else m = mp; end 
 vec_tts = tts(:); NP = 1:np;
@@ -12,14 +13,16 @@ if ~exist('Rini') | isempty(Rini)
   pext = [0; p];
   Rini = lra(phi * (s0 + pext(tts + 1)), r); 
 end
-prob = optimset(); 
+prob.options = optimset(opt); 
+if isempty(prob.options.Display)
+   prob.options = optimset(prob.options, 'disp', 'off'); 
+end
 reg = exist('opt') && isfield(opt, 'method') && strcmp(opt.method, 'reg');
 if reg
   prob.solver = 'fminunc';
 else
   prob.solver = 'fmincon'; 
 end
-prob.options = optimset('disp', 'off'); 
 pext = [0; p];
 prob.x0 = R2th(Rini, phi * (s0 + pext(tts + 1)), psi); 
 Im = find(isnan(p)); Ig = setdiff(1:np, Im); 
@@ -51,6 +54,7 @@ end
 if reg
   [x, fval, flag, info] = fminunc(prob);
 else
+  prob.options = optimset(prob.options, 'alg', 'sqp');
   [x, fval, flag, info] = fmincon(prob); 
 end
 info.fmin = fval;, info.Rh = th2R(x);

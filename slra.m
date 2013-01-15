@@ -20,7 +20,6 @@
 % opt.disp - information about progress of the optimization 
 % opt.solver - solver: 'c' --- efficient, 'm' --- general (default 'c')
 % opt.method - optimization method
-% opt.maxiter, opt.tol - stopping criteria
 %
 % Output arguments:
 % ph - approximation structure parameter vector

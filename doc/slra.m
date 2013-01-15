@@ -20,7 +20,6 @@
 % opt.disp - information about progress of the optimization 
 % opt.solver - solver: 'c' --- efficient, 'm' --- general (default 'c')
 % opt.method - optimization method
-% opt.maxiter, opt.tol - stopping criteria
 %
 % Output arguments:
 % ph - approximation structure parameter vector
@@ -41,24 +40,13 @@ ipr.addRequired('r', @(r) integer(r) && r >= 0);
 ipr.parse(p, s, r); 
 if ~isfield(s, 'phi'), s.phi = eye(sum(s.m)); end
 if ~isfield(s, 'n'), s.n = (length(p) - sum(s.m)) + 1; end
-if ~isfield(s, 'w'), s.w = ones(size(p)); end
+if ~isfield(s, 'w'), s.w = []; end
 ip = inputParser; ip.KeepUnmatched = true;
 m = size(s.phi, 1); ip.addParamValue('psi', [], @(psi) isnumeric(psi)); 
 ip.addParamValue('Rini', [], @(Rini) isnumeric(Rini) && ...
                                      all(size(Rini) == [m - r m]));
 ip.addParamValue('solver', 'c', @(solver) solver == 'c' || solver == 'm'); 
-ip.addParamValue('method', 'll', ...
-       @(method) ischar(method) && length(method) <= 3) % && ...
-       %any(strcmpi(method(1), ['reg' combine('lqn', {'ls', 'b2pf', 'n2r'})])));
-ip.addParamValue('disp', 'off', ...
-       @(disp) any(strcmpi(disp, {'iter', 'notify', 'off'})));
-ip.addParamValue('maxiter', 100, @(maxiter) integer(maxiter) && maxiter >= 0);
-ip.addParamValue('tol', 1e-5, non_negative);
-ip.addParamValue('epsrel', 1e-5, non_negative);
-ip.addParamValue('epsabs', 1e-5, non_negative);
-ip.addParamValue('epsgrad', 1e-5, non_negative);
-ip.addParamValue('step', 0.001, non_negative);
-ip.addParamValue('reggamma', 0.001, non_negative); 
+ip.addParamValue('disp', 'off');
 ip.parse(varargin{:}); opt = ip.Results;
 [m, mp] = size(s.phi); q = length(s.m); N = length(s.n); n = sum(s.n); 
 s2np = @(s) sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
@@ -72,12 +60,4 @@ if opt.solver == 'c'
   [ph, info] = slra_mex(p, s, r, opt); 
 else
   [ph, info] = slra_ext(s2s(s), p, r, s.w, opt.Rini, s.phi, opt.psi, opt); 
-end
-function c = combine(f, s)
-c = {};
-for i = 1:length(f)
-    c = [c f(i)];
-    for j = 1:length(s{i})
-        c = [c [f(i) s{i}(j)]];
-    end
 end

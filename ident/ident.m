@@ -11,6 +11,7 @@
 % ELL - system lag
 % OPT - options for the optimization algorithm:
 %   OPT.EXCT - vector of indices for exact variables (default [])
+%   OPT.WINI = 0 specifies zero initial conditions (default [])
 %   OPT.SYS0 - initial approximation: an SS system with M inputs, 
 %              P := size(W, 2) - M outputs, and order N : = ELL * P
 %   OPT.DISP - level of display [off | iter | notify | final] (default notify)
@@ -41,25 +42,25 @@ ip = inputParser; ip.KeepUnmatched = true;
 ip.addParamValue('exct', [], @(exct) isempty(exct) || ...
                                      (all(exct >= 1 & exct <= q)))
 ip.addParamValue('wini', [])
-ip.addParamValue('sys0', [], @(sys0) isempty(sys0) || isa(sys0, 'ss'));
+ip.addParamValue('sys0', [], @(sys0) isempty(sys0) || isa(sys0, 'lti'));
 ip.parse(varargin{:}); opt = ip.Results;
 ip.addParamValue('disp', 'off');
 ip.addParamValue('method', 'll');
 ip.addParamValue('maxiter', 100);
 ip.addParamValue('tol', 1e-5);
 ip.parse(varargin{:}); opt = ip.Results;
-if ~isempty(opt.sys0), [a, b, c, d] = ssdata(opt.sys0); L = ell1; O = c; for t = 2:L, O = [O; O(end - size(c, 1) + 1:end, :) * a]; end
-                       R = null(O')';
-                       if (m > 0)
-                         F = [d; O(1:(end - p), :) * b];
-                         TT = zeros(ell1 * p, ell1 * m);
-                         for i = 1:ell1
-                           TT((i - 1) * p + 1:end, (i - 1) * m + 1: i * m) = F(1:(ell1 + 1 - i) * p, :);
-                         end
-                         Q = R * TT;
-                         R3 = [reshape(Q, p, m, ell1), -reshape(R, p, p, ell1)];
-                         R  = reshape(R3, p, ell1 * q)';
-                       end , opt.Rini = R'; end
+if isa(opt.sys0, 'lti'), [a, b, c, d] = ssdata(ss(opt.sys0)); L = ell1; O = c; for t = 2:L, O = [O; O(end - size(c, 1) + 1:end, :) * a]; end
+                         R = null(O')';
+                         if (m > 0)
+                           F = [d; O(1:(end - p), :) * b];
+                           TT = zeros(ell1 * p, ell1 * m);
+                           for i = 1:ell1
+                             TT((i - 1) * p + 1:end, (i - 1) * m + 1: i * m) = F(1:(ell1 + 1 - i) * p, :);
+                           end
+                           Q = R * TT;
+                           R3 = [reshape(Q, p, m, ell1), -reshape(R, p, p, ell1)];
+                           R  = reshape(R3, p, ell1 * q);
+                         end , opt.Rini = R; end
 if iscell(w)
   if isempty(opt.wini) 
     opt.wini = cell(1, N); 
@@ -79,7 +80,8 @@ else
   par = []; for k = 1:N, par = [par; vec([opt.wini{k}; w{k}])]; end
 end
 s.m = ell1 * ones(q, 1); s.n = T - ell; r = ell1 * m + n;
-L = q * ell1; phi = []; for i = 1:ell1, phi = [phi, i:ell1:L]; end
+L = q * ell1; phi = []; 
+for i = 1:ell1, phi = [phi, i:ell1:L]; end
 s.phi = eye(L); s.phi = s.phi(phi, :);
 if ~isempty(opt.exct), s.w = ones(q, 1); s.w(opt.exct) = inf; end
 if ~iscell(opt.wini) && ~isempty(opt.wini)
@@ -98,8 +100,22 @@ elseif iscell(opt.wini) && ~isempty(cell2mat(opt.wini))
     end
   end
 end
+Im = find(isnan(par));
+if ~isempty(Im)
+  if ~isfield(s, 'w'), s.w = ones(size(par));
+  elseif all(size(s.w) == [q 1]) 
+    if iscell(w)
+      s.w = []; 
+      for k = 1:N
+        W = ones(T(k), q); W(:, opt.exct) = inf; s.w = [s.w; W(:)];
+      end
+    else
+      W = ones(T, q, N); W(:, opt.exct, :) = inf; s.w = vec(W);
+    end
+  end
+  s.w(Im) = 1e-5; par(Im) = 0;
+end
 [ph, info] = slra(par, s, r, opt); info.M = info.fmin;
-save data
 if ~iscell(w)
   wh = reshape(ph, T(1), q, N); 
   if ~isempty(opt.wini), wh = wh(ell1:end, :, :); end
@@ -109,6 +125,7 @@ else
     if ~isempty(opt.wini{k}), wh{k} = wh{k}(ell1:end, :); end
   end
 end
+info.Rh = - info.Rh / info.Rh(:, end - p + 1:end);
 if m > 0 
   R3 = reshape(info.Rh, p, q, ell1);
   Q3 = R3(:, 1:m, :); P3 = - R3(:, m + 1:q, :);
@@ -144,6 +161,7 @@ for k = 1:N
   else  
     uk = w{k}(:, 1:m); yk = w{k}(:, (m + 1):end); Tk = T(k);
   end
-  if m > 0, y0k = (yk - lsim(sys, uk, 1:Tk))'; else, y0k = yk'; end
+  if m > 0, y0k = (yk - lsim(sys, uk, 0:(Tk - 1)))'; else, y0k = yk'; end
   xini(:, k) = O(1:(Tk * p), :) \ y0k(:);
 end
+function a = vec(A), a = A(:);

@@ -1,4 +1,5 @@
 function S = s2s(s, np)
+if nargin > 1, p = 1:np; end
 if ~isfield(s, 'phi'), s.phi = eye(sum(s.m)); end
 if ~isfield(s, 'n'), s.n = (length(p) - sum(s.m)) + 1; end
 [m, mp] = size(s.phi); q = length(s.m); N = length(s.n); n = sum(s.n); 
