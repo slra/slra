@@ -6,10 +6,10 @@ void myMexErrorH( const char *reason, const char *F, int ln, int gsl_err ) {
                       (reason != NULL ? reason : "<unknown reason>"));
 }
 
-gsl_matrix M2trmat( mxArray * mat ) {
+gsl_matrix M2trmat( const mxArray * mat ) {
   gsl_matrix res = { 0, 0, 0, 0, 0, 0 };
   if (mat != NULL && mxGetN(mat) != 0 && mxGetM(mat) != 0) {
-    res = gsl_matrix_view_array(mxGetPr(mat),mxGetN(mat),mxGetM(mat)).matrix;
+    res = gsl_matrix_const_view_array(mxGetPr(mat),mxGetN(mat),mxGetM(mat)).matrix;
   }
   return res;
 }
@@ -71,8 +71,12 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
   }
 }
 
+size_t SLRAObject::myObjCnt = 0;
+
+
 SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
-                        gsl_matrix perm, gsl_vector wk, gsl_vector rvec ) {
+                        gsl_matrix perm, gsl_vector wk, gsl_vector rvec ) :
+                        old_gsl_err_h(NULL)  {
   double tmp_n;
   if (ml.size == 0) {
     throw new Exception("s.m should be a nonempty vector");   
@@ -92,7 +96,6 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
 
   myS = createMosaicStructure(&ml, &nk, vecChkNIL(wk), p_in.size);
   size_t m = (perm.data == NULL ? myS->getM() : perm.size2);
-  
   int r = (rvec.size == 0 ? m - 1 : gsl_vector_get(&rvec, 0));
   
   if (r <= 0 || r >= m) {
@@ -100,9 +103,18 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
   }
     
   myF = new CostFunction(vecChkNIL(p_in), myS, m-r, matChkNIL(perm));
+  old_gsl_err_h = gsl_set_error_handler(myMexErrorH);
+  ++myObjCnt;
 }
 
 SLRAObject::~SLRAObject() {
+  if (!(--myObjCnt)) {
+    Log::deleteLog();
+  }
+  if (old_gsl_err_h != myMexErrorH) {
+    gsl_set_error_handler(old_gsl_err_h);
+  }
+  
   delete myF;
   delete myS;
 }

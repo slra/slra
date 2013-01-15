@@ -15,7 +15,7 @@ using namespace std;
 
 void myMexErrorH( const char *reason, const char *F, int ln, int gsl_err );
 
-gsl_matrix M2trmat( mxArray * mat );
+gsl_matrix M2trmat(  const mxArray * mat );
 
 gsl_vector M2vec( const mxArray * mat );
 
@@ -47,6 +47,8 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
 class SLRAObject {
   Structure *myS;
   CostFunction *myF; 
+  gsl_error_handler_t *old_gsl_err_h;
+  static size_t myObjCnt;
 public:
   SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
               gsl_matrix perm, gsl_vector wk, gsl_vector rvec );

@@ -1,6 +1,5 @@
 #ifndef __CLASS_HANDLE_HPP__
 #define __CLASS_HANDLE_HPP__
-#include "mex.h"
 #include <stdint.h>
 #include <string>
 
@@ -8,9 +7,9 @@
 template<class base> class class_handle
 {
 public:
-    class_handle(base *ptr) : ptr_m(ptr), name_m(typeid(base).raw_name()) { signature_m = CLASS_HANDLE_SIGNATURE; }
+    class_handle(base *ptr) : ptr_m(ptr), name_m(typeid(base).name()) { signature_m = CLASS_HANDLE_SIGNATURE; }
     ~class_handle() { signature_m = 0; delete ptr_m; }
-    bool isValid() { return ((signature_m == CLASS_HANDLE_SIGNATURE) && !strcmp(name_m.c_str(), typeid(base).raw_name())); }
+    bool isValid() { return ((signature_m == CLASS_HANDLE_SIGNATURE) && !strcmp(name_m.c_str(), typeid(base).name())); }
     base *ptr() { return ptr_m; }
 
 private:

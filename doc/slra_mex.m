@@ -29,4 +29,8 @@
 % info.fmin = norm(w .* (p - ph)) ^ 2
 %
 % Note: it is required that length(p) > n * (m - r).
-
+function varargout = slra_mex(p, s, r, opt)
+  obj = slra_mex_obj('new', p, s, r);
+  [varargout{1:nargout}] = slra_mex_obj('optimize', obj, opt);
+  slra_mex_obj('delete', obj);
+end

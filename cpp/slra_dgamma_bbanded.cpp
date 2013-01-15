@@ -36,7 +36,8 @@ SDependentDGamma::~SDependentDGamma(){
   for (size_t i = 0; i < n; i++) {
     y_i = gsl_matrix_row(&Y_r, i).vector;
     
-    for (size_t j = mymax(0, i - S + 1); j < mymin(i + S, n); j++) {
+    size_t j = (i + 1 > S ? i - S + 1 : 0);
+    for (; j < mymin(i + S, n); j++) {
       y_j = gsl_matrix_row(&Y_r, j).vector;
 
       gsl_blas_dgemv(CblasNoTrans, 1.0, R, &y_i, 0.0, myTmp2);
@@ -55,8 +56,10 @@ void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R,
   gsl_vector_set_zero(res); 
   for (k = 0; k < n; k++)  {
     res_sub = gsl_vector_subvector(res, k * myD, myD).vector;
+ 
     
-    for (l = mymax(0, k - S + 1);  l < mymin(k + S, n); l++) {
+    l = (k + 1 > S ? k - S + 1 : 0);
+    for (;  l < mymin(k + S, n); l++) {
       yr_sub = gsl_vector_subvector(Yr, l * myD, myD).vector;
       myW->AtWijV(myTmp1, k, l, R, &perm_col, myTmp2);
       gsl_blas_daxpy(gsl_vector_get(&yr_sub, j), myTmp1, &res_sub);

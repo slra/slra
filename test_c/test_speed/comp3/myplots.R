@@ -1,7 +1,8 @@
 resrange <- seq(20,120,10);
 
 
-resslicot2<-(as.matrix(read.table("reselw.txt"), header=TRUE)/(resrange));
+resslicot2<-as.matrix(read.table("reselw.txt", header=TRUE));
+resslicot2<-(resslicot2/(resrange));
 resslicot2[,6] <-resslicot2[,6] / 50;
 ylim <- c(min(as.vector(resslicot2[,4])) , max(as.vector(resslicot2[,6])));
 
