@@ -47,7 +47,7 @@ ip.addParamValue('Rini', [], @(Rini) isnumeric(Rini) && ...
                                      all(size(Rini) == [m - r m]));
 ip.addParamValue('solver', 'c', @(solver) solver == 'c' || solver == 'm'); 
 ip.addParamValue('disp', 'off');
-ip.parse(varargin{:}); opt = ip.Results;
+ip.parse(varargin{:}); opt = merge(ip.Results, ip.Unmatched);
 [m, mp] = size(s.phi); q = length(s.m); N = length(s.n); n = sum(s.n); 
 s2np = @(s) sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
                                    - length(s.m) * length(s.n);, np = s2np(s); % = N * mp + q * n - q * N;
@@ -61,3 +61,5 @@ if opt.solver == 'c'
 else
   [ph, info] = slra_ext(s2s(s), p, r, s.w, opt.Rini, s.phi, opt.psi, opt); 
 end
+function s2 = merge(s1, s2)
+fn = fieldnames(s1); for i = 1:length(fn), s2.(fn{i}) = s1.(fn{i}); end
