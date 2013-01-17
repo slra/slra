@@ -29,37 +29,51 @@
 % info.fmin = norm(w .* (p - ph)) ^ 2
 %
 % Note: it is required that length(p) > n * (m - r).
+function varargout = slra(p, s, r, opt)    
 
-function [ph, info] = slra(p, s, r, varargin)
-non_negative = @(x) isnumeric(x) && all(all(x >= 0));
-integer = @(x) isnumeric(x) && ~isempty(x) && all(all(~mod(x, 1)));
-ipr = inputParser;
-ipr.addRequired('p', @(p) isnumeric(p) && ~isempty(p)); 
-ipr.addRequired('s', @(s) isfield(s, 'm'));
-ipr.addRequired('r', @(r) integer(r) && r >= 0); 
-ipr.parse(p, s, r); 
-if ~isfield(s, 'phi'), s.phi = eye(sum(s.m)); end
-if ~isfield(s, 'n'), s.n = (length(p) - sum(s.m)) + 1; end
-if ~isfield(s, 'w'), s.w = []; end
-ip = inputParser; ip.KeepUnmatched = true;
-m = size(s.phi, 1); ip.addParamValue('psi', [], @(psi) isnumeric(psi)); 
-ip.addParamValue('Rini', [], @(Rini) isnumeric(Rini) && ...
-                                     all(size(Rini) == [m - r m]));
-ip.addParamValue('solver', 'c', @(solver) solver == 'c' || solver == 'm'); 
-ip.addParamValue('disp', 'off');
-ip.parse(varargin{:}); opt = merge(ip.Results, ip.Unmatched);
-[m, mp] = size(s.phi); q = length(s.m); N = length(s.n); n = sum(s.n); 
-s2np = @(s) sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
-                                   - length(s.m) * length(s.n);, np = s2np(s); % = N * mp + q * n - q * N;
-if ~isfield(opt, 'psi') || isempty(opt.psi)
-  if opt.solver == 'c', opt.psi = eye(m); else, eye((m - r) * m); end
-end  
-if sum(size(s.w)) == np + 1, Im = unique([find(isnan(p)) find(s.w == 0)]); w(Im) = 0; p(Im) = NaN; else, Im = []; end
-if opt.solver == 'c' && ~isempty(Im), s.w(Im) = 1e-6; p(Im) = 0; end  
-if opt.solver == 'c'
-  [ph, info] = slra_mex(p, s, r, opt); 
-else
-  [ph, info] = slra_ext(s2s(s), p, r, s.w, opt.Rini, s.phi, opt.psi, opt); 
+tol_missing = 1e-6; % tolerance for missing value weights in the C solver
+
+% default solver
+if ~exist('opt'), opt = []; end
+if isfield(opt, 'solver') solver = opt.solver; else solver = 'c'; end
+
+% convert NaNs in p to 0s and create or modify s.w accordingly
+Im = find(isnan(p));
+if ~isempty(Im)
+  p(Im) = 0;
+  if ~isfield(s, 'w'), 
+    s.w = ones(size(p)); 
+  elseif length(s.w) ~= length(p) % convert s.w to np x 1 vector
+    % define constants
+    q = length(s.m); np = length(p);
+    if ~isfield(s, 'n'), s.n = (np - sum(s.m)) + 1; end % default s.n
+    N = length(s.n); n = sum(s.n); 
+    % convert q x 1 s.w to q x N
+    if isvector(s.w), s.w = s.w(:); s.w = s.w(:, ones(1, N)); end
+    % convert q x N s.w to np x 1
+    w = [];
+    for j = 1:N
+      for i = 1:q 
+        wij = s.w(i, j) * ones(s.m(i), s.n(j)); w = [w; wij(:)]; 
+      end 
+    end
+    s.w = w;
+  end
+  s.w(Im) = 0;
 end
-function s2 = merge(s1, s2)
-fn = fieldnames(s1); for i = 1:length(fn), s2.(fn{i}) = s1.(fn{i}); end
+if solver == 'c' && isfield(s, 'w'), s.w(find(s.w == 0)) = tol_missing; end
+
+% call the solver
+if solver == 'c'
+  obj = slra_mex_obj('new', p, s, r);
+  [varargout{1:nargout}] = slra_mex_obj('optimize', obj, opt);
+  slra_mex_obj('delete', obj);
+else
+  if ~isfield(s, 'w'),      s.w = [];      end
+  if ~isfield(s, 'phi'),    s.phi = [];    end
+  if ~isfield(s, 'w'),      s.w = [];      end
+  if ~isfield(opt, 'Rini'), opt.Rini = []; end
+  if ~isfield(opt, 'psi'),  opt.psi = [];  end
+  dir_str = fileparts(which('slra')); addpath([dir_str '/doc']);
+  [varargout{1:nargout}] = slra_ext(s2s(s), p, r, s.w, opt.Rini, s.phi, opt.psi, opt); 
+end

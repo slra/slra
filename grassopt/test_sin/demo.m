@@ -1,5 +1,5 @@
 addpath '..';
-addpath '../../doc';
+addpath '../..';
 addpath '../../test_c';
 gensin
 
@@ -10,7 +10,7 @@ opt.disp = 'off';
 opt.Display = 'off';
 
 testnos = (1:10)';
-methods = {'slra_mex'  'slra_mex_chp'  'slra_grass'  'slra_fmincon' 'slra_reg'};
+methods = {'slra'  'slra_mex_chp'  'slra_grass'  'slra_fmincon' 'slra_reg'};
 [fields, res] = run_tests(testnos, methods, opt);
 methnames = {'slra-lm'  'slra-perm' 'slra-grass' 'slra-mat' 'slra-reg'};
 
