@@ -10,10 +10,20 @@ function varargout = slra_reg(p, s, r, opt)
   end
   m = slra_mex_obj('getM', obj);
 
-  if  ~isfield(opt, 'psi') | isempty(opt.psi)
+  if ~isfield(opt, 'gcd') | isempty(opt.gcd)
+    opt.gcd = 0; 
+  end
+  
+  sgn = 1;
+  if (opt.gcd ~= 0)
+    sgn = -1;
+  end
+
+
+  if  ~isfield(opt, 'psi') || isempty(opt.psi)
     opt.psi = eye(m); 
   end
-  if  ~isfield(opt, 'method') | isempty(opt.method)
+  if  ~isfield(opt, 'method') || isempty(opt.method)
     opt.method = 'off'; 
   end
   d = m-r;
@@ -33,24 +43,24 @@ function varargout = slra_reg(p, s, r, opt)
   C = @(th) t2R(th) * t2R(th)' - eye(m - r);
 
   function [f, g, Hinfo] = myobjective(th)
-    f = slra_mex_obj('func', obj, t2R(th)) + opt.g * norm(C(th), 'fro') ^ 2;
-    g = R2t(slra_mex_obj('grad', obj, t2R(th))+ opt.g * 4 * C(th) * t2R(th));
+    f = sgn * slra_mex_obj('func', obj, t2R(th)) + opt.g * norm(C(th), 'fro') ^ 2;
+    g = R2t(sgn * slra_mex_obj('grad', obj, t2R(th))+ opt.g * 4 * C(th) * t2R(th));
     Hinfo = th;
-    return;
-    if (~strcmp(opt.method, 'on'))
-      return
-    end  
-    R = t2R(Hinfo);
-    Hinfo = slra_mex_obj('hess', obj, t2R(th));
-    Hinfo = Hinfo + opt.g * 4 * (kron(eye(m), R*R') + kron(R'*R, eye(m-r)) - eye((m-r)*m));
-    tmp = reshape(permute(reshape(kron(R, R'), m, (m-r), (m-r)*m), [2 1 3]), (m-r)*m, (m-r)*m);
-    Hinfo = Hinfo + opt.g * 4 * (tmp);
+%    return;
+%    if (~strcmp(opt.method, 'on'))
+%      return
+%    end  
+%    R = t2R(Hinfo);
+%    Hinfo = slra_mex_obj('hess', obj, t2R(th));
+%    Hinfo = Hinfo + opt.g * 4 * (kron(eye(m), R*R') + kron(R'*R, eye(m-r)) - eye((m-r)*m));
+%    tmp = reshape(permute(reshape(kron(R, R'), m, (m-r), (m-r)*m), [2 1 3]), (m-r)*m, (m-r)*m);
+%    Hinfo = Hinfo + opt.g * 4 * (tmp);
   end;
   
   function Hh = hessM(U, H)
     fdeps = 1e-10;
-    G0 = slra_mex_obj('grad', obj, U);
-    G1 = slra_mex_obj('grad', obj, (U+fdeps*H));
+    G0 = sgn * slra_mex_obj('grad', obj, U);
+    G1 = sgn * slra_mex_obj('grad', obj, (U+fdeps*H));
     Hh = (G1 - G0)/fdeps;
   end
   
@@ -76,6 +86,10 @@ function varargout = slra_reg(p, s, r, opt)
 %  info, pause
   Rh = t2R(x);
   ph = slra_mex_obj('getPh', obj, Rh);
+  if (opt.gcd ~= 0)
+    ph = p - ph;
+  end
+  
   [varargout{1:nargout}] = deal(ph, struct('Rh', Rh, 'Vh', [], 'fmin', fval, 'iter', info.iterations-1, 'time', t_slra));
 end
 

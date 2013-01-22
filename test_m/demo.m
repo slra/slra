@@ -1,5 +1,5 @@
 % DEMO - Demo file for structured low rank approximation
-clear all, rand('state', 0), randn('state', 0)
+clear all, rand('state', 0), randn('state', 0), addpath '..';
 
 opt.disp = 'iter';
 

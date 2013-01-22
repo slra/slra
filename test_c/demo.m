@@ -1,5 +1,4 @@
 addpath '..';
-addpath '../doc';
 opt.maxiter = 500;
 opt.epsabs = 0;
 opt.gradtol = 1e-5;

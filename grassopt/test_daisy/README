@@ -3,3 +3,9 @@ optimization, in the case of the structured low-rank approximation problem for
 system identification.
 
 The GenRTR package should be installed as well.
+
+10.01.2013:
+Changes with respect to the submitted version:
+ - the correct Phi is used (in the submitted version it was transposed)
+ - fitting is done for the whole time series (not for 70% of t.s.)
+

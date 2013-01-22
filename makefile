@@ -88,5 +88,5 @@ SLICOT.a : $(SLICOT_SRC_FILES)
 	ar -r SLICOT.a $(SLICOT_OBJ_FILES)
 
 clean : 
-	rm -f -r */*.o *.o *.a slra.mex* */slra_mex.mex*
+	rm -f -r */*.o *.o *.a 
 
