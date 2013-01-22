@@ -13,7 +13,7 @@ if ~exist('Rini') | isempty(Rini)
   pext = [0; p];
   Rini = lra(phi * (s0 + pext(tts + 1)), r); 
 end
-prob.options = optimset(opt); 
+if ~exist('opt'), opt = []; end, prob.options = optimset(opt); 
 if isempty(prob.options.Display)
    prob.options = optimset(prob.options, 'disp', 'off'); 
 end
@@ -25,7 +25,9 @@ else
 end
 pext = [0; p];
 prob.x0 = R2th(Rini, phi * (s0 + pext(tts + 1)), psi); 
-Im = find(isnan(p)); Ig = setdiff(1:np, Im); 
+Im = find(isnan(p)); 
+if exist('w') && length(w) == length(p), Im = unique([Im(:); find(w(:) == 0)]); end
+Ig = setdiff(1:np, Im); 
 if exist('w') & ~isempty(w)
   if any(size(w) == 1), w = diag(w); end
   if size(w, 1) == np, w = w(Ig, Ig); end  
@@ -37,7 +39,9 @@ if exist('w') & ~isempty(w)
     bfs(:, Ig(If)) = []; 
     Ig_ = Ig; np_ = np; np = length(p); 
     tts = reshape(bfs * vec(1:np), mp, n);
-    Im = find(isnan(p)); Ig = setdiff(1:np, Im); 
+    Im = find(isnan(p)); 
+    if exist('w') && length(w) == length(p), Im = unique([Im(:); find(w(:) == 0)]); end
+    Ig = setdiff(1:np, Im); 
   end
   sqrt_w = sqrtm(w); inv_sqrt_w = pinv(sqrt_w);
   bfs = double(bfs); p(Ig) = sqrt_w * p(Ig); 
