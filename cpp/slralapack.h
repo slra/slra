@@ -2,6 +2,19 @@
 extern "C" {
 #endif
 
+
+#ifdef BUILD_MEX_WINDOWS
+
+#define dtbtrs_ dtbtrs
+#define dpbtrs_ dpbtrs
+#define dpbtrf_ dpbtrf
+#define dgesvd_ dgesvd
+#define dgesv_ dgesv
+#define dgels_ dgels
+
+#endif /* BUILD_MEX_WINDOWS */
+
+
 /* SLICOT and LAPACK functions */
 #ifdef USE_SLICOT
 void mb02gd_(const char *typet, const char *triu, const size_t *k, 

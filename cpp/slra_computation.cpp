@@ -7,6 +7,8 @@ extern "C" {
 #include <gsl/gsl_math.h>
 }
 
+#include <string.h>
+
 #include "slra.h"
 
 CostFunction::CostFunction( const gsl_vector *p, Structure *s, size_t d, 

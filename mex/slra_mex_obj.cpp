@@ -38,9 +38,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     SLRAObject * slraObj = convertMat2Ptr<SLRAObject>(prhs[1]);
     int m =  slraObj->getF()->getNrow(), d =  slraObj->getF()->getD();
     
-    if (nlhs <= 0) {
-      throw new Exception("Output arguments should be provided.");        
-    }
 
     if (!strcmp("optimize", str_buf)) {
       OptimizationOptions opt;
@@ -74,6 +71,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       }
       return;
     }
+
+    if (nlhs <= 0) {
+      throw new Exception("Output arguments should be provided.");        
+    }
+
     if (!strcmp("getRini", str_buf)) {
       gsl_matrix rini = M2trmat(plhs[0] = mxCreateDoubleMatrix(d, m, mxREAL));
       slraObj->getF()->computeDefaultRTheta(&rini);

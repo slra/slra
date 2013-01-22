@@ -6,7 +6,7 @@
 #define MYWARNING Rprintf
 #define FLUSH()
 
-#elif defined(BUILD_MEX_OCTAVE) || defined(BUILD_MEX_MATLAB)
+#elif defined(BUILD_MEX_OCTAVE) || defined(MATLAB_MEX_FILE)
 
 #include "mex.h"
 #define PRINTF mexPrintf
