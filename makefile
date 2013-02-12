@@ -6,7 +6,8 @@ INC_FLAGS = -I./$(SLRA_CPP_DIR)
 OPT_FLAGS = -O2 # -pg 
 
 OCTAVE_MEX = mkoctfile --mex -v -DBUILD_MEX_OCTAVE 
-MEX = mex -v -largeArrayDims -DBUILD_MEX_MATLAB
+MEX = mex -v -largeArrayDims 
+MEXWIN = mex.bat -v -largeArrayDims -DBUILD_MEX_WINDOWS
 
 SLRA_OBJ_FILES=$(shell cat SLRAOBJ.txt)
 SLRA_SRC_FILES=$(SLRA_OBJ_FILES:%o=%cpp)
@@ -20,6 +21,9 @@ BUILD_MODE=BUILD_DEFAULT
 matlab: clean $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra_mex_obj 
+
+matlab-win: $(MEX_SRC_FILES) 
+	$(MEXWIN) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) 
 
 octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
