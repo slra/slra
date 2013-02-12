@@ -1,4 +1,5 @@
 % SLRA - solves the structured low-rank approximation problem
+%
 % minimize over ph norm(w .* (p - ph)) ^ 2 subject to rank(S(ph)) <= r
 % where S(ph) = Phi * H, with H a q x N block matrix with Hankel blocks
 % H_ij(ph) = hankel(ph_ij(1:m_i, m_i:(m_i + n_j - 1)))
@@ -42,26 +43,27 @@ if ~isfield(opt, 'disp'), opt.disp = 'off'; end % no display
 % convert NaNs in p to 0s and create or modify s.w accordingly
 Im = find(isnan(p));
 if ~isempty(Im)
-  p(Im) = 0;
+  % define constants
+  q = length(s.m); np = length(p);
+  if ~isfield(s, 'n'), s.n = (np - sum(s.m)) + 1; end % default s.n
+  N = length(s.n); n = sum(s.n);
   if ~isfield(s, 'w'),
     s.w = ones(size(p));
-  elseif length(s.w) ~= length(p) % convert s.w to np x 1 vector
-    % define constants
-    q = length(s.m); np = length(p);
-    if ~isfield(s, 'n'), s.n = (np - sum(s.m)) + 1; end % default s.n
-    N = length(s.n); n = sum(s.n);
+  elseif length(s.w(:)) ~= q || all(size(s.w) == [q N])
     % convert q x 1 s.w to q x N
     if isvector(s.w), s.w = s.w(:); s.w = s.w(:, ones(1, N)); end
     % convert q x N s.w to np x 1
     w = [];
     for j = 1:N
       for i = 1:q
-        wij = s.w(i, j) * ones(s.m(i), s.n(j)); w = [w; wij(:)];
+        wij = s.w(i, j) * ones(s.m(i) + s.n(j) - 1, 1); w = [w; wij];
       end
     end
     s.w = w;
+  else
+    error('Wrong size of s.w.')
   end
-  s.w(Im) = 0;
+  p(Im) = 0; s.w(Im) = 0;
 end
 if (opt.solver == 'c') && isfield(s, 'w'), s.w(find(s.w == 0)) = tol_missing; end
 
@@ -74,7 +76,6 @@ if opt.solver == 'c'
 else
   if ~isfield(s, 'w'), s.w = []; end
   if ~isfield(s, 'phi'), s.phi = []; end
-  if ~isfield(s, 'w'), s.w = []; end
   if ~isfield(opt, 'Rini'), opt.Rini = []; end
   if ~isfield(opt, 'psi'), opt.psi = []; end
   dir_str = fileparts(which('slra')); addpath([dir_str '/doc']); np = length(p);

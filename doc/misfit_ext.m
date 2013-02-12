@@ -7,7 +7,7 @@ if ~exist('s0') || isempty(s0), s0 = zeros(mp, n); end
 if ~exist('bfs') | isempty(bfs), vec_tts = tts(:); NP = 1:np;
                                  bfs = vec_tts(:, ones(1, np)) == NP(ones(mp * n, 1), :);, end
 Im = find(isnan(p)); 
-if exist('w') && length(w) == length(p), Im = unique([Im(:); find(w(:) == 0)]); end
+if exist('w') && length(w(:)) == length(p), Im = unique([Im(:); find(w(:) == 0)]); end
 Ig = setdiff(1:np, Im); 
 if exist('w') & ~isempty(w)
   if any(size(w) == 1), w = diag(w); end
@@ -21,7 +21,7 @@ if exist('w') & ~isempty(w)
     Ig_ = Ig; np_ = np; np = length(p); 
     tts = reshape(bfs * vec(1:np), mp, n);
     Im = find(isnan(p)); 
-    if exist('w') && length(w) == length(p), Im = unique([Im(:); find(w(:) == 0)]); end
+    if exist('w') && length(w(:)) == length(p), Im = unique([Im(:); find(w(:) == 0)]); end
     Ig = setdiff(1:np, Im); 
   end
   sqrt_w = sqrtm(w); inv_sqrt_w = pinv(sqrt_w);
