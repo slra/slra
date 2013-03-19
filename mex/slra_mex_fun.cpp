@@ -102,7 +102,7 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
     throw new Exception("Incorrect rank\n");   
   }
     
-  myF = new CostFunction(vecChkNIL(p_in), myS, m-r, matChkNIL(perm));
+  myF = new VarproFunction(vecChkNIL(p_in), myS, m-r, matChkNIL(perm));
   old_gsl_err_h = gsl_set_error_handler(myMexErrorH);
   ++myObjCnt;
 }

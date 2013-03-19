@@ -41,8 +41,8 @@ public:
   virtual Cholesky *createCholesky( size_t D ) const;
   virtual DGamma *createDGamma( size_t D ) const;
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ); 
-  virtual void correctP( gsl_vector* p, gsl_matrix *R, gsl_vector *yr,
-                         long wdeg = 2 );
+  virtual void correctP( gsl_vector* p, const gsl_matrix *R, 
+                         const gsl_vector *yr, long wdeg = 2 );
   /**@}*/
  
   /** @name Implementing StationaryStructure interface */

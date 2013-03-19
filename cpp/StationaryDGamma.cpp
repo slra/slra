@@ -54,8 +54,8 @@ void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r,
   }    
 }
 
-void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R, 
-         size_t i, size_t j,  gsl_vector *yr ) {
+void StationaryDGamma::calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
+         size_t i, size_t j,  const gsl_vector *yr ) {
   gsl_vector gv_sub, perm_col = gsl_matrix_column(myEye, i).vector, dgammajrow,
              res_stride, yr_stride;
   long S = myW->getS();           
@@ -74,7 +74,7 @@ void StationaryDGamma::calcDijGammaYr( gsl_vector *res,  gsl_matrix *R,
     tmv_prod_vector(myDGammaVec, myW->getS(), yr, n, res);  
   } else {
     res_stride = gsl_vector_subvector_with_stride(res, j, myD, n).vector;       
-    yr_stride = gsl_vector_subvector_with_stride(yr, j, myD, n).vector;       
+    yr_stride = gsl_vector_const_subvector_with_stride(yr, j, myD, n).vector;       
     gsl_matrix_view gamma_vec_mat = gsl_matrix_view_vector(myDGammaVec, 1, 
                                                            myDGammaVec->size);
     gsl_vector_memcpy(myTmpCol, &yr_stride);

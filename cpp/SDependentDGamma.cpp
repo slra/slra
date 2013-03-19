@@ -47,8 +47,8 @@ SDependentDGamma::~SDependentDGamma(){
   }
 }
 
-void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                   size_t i, size_t j, gsl_vector *Yr ) {
+void SDependentDGamma::calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
+                   size_t i, size_t j, const gsl_vector *Yr ) {
   gsl_vector perm_col = gsl_matrix_column(myEye, i).vector, yr_sub, res_sub;
   size_t k, l, n = Yr->size / myD; long S = myW->getS();
   double tmp;
@@ -57,10 +57,9 @@ void SDependentDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R,
   for (k = 0; k < n; k++)  {
     res_sub = gsl_vector_subvector(res, k * myD, myD).vector;
  
-    
     l = (k + 1 > S ? k - S + 1 : 0);
     for (;  l < mymin(k + S, n); l++) {
-      yr_sub = gsl_vector_subvector(Yr, l * myD, myD).vector;
+      yr_sub = gsl_vector_const_subvector(Yr, l * myD, myD).vector;
       myW->AtWijV(myTmp1, k, l, R, &perm_col, myTmp2);
       gsl_blas_daxpy(gsl_vector_get(&yr_sub, j), myTmp1, &res_sub);
 

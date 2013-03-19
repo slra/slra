@@ -20,8 +20,8 @@ public:
   
   virtual void calcYrtDgammaYr( gsl_matrix *mgrad_r, const gsl_matrix *R, 
                    const gsl_vector *yr );
-  virtual void calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                    size_t i, size_t j, gsl_vector *Yr );
+  virtual void calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
+                    size_t i, size_t j, const gsl_vector *Yr );
 };
 
 

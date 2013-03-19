@@ -46,7 +46,7 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
 
 class SLRAObject {
   Structure *myS;
-  CostFunction *myF; 
+  VarproFunction *myF; 
   gsl_error_handler_t *old_gsl_err_h;
   static size_t myObjCnt;
 public:
@@ -55,5 +55,5 @@ public:
   virtual ~SLRAObject();
   
   Structure *getS() { return myS; }
-  CostFunction *getF() { return myF; }
+  VarproFunction *getF() { return myF; }
 };

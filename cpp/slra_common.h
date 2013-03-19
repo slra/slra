@@ -74,9 +74,9 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
  * T - storage for [t_s-1' ... t_1' t_0 t_1 ... t_s-1].
  * m = number of block rows / columns
  */ 
-void tmv_prod_vector( gsl_vector *T, size_t s, gsl_vector* v, size_t m, 
+void tmv_prod_vector( gsl_vector *T, size_t s, const gsl_vector* v, size_t m, 
          gsl_vector* p );
-void tmv_prod_new( gsl_matrix *T, size_t s,  gsl_vector *v, size_t m, gsl_vector *p, 
+void tmv_prod_new( gsl_matrix *T, size_t s, const gsl_vector *v, size_t m, gsl_vector *p, 
          double beta = 0.0 );
 
 void ls_solve( const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *X ); 

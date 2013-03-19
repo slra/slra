@@ -37,16 +37,16 @@ void StripedDGamma::calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R,
   }
 }
 
-void StripedDGamma::calcDijGammaYr( gsl_vector *res, gsl_matrix *R, 
-                        size_t i, size_t j, gsl_vector *yr ) {
+void StripedDGamma::calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
+                        size_t i, size_t j, const gsl_vector *yr ) {
   size_t n_row = 0, k;
-  gsl_vector_view sub_yr, sub_res;
+  gsl_vector sub_yr, sub_res;
   
   for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * R->size2, 
-                                  myS->getBlock(k)->getN() * R->size2);    
-    sub_res = gsl_vector_subvector(res, n_row * R->size2, 
-                                   myS->getBlock(k)->getN() * R->size2);    
-    myLHDGamma[k]->calcDijGammaYr(&sub_res.vector, R, i, j, &sub_yr.vector);
+    sub_yr = gsl_vector_const_subvector(yr, n_row * R->size2, 
+                                  myS->getBlock(k)->getN() * R->size2).vector;    
+    sub_res = gsl_vector_const_subvector(res, n_row * R->size2, 
+                                   myS->getBlock(k)->getN() * R->size2).vector;    
+    myLHDGamma[k]->calcDijGammaYr(&sub_res, R, i, j, &sub_yr);
   }                   
 }

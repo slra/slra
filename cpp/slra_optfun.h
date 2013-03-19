@@ -3,8 +3,10 @@ public:
   virtual ~OptFunction() {}
   virtual size_t getNvar() = 0;
   virtual size_t getNsq() = 0;
-  virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad ) = 0;
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac ) = 0;
+  virtual void computeFuncAndGrad( const gsl_vector* x, double* f, 
+                                   gsl_vector *grad ) = 0;
+  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
+                                  gsl_matrix *jac ) = 0;
 
   static double _f( const gsl_vector* x, void* params ) {
     double f;
@@ -36,13 +38,13 @@ public:
 
 class OptFunctionSLRA : public OptFunction {
 protected:
-  CostFunction &myFun;
+  VarproFunction &myFun;
   gsl_matrix *myTmpR;  
   gsl_matrix *myPsi;
   gsl_matrix *myTmpXId;
   void computeR( const gsl_vector *x, gsl_matrix *R ); 
 public: 
-  OptFunctionSLRA( CostFunction &fun, gsl_matrix *Psi );
+  OptFunctionSLRA( VarproFunction &fun, gsl_matrix *Psi );
   virtual ~OptFunctionSLRA();
   virtual size_t getNvar(); 
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad );
@@ -64,19 +66,21 @@ public:
 
 class OptFunctionSLRACholesky : public OptFunctionSLRA {
 public: 
-  OptFunctionSLRACholesky( CostFunction &fun, gsl_matrix *psi ) : 
+  OptFunctionSLRACholesky( VarproFunction &fun, gsl_matrix *psi ) : 
       OptFunctionSLRA(fun, psi) {}
   virtual ~OptFunctionSLRACholesky() {}
   virtual size_t getNsq() { return myFun.getN() * myFun.getD(); }
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac );
+  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
+                                   gsl_matrix *jac );
 };
 
 class OptFunctionSLRACorrection : public OptFunctionSLRA {
 public: 
-  OptFunctionSLRACorrection( CostFunction &fun, gsl_matrix *psi ) : 
+  OptFunctionSLRACorrection( VarproFunction &fun, gsl_matrix *psi ) : 
       OptFunctionSLRA(fun, psi)  {}
   virtual ~OptFunctionSLRACorrection() {}
   virtual size_t getNsq() { return myFun.getNp(); }
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, gsl_matrix *jac );
+  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
+                                  gsl_matrix *jac );
 };
 

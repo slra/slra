@@ -17,21 +17,25 @@ extern "C" {
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
 }
 
-#include "slra_optimization.h"
 #include "slra_basic.h"
+#include "SDependentStructure.h"
+#include "StationaryStructure.h"
 #include "StripedStructure.h"
 #include "StripedCholesky.h"
 #include "StripedDGamma.h"
 #include "LayeredHStructure.h"
 #include "WLayeredHStructure.h"
-#include "slra_cholesky_btbanded.h"
+#include "SDependentCholesky.h"
 #include "StationaryCholesky.h"
 #include "StationaryCholeskySlicot.h"
 #include "SDependentDGamma.h"
 #include "StationaryDGamma.h"
 
-#include "slra_computation.h"
+#include "VarproFunction.h"
 #include "slra_optfun.h"
+
+#include "OptimizationOptions.h"
+
 
 #include "slra_common.h"
 #include "slralapack.h"
@@ -55,20 +59,10 @@ extern "C" {
  *                       (not computed if <tt>R_out == NULL</tt> )
  * @param [out]    v_out Covariance matrix for X
  */
-void slra( CostFunction *costFun, 
+void slra( VarproFunction *costFun, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
           gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out );
 
-/** Main function that runs GSL optimization
- * @ingroup MainFunctions 
- * @param [in]     F     OptFunction object
- * @param [in,out] opt   Optimization options
- * @param [in,out] x_vec Vector containing initial approximation and returning
- *                       the minimum point 
- * @param [out]    v     Covariance matrix for x
- */
-int gsl_optimize( OptFunction *F, OptimizationOptions *opt, 
-                       gsl_vector* x_vec, gsl_matrix *v );
 
 /** @defgroup MainFunctions
  * Global functions. */
@@ -132,14 +126,14 @@ TECHREPORT{MarkovskyUsevich12-Software,
  * The Cholesky and DGamma instances are optimized for a specific structures.
  *
  * Computation of cost functions and derivatives
- * are performed by CostFunction object, which is constructed 
+ * are performed by VarproFunction object, which is constructed 
  * given Structure, \f$\Phi\f$ matrix, and rank reduction.
  *
- * CostFunction object implements high-level algorithms for computing
+ * VarproFunction object implements high-level algorithms for computing
  * cost function, gradient, pseudo-Jacobian and Jacobian given a general affine
  * structure.
  *
- * CostFunction object also contains functions for computing initial approximation.
+ * VarproFunction object also contains functions for computing initial approximation.
  *
  * \subsection opt_sec Optimization options
  * Optimization options are implemented in OptimizationOptions class,

@@ -14,7 +14,7 @@
 #include "slra.h"
 
 
-void meas_time( CostFunction &costFun,
+void meas_time( VarproFunction &costFun,
                 double &tm_func, double &tm_grad, double &tm_pjac ) {
   OptFunctionSLRACholesky optFun(costFun, NULL);                
   gsl_vector *x = gsl_vector_alloc(optFun.getNvar());
@@ -77,7 +77,7 @@ void run_test( const char * testname, double & time, double& fmin,
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
   Structure *S = NULL;
-  CostFunction * myCostFun = NULL;
+  VarproFunction * myCostFun = NULL;
 
   try {
     /* Read structure  and allocate structure object */
@@ -133,7 +133,7 @@ void run_test( const char * testname, double & time, double& fmin,
     read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname);
     /* call slra */  
 
-    myCostFun = new CostFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
+    myCostFun = new VarproFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
 
     if (test_type[0] == 'd') {
       slra(myCostFun, &opt, (hasR ? R : NULL), NULL, p2, R, v);

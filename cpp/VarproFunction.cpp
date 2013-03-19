@@ -3,7 +3,7 @@
 
 #include "slra.h"
 
-CostFunction::CostFunction( const gsl_vector *p, Structure *s, size_t d, 
+VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d, 
                          gsl_matrix *Phi ) : myP(NULL), myD(d), myStruct(s), 
                          myReggamma(SLRA_DEF_reggamma) {
   if (myStruct->getNp() > p->size) {
@@ -54,7 +54,7 @@ CostFunction::CostFunction( const gsl_vector *p, Structure *s, size_t d,
   myStruct->fillMatrixFromP(myMatr, p);
 }
   
-CostFunction::~CostFunction() {
+VarproFunction::~VarproFunction() {
   delete myGam;
   delete myDeriv;
   gsl_vector_free(myP);
@@ -71,7 +71,7 @@ CostFunction::~CostFunction() {
   gsl_vector_free(myTmpCorr);
 }
 
-void CostFunction::computeGammaSr( const gsl_matrix *R, 
+void VarproFunction::computeGammaSr( const gsl_matrix *R, 
                       gsl_matrix *Rorig, gsl_vector *Sr, bool regularize_gamma ) {
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPhi, R, 0, Rorig);
   myGam->calcGammaCholesky(Rorig, regularize_gamma ? myReggamma : 0);
@@ -79,7 +79,8 @@ void CostFunction::computeGammaSr( const gsl_matrix *R,
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myMatr, Rorig, 0, &SrMat.matrix);
 } 
 
-void CostFunction::computeZmatTmpJac( gsl_vector* yr, gsl_matrix *Rorig, double factor ) {
+void VarproFunction::fillZmatTmpJac( const gsl_vector* yr, 
+                                        const gsl_matrix *Rorig, double factor ) {
   for (size_t i = 0; i < getM(); i++) {
     for (size_t j = 0; j < getD(); j++) {
       gsl_vector tJr = gsl_matrix_row(myTmpJac, i + j * getM()).vector;
@@ -93,9 +94,9 @@ void CostFunction::computeZmatTmpJac( gsl_vector* yr, gsl_matrix *Rorig, double 
   }
 }
 
-void CostFunction::setPhiPermCol( size_t i, gsl_matrix *perm ) {
+void VarproFunction::setPhiPermCol( size_t i, const gsl_matrix *perm ) {
   if (perm != NULL) {
-    gsl_vector permCol = gsl_matrix_column(perm, i).vector;
+    gsl_vector permCol = gsl_matrix_const_column(perm, i).vector;
     gsl_blas_dgemv(CblasNoTrans, 1.0, myPhi, &permCol, 0.0, myPhiPermCol);
   } else {
     gsl_vector phiCol = gsl_matrix_column(myPhi, i).vector;
@@ -103,57 +104,37 @@ void CostFunction::setPhiPermCol( size_t i, gsl_matrix *perm ) {
   }  
 }
 
-void CostFunction::mulZmatPerm( gsl_vector* res, gsl_matrix *perm, size_t i, size_t j ) {
+void VarproFunction::mulZmatPerm( gsl_vector* res, const gsl_matrix *perm,
+                                  size_t i, size_t j ) {
   gsl_matrix subJ = gsl_matrix_submatrix(myTmpJac, j * getM(), 0, getM(),
                          myTmpJac->size2).matrix;
   setPhiPermCol(i, perm);    
   gsl_blas_dgemv(CblasTrans, 1.0, &subJ, myPhiPermCol, 0.0, res); 
 }
 
-void CostFunction::computePseudoJacobianLsFromYr( gsl_vector* yr, 
-         gsl_matrix *Rorig, gsl_matrix *perm, gsl_matrix *jac, double factor ) {
+void VarproFunction::computePseudoJacobianLsFromYr( const gsl_vector* yr, 
+         const gsl_matrix *Rorig, const gsl_matrix *perm, gsl_matrix *pjac, 
+         double factor ) {
   size_t nrow = perm != NULL ? perm->size2 : getNrow();
-  computeZmatTmpJac(yr, Rorig, factor);
+  fillZmatTmpJac(yr, Rorig, factor);
   
   for (size_t i = 0; i < nrow; i++) {
     for (size_t j = 0; j < getD(); j++) {
       mulZmatPerm(myTmpJacobianCol, perm, i, j);
       myGam->multInvCholeskyVector(myTmpJacobianCol, 1);
-      gsl_matrix_set_col(jac, i * getD() + j, myTmpJacobianCol);  
+      gsl_matrix_set_col(pjac, i * getD() + j, myTmpJacobianCol);  
     }
   }
 }
 
-void CostFunction::computeHessian( const gsl_matrix* R,  gsl_matrix* H ) {
-  computeFuncAndPseudoJacobianLs(R, NULL, NULL, myTmpJac2);
-  gsl_blas_dgemm(CblasNoTrans, CblasTrans, 2.0, myTmpJac2, myTmpJac2, 0.0, H);
-}
 
-void CostFunction::multiplyByHessian( const gsl_matrix* R, const gsl_matrix* Hin, 
-                                      gsl_matrix* Hout ) {
-  gsl_vector hinv = gsl_vector_const_view_array(Hin->data, Hin->size1 *Hin->size2).vector,
-       houtv = gsl_vector_const_view_array(Hout->data, Hout->size1 *Hout->size2).vector;
-  computeFuncAndPseudoJacobianLs(R, NULL, NULL, myTmpJac2);
-  gsl_blas_dgemv(CblasTrans, 1.0, myTmpJac2, &hinv, 0.0, myTmpJacobianCol);
-  gsl_blas_dgemv(CblasNoTrans, 2.0, myTmpJac2, myTmpJacobianCol, 0.0, &houtv);
-//  computeZmatTmpJac(myTmpYr, myRorig);
-//  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPhi, Hin, 0, myTmpGradR);
-//  gsl_vector h_vec = gsl_vector_view_array(myTmpGradR->data, 
-//                           myTmpGradR->size1 * myTmpGradR->size2).vector;
-//  gsl_blas_dgemv(CblasTrans, 1.0, myTmpJac, &h_vec, 0.0, myTmpJacobianCol);
-//  myGam->multInvGammaVector(myTmpJacobianCol);
-//  gsl_blas_dgemv(CblasNoTrans, 1.0, myTmpJac, myTmpJacobianCol, 0.0, &h_vec);
-//  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1, myPhi, myTmpGradR, 0, Hout);
-}
-
-
-void CostFunction::computeJacobianOfCorrection( gsl_vector* yr, 
-         gsl_matrix *Rorig, gsl_matrix *perm, gsl_matrix *jac ) {
+void VarproFunction::computeJacobianOfCorrection( const gsl_vector* yr, 
+         const gsl_matrix *Rorig, const gsl_matrix *perm, gsl_matrix *jac ) {
   size_t nrow = perm != NULL ? perm->size2 : getNrow();
   gsl_matrix_set_zero(jac);
   gsl_matrix_set_zero(myTmpGradR);
 
-  computeZmatTmpJac(yr, Rorig, 11);
+  fillZmatTmpJac(yr, Rorig, 11);
 
   for (size_t i = 0; i < perm->size2; i++) {
     for (size_t j = 0; j < getD(); j++) {
@@ -177,9 +158,9 @@ void CostFunction::computeJacobianOfCorrection( gsl_vector* yr,
   }
 }
 
-void CostFunction::computeGradFromYr( gsl_vector* yr, const gsl_matrix *Rorig, 
-                                      gsl_matrix *perm, gsl_matrix *gradR ) {
-  gsl_matrix_view yr_matr = gsl_matrix_view_vector(yr, getN(), getD());
+void VarproFunction::computeGradFromYr( const gsl_vector* yr, 
+         const gsl_matrix *Rorig, const gsl_matrix *perm, gsl_matrix *gradR ) {
+  gsl_matrix_const_view yr_matr = gsl_matrix_const_view_vector(yr, getN(), getD());
   myDeriv->calcYrtDgammaYr(myTmpGradR, Rorig, yr);
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix,
                 -1.0, myTmpGradR);
@@ -196,8 +177,11 @@ void CostFunction::computeGradFromYr( gsl_vector* yr, const gsl_matrix *Rorig,
   }
 }
 
-void CostFunction::computeFuncAndGrad( const gsl_matrix* R, double * f, 
-                                       gsl_matrix *perm, gsl_matrix *gradR ) {
+
+
+
+void VarproFunction::computeFuncAndGrad( const gsl_matrix* R, double * f, 
+                                       const gsl_matrix *perm, gsl_matrix *gradR ) {
   computeGammaSr(R, myRorig, myTmpYr, true);
 
   if (f != NULL) {
@@ -214,8 +198,8 @@ void CostFunction::computeFuncAndGrad( const gsl_matrix* R, double * f,
   }
 }
 
-void CostFunction::computeFuncAndPseudoJacobianLs( const gsl_matrix *R, 
-                       gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac, double factor ) {
+void VarproFunction::computeFuncAndPseudoJacobianLs( const gsl_matrix *R, 
+         gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac, double factor ) {
   computeGammaSr(R, myRorig, myTmpYr, true);
   if (res != NULL) {
     myGam->multInvCholeskyVector(myTmpYr, 1);
@@ -231,7 +215,7 @@ void CostFunction::computeFuncAndPseudoJacobianLs( const gsl_matrix *R,
   } 
 }
 
-void CostFunction::computeCorrectionAndJacobian( gsl_matrix *R, 
+void VarproFunction::computeCorrectionAndJacobian( gsl_matrix *R, 
                        gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac ) {
   computeGammaSr(R, myRorig, myTmpYr, true);                  
   myGam->multInvGammaVector(myTmpYr);
@@ -244,7 +228,7 @@ void CostFunction::computeCorrectionAndJacobian( gsl_matrix *R,
   } 
 }
 
-void CostFunction::computePhat( gsl_vector* p, gsl_matrix *R ) {
+void VarproFunction::computePhat( gsl_vector* p, gsl_matrix *R ) {
   try  {
     computeGammaSr(R, myRorig, myTmpYr, true);
   } catch (Exception *e) {
@@ -260,7 +244,7 @@ void CostFunction::computePhat( gsl_vector* p, gsl_matrix *R ) {
   myStruct->correctP(p, myRorig, myTmpYr);
 }
 
-void CostFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
+void VarproFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
   size_t c_size1 = getN(), c_size2 = getNrow();
   size_t status = 0;
   size_t minus1 = -1;

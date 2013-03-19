@@ -103,21 +103,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       return;
     }
-    if (!strcmp("hess", str_buf)) {
-      gsl_matrix hess_m = M2trmat(plhs[0] = mxCreateDoubleMatrix(d*m, d*m, mxREAL));
-      slraObj->getF()->computeHessian(&R, &hess_m);      
-
-      return;
-    }
-    if (!strcmp("hessMult", str_buf)) {
-      if (nrhs < 4) {
-        throw new Exception("Argument Hin needed.");        
-      }
-      gsl_matrix hin = M2trmat(prhs[3]);
-      gsl_matrix hout = M2trmat(plhs[0] = mxCreateDoubleMatrix(d, m, mxREAL));
-      slraObj->getF()->multiplyByHessian(&R, &hin, &hout);      
-      return;
-    }
     if (!strcmp("getPh", str_buf)) {
       gsl_vector pout = 
            M2vec(plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getP()->size, 1, mxREAL));

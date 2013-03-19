@@ -13,7 +13,7 @@
 #include "slra.h"
 
 
-void slra( CostFunction *costFun, 
+void slra( VarproFunction *costFun, 
            OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
            gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out ) { 
   OptFunctionSLRA *optFun = NULL;
@@ -40,7 +40,7 @@ void slra( CostFunction *costFun,
       optFun->RTheta2x(Rini, x);
     }
 
-    gsl_optimize(optFun, opt, x, v_out);
+    opt->gslOptimize(optFun, x, v_out);
 
     if (p_out != NULL) {
       optFun->computePhat(p_out, x);

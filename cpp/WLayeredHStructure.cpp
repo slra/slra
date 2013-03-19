@@ -29,10 +29,10 @@ WLayeredHStructure::~WLayeredHStructure() {
   gsl_vector_free(myInvSqrtWeights);
 }
 
-void WLayeredHStructure::correctP( gsl_vector* p, gsl_matrix *R, 
-                                   gsl_vector *yr, long wdeg ) {
+void WLayeredHStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
+                                   const gsl_vector *yr, long wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
-  gsl_matrix yr_matr = gsl_matrix_view_vector(yr, getN(), R->size2).matrix;
+  gsl_matrix yr_matr = gsl_matrix_const_view_vector(yr, getN(), R->size2).matrix;
   gsl_vector yr_matr_row;
   gsl_vector_view res_sub, p_chunk_sub, inv_w_chunk;
   gsl_vector *res = gsl_vector_alloc(R->size1), 

@@ -1,15 +1,7 @@
 #include <memory.h>
-extern "C" {
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_math.h>
-}
-
 #include "slra.h"
 
-OptFunctionSLRA::OptFunctionSLRA( CostFunction &fun, gsl_matrix *Psi ) : 
+OptFunctionSLRA::OptFunctionSLRA( VarproFunction &fun, gsl_matrix *Psi ) : 
     myFun(fun) {
   if (Psi == NULL) {
     myPsi = gsl_matrix_alloc(myFun.getNrow(), myFun.getNrow());
@@ -46,12 +38,14 @@ void OptFunctionSLRA::computeR( const gsl_vector * x, gsl_matrix *R ) {
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPsi, myTmpXId, 0, R);
 }
 
-void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f, gsl_vector *grad ) {
+void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f, 
+                                         gsl_vector *grad ) {
   computeR(x, myTmpR);
   if (grad == NULL) {
     myFun.computeFuncAndGrad(myTmpR, f, NULL, NULL);
   } else {
-    gsl_matrix grad_matr = gsl_matrix_view_vector(grad, getRank(), myFun.getD()).matrix;
+    gsl_matrix grad_matr = gsl_matrix_view_vector(grad, getRank(), 
+                                                  myFun.getD()).matrix;
     gsl_matrix psi_sub_matr = gsl_matrix_submatrix(myPsi, 0, 0, 
                                       myFun.getNrow(), getRank()).matrix;
     myFun.computeFuncAndGrad(myTmpR, f, &psi_sub_matr, &grad_matr);
