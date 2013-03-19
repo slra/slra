@@ -131,6 +131,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   } 
 
   if (was_error) {
+#ifdef   BUILD_MEX_WINDOWS
+    mexPrintf("Error using slra MEX object:\n");
+    mexPrintf("%s\n", str_buf);
+#else /* BUILD_MEX_WINDOWS */
     mexErrMsgTxt(str_buf);
+#endif /* BUILD_MEX_WINDOWS */      
   }
 }
