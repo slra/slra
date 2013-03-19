@@ -19,6 +19,10 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
                gsl_vector * wk ) {
   enum { MOSAICEQ = 1, MOSAIC, WMOSAIC } stype;
   
+  if (wk->size == 0) {
+    wk = NULL;
+  }
+  
   if (wk == NULL || wk->size == ml->size) {
     stype = MOSAICEQ;
   } else if (wk->size == ml->size * nk->size ) {
@@ -29,14 +33,22 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
     throw new Exception("Incorrect weight specification\n");   
   }
   
-  Structure *s;      
-  //pStructure *res = new pStructure[n_k->size];         
-  if (stype == MOSAIC || stype == MOSAICEQ) {
-    s = new MosaicHStructure(ml, nk, wk);
-  } else {
-    s = new WMosaicHStructure(ml, nk, wk);
-  } 
-  return s;
+  pStructure *res = new pStructure[nk->size];
+  double *pw = (wk == NULL ? NULL : wk->data);
+  for (size_t k = 0; k < nk->size; k++) {
+    if (stype == WMOSAIC) {
+      res[k] = new WLayeredHStructure(ml->data, ml->size, nk->data[k], pw);
+      if (pw != NULL) {
+        pw += res[k]->getNp();
+      }
+    } else {
+      res[k] = new LayeredHStructure(ml->data, ml->size, nk->data[k], pw);
+      if (stype == MOSAIC) {
+        pw += ml->size;
+      }
+    } 
+  }
+  return new StripedStructure(nk->size, res,  stype == MOSAICEQ);
 }
 
 void OptimizationOptions::str2Method( const char *str )  {

@@ -17,9 +17,7 @@
 #include "slra_striped.h"
 
 #include "LayeredHStructure.h"
-#include "MosaicHStructure.h"
 #include "WLayeredHStructure.h"
-#include "WMosaicHStructure.h"
 #include "slra_cholesky_btbanded.h"
 #include "SDependentDGamma.h"
 #include "StationaryDGamma.h"

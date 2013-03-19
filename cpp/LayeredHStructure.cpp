@@ -11,16 +11,15 @@ extern "C" {
 #include "slra.h"
 
 LayeredHStructure::LayeredHStructure( const double *m_l, 
-    size_t q, size_t n, const double *w_l  ) : myQ(q), myN(n), mySA(NULL)  {
+    size_t q, size_t n, const double *w  ) : myQ(q), myN(n), mySA(NULL)  {
   mySA = new Layer[myQ];
  
   for (size_t l = 0; l < myQ; l++) {
     mySA[l].blocks_in_row = m_l[l];
-    if (w_l != NULL && !(w_l[l] > 0)) {
-      throw new Exception("This value of weight is not supported: %lf\n", 
-                          w_l[l]);
+    if (w != NULL && !(w[l] > 0)) {
+      throw new Exception("This value of weight is not supported: %lf\n", w[l]);
     }
-    mySA[l].inv_w = (w_l != NULL) ? (1 / w_l[l]) : 1.0;
+    mySA[l].inv_w = (w != NULL) ? (1 / w[l]) : 1.0;
   }    
    
   computeStats(); 

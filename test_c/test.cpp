@@ -93,31 +93,29 @@ void run_test( const char * testname, double & time, double& fmin,
     if (hasW) {
       gsl_vector_fscanf(file, w_k);
       fclose(file);
-      if (elementwise_w) {
-        gsl_vector *el_wk = gsl_vector_alloc(compute_np(m_k, n_l));
-        int i = 0;
-        size_t T;
-        gsl_vector sv;
-        for (size_t l = 0; l < s_N; l++) {
-          for (size_t k = 0; k < s_q; k++, i += T) {
-            T = gsl_vector_get(m_k, k) + gsl_vector_get(n_l, l) - 1;
-            sv = gsl_vector_subvector(el_wk, i, T).vector;
-            gsl_vector_set_all(&sv, gsl_vector_get(w_k, k));
-          }
+    } else {
+      gsl_vector_set_all(w_k, 1);
+    }  
+     
+    if (elementwise_w) {
+      gsl_vector *el_wk = gsl_vector_alloc(compute_np(m_k, n_l));
+      int i = 0;
+      size_t T;
+      gsl_vector sv;
+      for (size_t l = 0; l < s_N; l++) {
+        for (size_t k = 0; k < s_q; k++, i += T) {
+          T = gsl_vector_get(m_k, k) + gsl_vector_get(n_l, l) - 1;
+          sv = gsl_vector_subvector(el_wk, i, T).vector;
+          gsl_vector_set_all(&sv, gsl_vector_get(w_k, k));
         }
-        gsl_vector_free(w_k);
-        w_k = el_wk;
       }
-    } else {  
       gsl_vector_free(w_k);
-      w_k = NULL;
+      w_k = el_wk;
     }
     
     S = createMosaicStructure(m_k, n_l, w_k);
     gsl_vector_free(n_l);  
-    if (w_k != NULL) {
-      gsl_vector_free(w_k);  
-    }
+    gsl_vector_free(w_k);  
     gsl_vector_free(m_k);  
     
     /* Compute invariants and read everything else */ 

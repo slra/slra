@@ -11,11 +11,9 @@ public:
    * @param m_l \f${\bf m} = \begin{bmatrix}m_1 & \cdots & m_q\end{bmatrix}\f$
    * @param w vector of weights 
    * \f${\bf w} =\begin{bmatrix} w_1 & \cdots & w_{n_p} \end{bmatrix}\f$.
-   * If w_l == NULL then \f${\bf w}\f$ is set to be
-   * \f$\begin{bmatrix}1&\cdots&1\end{bmatrix}\f$. 
    */
   WLayeredHStructure( const double *m_l, size_t q, size_t n, 
-                     const gsl_vector *w = NULL );
+                      const double *w );
   virtual ~WLayeredHStructure();
 
   /** @name Implementing Structure interface */

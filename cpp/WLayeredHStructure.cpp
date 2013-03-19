@@ -11,23 +11,16 @@ extern "C" {
 #include "slra.h"
 
 WLayeredHStructure::WLayeredHStructure( const double *m_l, size_t q, size_t n, 
-    const gsl_vector *w ) : myBase(m_l, q, n, NULL) {
+    const double *w ) : myBase(m_l, q, n, NULL) {
   myInvWeights = gsl_vector_alloc(myBase.getNp());
   myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
 
-  if (w != NULL) {
-    for (size_t l = 0; l < myInvWeights->size; l++) {
-      if (!(gsl_vector_get(w, l) > 0)) {
-        throw new Exception("Value of weight not supported: %lf\n", 
-                            gsl_vector_get(w, l));
-      }
-      gsl_vector_set(myInvWeights, l, (1 / gsl_vector_get(w, l)));
-      gsl_vector_set(myInvSqrtWeights, l, 
-          sqrt(gsl_vector_get(myInvWeights, l)));
+  for (size_t l = 0; l < myInvWeights->size; l++) {
+    if (!(w[l] > 0)) {
+      throw new Exception("Value of weight not supported: %lf\n", w[l]);
     }
-  } else {
-    gsl_vector_set_all(myInvWeights, 1);
-    gsl_vector_set_all(myInvSqrtWeights, 1);
+    gsl_vector_set(myInvWeights, l, (1 / w[l]));
+    gsl_vector_set(myInvSqrtWeights, l, sqrt(gsl_vector_get(myInvWeights, l)));
   }
 }
 

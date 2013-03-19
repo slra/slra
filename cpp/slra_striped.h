@@ -15,14 +15,13 @@ class StripedStructure : public Structure {
   size_t myNp;
   size_t myMaxNkInd;
   bool myIsSameGamma;
-protected:
+public:
   /** Constructs striped structure from array.
    * @param blocksN \f$N\f$ 
    * @param stripe array of Structure objects
    */
   StripedStructure( size_t blocksN, Structure *stripe[], 
                     bool isSameGamma = false );
-public:
   virtual ~StripedStructure();
 
   /** @name Implementing Structure interface */
