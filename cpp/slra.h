@@ -19,7 +19,8 @@
 #include "slra_layered_hankel.h"
 #include "slra_layered_hankel_weighted.h"
 #include "slra_cholesky_btbanded.h"
-#include "slra_dgamma_btbanded.h"
+#include "SDependentDGamma.h"
+#include "StationaryDGamma.h"
 
 #include "slra_computation.h"
 #include "slra_optfun.h"
