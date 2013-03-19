@@ -113,8 +113,7 @@ void run_test( const char * testname, double & time, double& fmin,
       w_k = NULL;
     }
     
-    S = elementwise_w ? (Structure *)new WMosaicHStructure(m_k, n_l, w_k) : 
-                        (Structure *)new MosaicHStructure(m_k, n_l, w_k);
+    S = createMosaicStructure(m_k, n_l, w_k);
     gsl_vector_free(n_l);  
     if (w_k != NULL) {
       gsl_vector_free(w_k);  

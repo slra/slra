@@ -36,8 +36,4 @@ public:
    */
   MosaicHStructure( gsl_vector *m_l, gsl_vector *n_k, gsl_vector *w );
   virtual ~MosaicHStructure() {}
-  /** @name Implementing Structure interface */
-  /**@{*/
-  virtual Cholesky *createCholesky( size_t r ) const;
-  /**@}*/
 };

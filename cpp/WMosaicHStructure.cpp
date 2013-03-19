@@ -13,11 +13,12 @@ extern "C" {
 typedef Structure* pStructure;
 
 pStructure *WMosaicHStructure::allocStripe( gsl_vector *m_l, gsl_vector *n_k,  
-                gsl_vector *w )  {
+                 gsl_vector *w )  {
   pStructure *res = new pStructure[n_k->size];
 
   for (size_t k = 0; k < n_k->size; k++) {
-    res[k] = new WLayeredHStructure(m_l->data, m_l->size, n_k->data[k], w);
+    res[k] = new WLayeredHStructure(m_l->data, m_l->size, n_k->data[k], 
+                                    w);
     if (w != NULL) {
       w->data += res[k]->getNp();
     }
@@ -27,4 +28,5 @@ pStructure *WMosaicHStructure::allocStripe( gsl_vector *m_l, gsl_vector *n_k,
 
 WMosaicHStructure::WMosaicHStructure( gsl_vector *m_l, gsl_vector *n_k,  
     gsl_vector *w ) : StripedStructure(n_k->size, allocStripe(m_l, n_k, w)) {
+    
 }

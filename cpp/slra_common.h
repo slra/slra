@@ -54,6 +54,20 @@
          
 #define gsl_matrix_free_ifnull(M)    if (M != NULL) gsl_matrix_free(M)
 #define gsl_vector_free_ifnull(V)    if (V != NULL) gsl_vector_free(V)
+     
+     
+/** Function that creates appropriate Mosaic structure from weights and checks its
+ *    consistence with \f$n_p\f$
+ * @ingroup MainFunctions 
+ * @param [in]     ml      Vector of \f$\bf m\f$ \sa MosaicHStructure
+ * @param [in]     nk      Vector of \f$\bf n\f$ \sa MosaicHStructure  
+ * @param [in]     wk      Vector of weights. If NULL, or of sizes \f$q\f$, \f$qN\f$ - 
+ *                         MosaicHStructure is constructed, otherwise - WMosaicHStructure
+ * @param [in]     d       Rank reduction  (\f$m-r\f$) 
+ */                
+Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
+               gsl_vector * wk );
+
          
 /*
  * tmv_prod_new: block-Toeplitz banded matrix p =  T * v

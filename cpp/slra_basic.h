@@ -23,7 +23,7 @@ public:
   /** Solves linear system with factor \f$C\f$. 
    * Computes \f$M_r^T \leftarrow C^{-1} M_r^T\f$  if trans = 0 or 
    * \f$M_r^T \leftarrow C^{-T} M_r^T\f$  if trans = 1 */
-  virtual void multInvCholeskyTransMatrix( gsl_matrix * M_r, long trans );
+//  virtual void multInvCholeskyTransMatrix( gsl_matrix * M_r, long trans );
   /** Solves linear system with \f$\Gamma(R)\f$ . 
    * Computes \f$y_r \leftarrow \Gamma^{-1} y_r\f$ 
    * using Cholesky factorization */

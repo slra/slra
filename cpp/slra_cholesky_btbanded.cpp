@@ -55,42 +55,4 @@ void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg 
   }
 }
 
-SameStripedStationaryCholesky::
-    SameStripedStationaryCholesky( const MosaicHStructure *s, 
-         size_t D, long use_slicot  ) :  myS(s) {
-  myBase = (StationaryCholesky *)myS->getMaxBlock()->createCholesky(D);  
-}
-SameStripedStationaryCholesky::~SameStripedStationaryCholesky() {
-  delete myBase;
-}
-  
-void SameStripedStationaryCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamma ) {
-  myBase->calcGammaCholesky(R, reg_gamma);
-}
 
-  
-void SameStripedStationaryCholesky::
-         multInvCholeskyVector( gsl_vector * yr, long trans ) {
-  size_t n_row = 0, k;
-  gsl_vector_view sub_yr;
-  
-  for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), 
-                 myS->getBlock(k)->getN() * myBase->getD());    
-  
-    myBase->multInvPartCholeskyArray(sub_yr.vector.data, trans, 
-        sub_yr.vector.size, sub_yr.vector.size);
-  }
-}
-
-void SameStripedStationaryCholesky::multInvGammaVector( gsl_vector * yr ) {
-  size_t n_row = 0, k;
-  gsl_vector_view sub_yr;
-  
-  for (k = 0; k < myS->getBlocksN(); n_row += myS->getBlock(k)->getN(), k++) {
-    sub_yr = gsl_vector_subvector(yr, n_row * myBase->getD(), 
-                 myS->getBlock(k)->getN() * myBase->getD());    
-    myBase->multInvPartGammaArray(sub_yr.vector.data, 
-        sub_yr.vector.size, sub_yr.vector.size);
-  }
-}

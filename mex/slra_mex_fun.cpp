@@ -94,7 +94,7 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
     throw new Exception("Size of vector p exceeds structure requirements");   
   } 
 
-  myS = createMosaicStructure(&ml, &nk, vecChkNIL(wk), p_in.size);
+  myS = createMosaicStructure(&ml, &nk, vecChkNIL(wk));
   size_t m = (perm.data == NULL ? myS->getM() : perm.size2);
   int r = (rvec.size == 0 ? m - 1 : gsl_vector_get(&rvec, 0));
   

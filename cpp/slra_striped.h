@@ -14,12 +14,14 @@ class StripedStructure : public Structure {
   size_t myN;
   size_t myNp;
   size_t myMaxNkInd;
+  bool myIsSameGamma;
 protected:
   /** Constructs striped structure from array.
    * @param blocksN \f$N\f$ 
    * @param stripe array of Structure objects
    */
-  StripedStructure( size_t blocksN, Structure *stripe[] );
+  StripedStructure( size_t blocksN, Structure *stripe[], 
+                    bool isSameGamma = false );
 public:
   virtual ~StripedStructure();
 
@@ -48,6 +50,10 @@ public:
     return getBlock(myMaxNkInd); 
   }
   /**@}*/
+  
+  bool isSameGamma() const { 
+    return myIsSameGamma; 
+  }
 };
 
 
@@ -55,6 +61,7 @@ public:
 class StripedCholesky : virtual public Cholesky {
   Cholesky **myGamma;
   size_t myD;
+  size_t myNGamma;
   const StripedStructure *myS;
 public:  
   /** Constructs a stripe of Cholesky objects

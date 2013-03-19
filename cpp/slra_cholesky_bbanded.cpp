@@ -29,43 +29,39 @@ SDependentCholesky::~SDependentCholesky() {
   gsl_matrix_free(myTempGammaij);
 }
 
-void SDependentCholesky::multInvPartCholeskyArray( double * yr,
-         long trans, size_t size, size_t chol_size ) {
-  size_t info, total_cols = size / chol_size;
-  dtbtrs_("U", (trans ? "T" : "N"), "N", 
-          &chol_size, &d_times_s_minus_1, &total_cols, 
-	  myPackedCholesky, &d_times_s, yr, &chol_size, &info);
-}
-  
-void SDependentCholesky::multInvPartGammaArray( double * yr, size_t size,
-         size_t chol_size ) {
-  size_t info, total_cols = size / chol_size; 
-  dpbtrs_("U", &chol_size, &d_times_s_minus_1, &total_cols, 
-          myPackedCholesky, &d_times_s, yr, &chol_size, &info);  
-}
-
 void SDependentCholesky::multInvCholeskyVector( gsl_vector * yr, long trans ) {
   if (yr->stride != 1) {
     throw new Exception("Cannot mult vectors with stride != 1\n");
   }
-  multInvPartCholeskyArray(yr->data, trans, yr->size, d_times_n);
+  if (yr->size > d_times_n) {
+    throw new Exception("yr->size > d_times_n\n");
+  }
+ 
+  size_t one = 1, info;
+  dtbtrs_("U", (trans ? "T" : "N"), "N", &yr->size, &d_times_s_minus_1, &one, 
+	        myPackedCholesky, &d_times_s, yr->data, &yr->size, &info);
 }
 
 void SDependentCholesky::multInvGammaVector( gsl_vector * yr ) {
   if (yr->stride != 1) {
     throw new Exception("Cannot mult vectors with stride != 1\n");
   }
-  multInvPartGammaArray(yr->data, yr->size, d_times_n);
+  if (yr->size > d_times_n) {
+    throw new Exception("yr->size > d_times_n\n");
+  }
+
+  size_t one = 1, info;
+  dpbtrs_("U", &yr->size, &d_times_s_minus_1, &one, 
+          myPackedCholesky, &d_times_s, yr->data, &yr->size, &info);  
 }
 
 void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamma ) {
   size_t info = 0;
-  computeGammaUpperPart(R);
-  
   gsl_matrix m = gsl_matrix_view_array(myPackedCholesky, d_times_n, 
                      d_times_s).matrix;
   gsl_vector m_col = gsl_matrix_column(&m, d_times_s - 1).vector;
   
+  computeGammaUpperPart(R);
   dpbtrf_("U", &d_times_n, &d_times_s_minus_1, myPackedCholesky, 
           &d_times_s, &info);
           
@@ -76,12 +72,11 @@ void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamm
     computeGammaUpperPart(R, reg_gamma);
 
     dpbtrf_("U", &d_times_n, &d_times_s_minus_1,
-            myPackedCholesky, &d_times_s, &info);
+        myPackedCholesky, &d_times_s, &info);
   }
   
   if (info) {
-    throw new Exception("Gamma matrix is singular "
-                        "(DPBTRF info = %d).\n", info); 
+    throw new Exception("Gamma is singular (DPBTRF info = %d).\n", info); 
   }
 }
 

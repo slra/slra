@@ -13,15 +13,30 @@ Exception::Exception( const char *format, ... ) {
   vsnprintf(myMsg, MSG_MAX-1, format, vl); 
 }
 
-Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
-               gsl_vector * wk, size_t np_comp ) {
-  if (wk == NULL || wk->size == ml->size * nk->size || wk->size == ml->size) { 
-    return new MosaicHStructure(ml, nk, wk);
+typedef Structure* pStructure;
+
+Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
+               gsl_vector * wk ) {
+  enum { MOSAICEQ = 1, MOSAIC, WMOSAIC } stype;
+  
+  if (wk == NULL || wk->size == ml->size) {
+    stype = MOSAICEQ;
+  } else if (wk->size == ml->size * nk->size ) {
+    stype = MOSAIC;
+  } else if (wk->size == compute_np(ml,nk)) {
+    stype = WMOSAIC;
+  } else {
+    throw new Exception("Incorrect weight specification\n");   
+  }
+  
+  Structure *s;      
+  //pStructure *res = new pStructure[n_k->size];         
+  if (stype == MOSAIC || stype == MOSAICEQ) {
+    s = new MosaicHStructure(ml, nk, wk);
+  } else {
+    s = new WMosaicHStructure(ml, nk, wk);
   } 
-  if (wk->size == np_comp) {
-    return new WMosaicHStructure(ml, nk, wk);
-  } 
-  throw new Exception("Incorrect weight specification\n");   
+  return s;
 }
 
 void OptimizationOptions::str2Method( const char *str )  {
@@ -194,13 +209,6 @@ size_t compute_n( gsl_vector* ml, size_t np ) {
   }
 
   return np / ml->size;
-}
-
-void Cholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr, long trans ) { 
-  for (size_t i = 0; i < yr_matr->size1; i++) {
-    gsl_vector_view row = gsl_matrix_row(yr_matr, i);
-    multInvCholeskyVector(&row.vector, trans);
-  }
 }
 
 const gsl_vector *vecChkNIL( const gsl_vector &vec ) {

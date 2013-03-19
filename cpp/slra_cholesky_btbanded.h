@@ -23,14 +23,7 @@ public:
   size_t getM() const { return myW->getM(); }
   size_t getS() const { return myW->getS(); }
 
-
   virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
-
-  
-  virtual void multInvPartCholeskyArray( double * yr, long trans, 
-                   size_t size, size_t chol_size );
-  virtual void multInvPartGammaArray( double * yr, size_t size, 
-                   size_t chol_size );
 
   virtual void multInvCholeskyVector( gsl_vector * yr, long trans );
   virtual void multInvGammaVector( gsl_vector * yr );
@@ -67,21 +60,6 @@ private:
 };
 #endif /* USE_SLICOT */
 
-
-class SameStripedStationaryCholesky : public Cholesky {
-public:  
-  SameStripedStationaryCholesky( const MosaicHStructure *s, 
-      size_t r, long use_slicot );
-  virtual ~SameStripedStationaryCholesky();
-
-  virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
-  virtual void multInvCholeskyVector( gsl_vector * yr, long trans );  
-  virtual void multInvGammaVector( gsl_vector * yr );                
-  
-private:
-  StationaryCholesky *myBase;
-  const MosaicHStructure *myS;
-};
 
 
 
