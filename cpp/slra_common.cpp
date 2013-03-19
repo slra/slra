@@ -19,10 +19,6 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
                gsl_vector * wk ) {
   enum { MOSAICEQ = 1, MOSAIC, WMOSAIC } stype;
   
-  if (wk->size == 0) {
-    wk = NULL;
-  }
-  
   if (wk == NULL || wk->size == ml->size) {
     stype = MOSAICEQ;
   } else if (wk->size == ml->size * nk->size ) {

@@ -111,11 +111,18 @@ void run_test( const char * testname, double & time, double& fmin,
       }
       gsl_vector_free(w_k);
       w_k = el_wk;
+    } else {
+      if (!hasW) {
+        gsl_vector_free(w_k); 
+        w_k = NULL;
+      }
     }
     
     S = createMosaicStructure(m_k, n_l, w_k);
     gsl_vector_free(n_l);  
-    gsl_vector_free(w_k);  
+    if (w_k != NULL) {
+      gsl_vector_free(w_k);  
+    }
     gsl_vector_free(m_k);  
     
     /* Compute invariants and read everything else */ 

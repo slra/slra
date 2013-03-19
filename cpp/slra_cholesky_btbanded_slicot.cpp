@@ -1,12 +1,5 @@
 #include <memory.h>
 #include <cstdarg>
-extern "C" {
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_math.h>
-}
 #include "slra.h"
 
 #ifdef USE_SLICOT

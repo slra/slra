@@ -6,19 +6,27 @@
 #ifndef _SLRA_H_
 #define _SLRA_H_
 
+extern "C" {
+#include <gsl/gsl_vector.h>
 #include <gsl/gsl_vector_uint.h>
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_math.h>
 #include <gsl/gsl_multifit_nlin.h> /* Levenberge-Marquardt */
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
-#include <gsl/gsl_blas.h>
+}
 
 #include "slra_optimization.h"
 #include "slra_basic.h"
-#include "slra_striped.h"
-
+#include "StripedStructure.h"
+#include "StripedCholesky.h"
+#include "StripedDGamma.h"
 #include "LayeredHStructure.h"
 #include "WLayeredHStructure.h"
 #include "slra_cholesky_btbanded.h"
+#include "StationaryCholesky.h"
+#include "StationaryCholeskySlicot.h"
 #include "SDependentDGamma.h"
 #include "StationaryDGamma.h"
 

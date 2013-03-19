@@ -1,12 +1,5 @@
 #include <memory.h>
 #include <cstdarg>
-extern "C" {
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_math.h>
-}
 #include "slra.h"
 
 StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  size_t D ) : 
@@ -42,16 +35,16 @@ void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg 
   size_t row_gam, col_gam, icor;
   double *gp = myPackedCholesky;
     
-  for (size_t i = 0; i < d_times_s; i++) {
+  for (size_t i = 0; i < myDS; i++) {
     for (size_t j = 0; j < getD(); j++) {
       icor = i + j + 1;
-      gp[i + j * d_times_s] = gsl_matrix_get(myGamma, 
+      gp[i + j * myDS] = gsl_matrix_get(myGamma, 
           icor % getD(), j + (getS() - (icor / getD())) * getD());
     }
   }
   for (size_t r = 1; r < getN(); r++) {
-    gp +=  d_times_s * getD();
-    memcpy(gp, myPackedCholesky, d_times_s * getD() * sizeof(double));
+    gp +=  myDS * getD();
+    memcpy(gp, myPackedCholesky, myDS * getD() * sizeof(double));
   }
 }
 
