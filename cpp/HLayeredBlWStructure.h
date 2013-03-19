@@ -4,7 +4,7 @@
  * \begin{bmatrix} \mathcal{H}_{n,m_1} & \cdots & \mathcal{H}_{n,m_q} 
  * \end{bmatrix} \f$  with \f$q\f$ blocks.
  */
-class LayeredHStructure : public StationaryStructure {
+class HLayeredBlWStructure : public StationaryStructure {
   typedef struct {
     size_t blocks_in_row;       /* Number of blocks in a row of Ci */
     double inv_w;            /* Square root of inverse of the weight */
@@ -30,9 +30,9 @@ public:
    * If w_l == NULL then \f${\bf w}\f$ is set to be
    * \f$\begin{bmatrix}1&\cdots&1\end{bmatrix}\f$. 
    */
-  LayeredHStructure( const double *m_l, size_t q, size_t n, 
+  HLayeredBlWStructure( const double *m_l, size_t q, size_t n, 
                      const double *w_l = NULL );
-  virtual ~LayeredHStructure();
+  virtual ~HLayeredBlWStructure();
   /** @name Implementing Structure interface */
   /**@{*/
   virtual size_t getM() const { return myM; }

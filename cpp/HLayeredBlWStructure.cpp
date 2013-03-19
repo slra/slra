@@ -1,16 +1,9 @@
 #include <limits>
 #include <memory.h>
 #include <cstdarg>
-extern "C" {
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_math.h>
-}
 #include "slra.h"
 
-LayeredHStructure::LayeredHStructure( const double *m_l, 
+HLayeredBlWStructure::HLayeredBlWStructure( const double *m_l, 
     size_t q, size_t n, const double *w  ) : myQ(q), myN(n), mySA(NULL)  {
   mySA = new Layer[myQ];
  
@@ -26,7 +19,7 @@ LayeredHStructure::LayeredHStructure( const double *m_l,
   computeWkParams();
 }
 
-LayeredHStructure::~LayeredHStructure() {
+HLayeredBlWStructure::~HLayeredBlWStructure() {
   if (mySA != NULL) {
     delete[] mySA;
   }
@@ -38,7 +31,7 @@ LayeredHStructure::~LayeredHStructure() {
   }
 }
 
-void LayeredHStructure::fillMatrixFromP( gsl_matrix* c, 
+void HLayeredBlWStructure::fillMatrixFromP( gsl_matrix* c, 
                                          const gsl_vector* p ) {
   size_t sum_np = 0, sum_nl = 0, l, j;
   gsl_matrix_view c_chunk, c_chunk_sub;
@@ -54,7 +47,7 @@ void LayeredHStructure::fillMatrixFromP( gsl_matrix* c,
   }
 }
 
-void LayeredHStructure::computeWkParams() {
+void HLayeredBlWStructure::computeWkParams() {
   size_t k, l, i, imax, sum_nl, rep;
   gsl_matrix *zk;
   gsl_matrix_view wi, zkl;
@@ -78,7 +71,7 @@ void LayeredHStructure::computeWkParams() {
   }
 }
 
-void LayeredHStructure::computeStats() {
+void HLayeredBlWStructure::computeStats() {
   size_t l;
   for (l = 0, myM = 0, myMaxLag = 1; l < myQ; 
        myM += getLayerLag(l), ++l) {
@@ -88,7 +81,7 @@ void LayeredHStructure::computeStats() {
   }
 }
 
-void LayeredHStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
+void HLayeredBlWStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
                                   const gsl_vector *yr, long wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len, D = R->size2;
   gsl_matrix yr_matr = gsl_matrix_const_view_vector(yr, getN(), D).matrix, b_xext;
@@ -117,7 +110,7 @@ void LayeredHStructure::correctP( gsl_vector* p, const gsl_matrix *R,
   gsl_vector_free(res);
 }
 
-Cholesky *LayeredHStructure::createCholesky( size_t D ) const {
+Cholesky *HLayeredBlWStructure::createCholesky( size_t D ) const {
 #ifdef USE_SLICOT 
   return new StationaryCholeskySlicot(this, D);
 #else  /* USE_SLICOT */
@@ -125,25 +118,25 @@ Cholesky *LayeredHStructure::createCholesky( size_t D ) const {
 #endif /* USE_SLICOT */
 }
 
-DGamma *LayeredHStructure::createDGamma( size_t D ) const {
+DGamma *HLayeredBlWStructure::createDGamma( size_t D ) const {
   return new StationaryDGamma(this, D);
 }
 
 
-void LayeredHStructure::WkB( gsl_matrix *res, long k, 
+void HLayeredBlWStructure::WkB( gsl_matrix *res, long k, 
                              const gsl_matrix *B ) const {
   gsl_matrix_memcpy(res, B);
   gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), 
                  CblasNonUnit, 1.0, getWk(abs(k)), res);
 }
 
-void LayeredHStructure::AtWkB( gsl_matrix *res, long k, const gsl_matrix *A,
+void HLayeredBlWStructure::AtWkB( gsl_matrix *res, long k, const gsl_matrix *A,
          const gsl_matrix *B, gsl_matrix *tmpWkB, double beta ) const {
   WkB(tmpWkB, k, B);
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpWkB, beta, res);       
 }
 
-void LayeredHStructure::AtWkV( gsl_vector *res, long k, const gsl_matrix *A,
+void HLayeredBlWStructure::AtWkV( gsl_vector *res, long k, const gsl_matrix *A,
          const gsl_vector *V, gsl_vector *tmpWkV, double beta ) const {
   gsl_blas_dcopy(V, tmpWkV);
   gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans),

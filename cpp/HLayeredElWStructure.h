@@ -1,8 +1,8 @@
 /** Layered Hankel structure with elementwise weights.
- * @copydetails LayeredHStructure
+ * @copydetails HLayeredBlWStructure
  */
-class WLayeredHStructure : public SDependentStructure {
-  LayeredHStructure myBase;
+class HLayeredElWStructure : public SDependentStructure {
+  HLayeredBlWStructure myBase;
   gsl_vector *myInvWeights;
   gsl_vector *myInvSqrtWeights;
   void mulInvWij( gsl_matrix * res, long i ) const;
@@ -12,9 +12,9 @@ public:
    * @param w vector of weights 
    * \f${\bf w} =\begin{bmatrix} w_1 & \cdots & w_{n_p} \end{bmatrix}\f$.
    */
-  WLayeredHStructure( const double *m_l, size_t q, size_t n, 
+  HLayeredElWStructure( const double *m_l, size_t q, size_t n, 
                       const double *w );
-  virtual ~WLayeredHStructure();
+  virtual ~HLayeredElWStructure();
 
   /** @name Implementing Structure interface */
   /**@{*/

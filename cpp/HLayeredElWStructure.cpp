@@ -10,7 +10,7 @@ extern "C" {
 }
 #include "slra.h"
 
-WLayeredHStructure::WLayeredHStructure( const double *m_l, size_t q, size_t n, 
+HLayeredElWStructure::HLayeredElWStructure( const double *m_l, size_t q, size_t n, 
     const double *w ) : myBase(m_l, q, n, NULL) {
   myInvWeights = gsl_vector_alloc(myBase.getNp());
   myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
@@ -24,12 +24,12 @@ WLayeredHStructure::WLayeredHStructure( const double *m_l, size_t q, size_t n,
   }
 }
 
-WLayeredHStructure::~WLayeredHStructure() {
+HLayeredElWStructure::~HLayeredElWStructure() {
   gsl_vector_free(myInvWeights);
   gsl_vector_free(myInvSqrtWeights);
 }
 
-void WLayeredHStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
+void HLayeredElWStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
                                    const gsl_vector *yr, long wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;
   gsl_matrix yr_matr = gsl_matrix_const_view_vector(yr, getN(), R->size2).matrix;
@@ -58,7 +58,7 @@ void WLayeredHStructure::correctP( gsl_vector* p, const gsl_matrix *R,
   gsl_vector_free(res);
 }
 
-void WLayeredHStructure::mulInvWij( gsl_matrix *matr, long i  ) const {
+void HLayeredElWStructure::mulInvWij( gsl_matrix *matr, long i  ) const {
   size_t sum_np = i, sum_ml = 0, l, k;
   gsl_vector matr_row;
 
@@ -70,7 +70,7 @@ void WLayeredHStructure::mulInvWij( gsl_matrix *matr, long i  ) const {
   }
 }
 
-void WLayeredHStructure::WijB( gsl_matrix *res, long i, long j, 
+void HLayeredElWStructure::WijB( gsl_matrix *res, long i, long j, 
          const gsl_matrix *B ) const {
   gsl_matrix_memcpy(res, B);
   if (i <= j) {
@@ -84,7 +84,7 @@ void WLayeredHStructure::WijB( gsl_matrix *res, long i, long j,
   }
 }
 
-void WLayeredHStructure::AtWijB( gsl_matrix *res, long i, long j, 
+void HLayeredElWStructure::AtWijB( gsl_matrix *res, long i, long j, 
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWijB, 
          double beta ) const {
   gsl_matrix_scale(res, beta);
@@ -107,7 +107,7 @@ void WLayeredHStructure::AtWijB( gsl_matrix *res, long i, long j,
   }
 }   
 
-void WLayeredHStructure::AtWijV( gsl_vector *res, long i, long j, 
+void HLayeredElWStructure::AtWijV( gsl_vector *res, long i, long j, 
          const gsl_matrix *A, const gsl_vector *V, 
                      gsl_vector *tmpWijV, double beta ) const {
   gsl_vector_scale(res, beta);
@@ -130,11 +130,11 @@ void WLayeredHStructure::AtWijV( gsl_vector *res, long i, long j,
   }
 }   
 
-Cholesky *WLayeredHStructure::createCholesky( size_t D ) const {
+Cholesky *HLayeredElWStructure::createCholesky( size_t D ) const {
   return new SDependentCholesky(this, D);
 }
 
-DGamma *WLayeredHStructure::createDGamma( size_t D ) const {
+DGamma *HLayeredElWStructure::createDGamma( size_t D ) const {
   return new SDependentDGamma(this, D);
 }
 

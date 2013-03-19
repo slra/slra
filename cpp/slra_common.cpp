@@ -17,14 +17,14 @@ typedef Structure* pStructure;
 
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
                gsl_vector * wk ) {
-  enum { MOSAICEQ = 1, MOSAIC, WMOSAIC } stype;
+  enum { ROW_BLW_MOSAIC = 1, BLW_MOSAIC, ELW_MOSAIC } stype;
   
   if (wk == NULL || wk->size == ml->size) {
-    stype = MOSAICEQ;
+    stype = ROW_BLW_MOSAIC;
   } else if (wk->size == ml->size * nk->size ) {
-    stype = MOSAIC;
+    stype = BLW_MOSAIC;
   } else if (wk->size == compute_np(ml,nk)) {
-    stype = WMOSAIC;
+    stype = ELW_MOSAIC;
   } else {
     throw new Exception("Incorrect weight specification\n");   
   }
@@ -32,19 +32,19 @@ Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk,
   pStructure *res = new pStructure[nk->size];
   double *pw = (wk == NULL ? NULL : wk->data);
   for (size_t k = 0; k < nk->size; k++) {
-    if (stype == WMOSAIC) {
-      res[k] = new WLayeredHStructure(ml->data, ml->size, nk->data[k], pw);
+    if (stype == ELW_MOSAIC) {
+      res[k] = new HLayeredElWStructure(ml->data, ml->size, nk->data[k], pw);
       if (pw != NULL) {
         pw += res[k]->getNp();
       }
     } else {
-      res[k] = new LayeredHStructure(ml->data, ml->size, nk->data[k], pw);
-      if (stype == MOSAIC) {
+      res[k] = new HLayeredBlWStructure(ml->data, ml->size, nk->data[k], pw);
+      if (stype == BLW_MOSAIC) {
         pw += ml->size;
       }
     } 
   }
-  return new StripedStructure(nk->size, res,  stype == MOSAICEQ);
+  return new StripedStructure(nk->size, res,  stype == ROW_BLW_MOSAIC);
 }
 
 void OptimizationOptions::str2Method( const char *str )  {
