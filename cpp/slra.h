@@ -16,8 +16,10 @@
 #include "slra_basic.h"
 #include "slra_striped.h"
 
-#include "slra_layered_hankel.h"
-#include "slra_layered_hankel_weighted.h"
+#include "LayeredHStructure.h"
+#include "MosaicHStructure.h"
+#include "WLayeredHStructure.h"
+#include "WMosaicHStructure.h"
 #include "slra_cholesky_btbanded.h"
 #include "SDependentDGamma.h"
 #include "StationaryDGamma.h"

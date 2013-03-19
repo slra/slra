@@ -58,16 +58,6 @@ void SDependentCholesky::multInvGammaVector( gsl_vector * yr ) {
   multInvPartGammaArray(yr->data, yr->size, d_times_n);
 }
 
-void SDependentCholesky::multInvCholeskyTransMatrix( gsl_matrix * yr_matr,
-         long trans ) {
-  if (yr_matr->size2 != yr_matr->tda) {
-    Cholesky::multInvCholeskyTransMatrix(yr_matr, trans);
-  } else {
-    multInvPartCholeskyArray(yr_matr->data, trans, 
-        yr_matr->size1 * yr_matr->size2, d_times_n);
-  }
-}
-
 void SDependentCholesky::calcGammaCholesky( const gsl_matrix *R, double reg_gamma ) {
   size_t info = 0;
   computeGammaUpperPart(R);

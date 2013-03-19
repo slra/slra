@@ -34,7 +34,6 @@ public:
 
   virtual void multInvCholeskyVector( gsl_vector * yr, long trans );
   virtual void multInvGammaVector( gsl_vector * yr );
-  virtual void multInvCholeskyTransMatrix( gsl_matrix * yr_matr, long trans );
 };
 
 class StationaryCholesky : public SDependentCholesky {
