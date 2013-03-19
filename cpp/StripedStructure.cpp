@@ -26,7 +26,8 @@ StripedStructure::~StripedStructure()  {
   }
 }
 
-void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
+void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p,
+                                bool premultInvW ) {
   size_t n_row = 0, sum_np = 0;
   gsl_matrix_view sub_c;
   
@@ -35,7 +36,7 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
     sub_c = gsl_matrix_submatrix(c, n_row, 0, getBlock(k)->getN(), c->size2);    
     gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, 
         myStripe[k]->getNp());
-    myStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
+    myStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector, premultInvW);
   }
 }
 

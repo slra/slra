@@ -31,10 +31,10 @@ HLayeredBlWStructure::~HLayeredBlWStructure() {
   }
 }
 
-void HLayeredBlWStructure::fillMatrixFromP( gsl_matrix* c, 
-                                         const gsl_vector* p ) {
+void HLayeredBlWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p, 
+                                            bool premultInvW ) {
   size_t sum_np = 0, sum_nl = 0, l, j;
-  gsl_matrix_view c_chunk, c_chunk_sub;
+  gsl_matrix_view c_chunk;
  
   for (l = 0; l < getQ(); 
        sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
@@ -44,6 +44,9 @@ void HLayeredBlWStructure::fillMatrixFromP( gsl_matrix* c,
                                                               getN());
       gsl_matrix_set_col(&c_chunk.matrix, j, &psub.vector);
     }  
+    if (premultInvW) {
+      gsl_matrix_scale(&c_chunk.matrix, getLayerInvWeight(l));
+    }
   }
 }
 

@@ -29,6 +29,26 @@ HLayeredElWStructure::~HLayeredElWStructure() {
   gsl_vector_free(myInvSqrtWeights);
 }
 
+void HLayeredElWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p, 
+                                            bool premultInvW ) {
+  size_t sum_np = 0, sum_nl = 0, l, j;
+  gsl_vector_view c_col, invw_sub;
+ 
+  for (l = 0; l < getQ(); 
+       sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
+    for (j = 0; j < getLayerLag(l); j++) {
+      gsl_vector_const_view psub = gsl_vector_const_subvector(p, sum_np + j, 
+                                                              getN());
+      c_col = gsl_matrix_column(c, j + sum_nl);
+      gsl_vector_memcpy(&c_col.vector, &psub.vector);
+      if (premultInvW) {
+        invw_sub = gsl_vector_subvector(myInvWeights, sum_np + j, getN());
+        gsl_vector_mul(&c_col.vector, &invw_sub.vector);
+      }
+    }  
+  }
+}
+
 void HLayeredElWStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
                                    const gsl_vector *yr, long wdeg ) {
   size_t l, k, sum_np = 0, sum_nl = 0, p_len;

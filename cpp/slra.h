@@ -18,6 +18,7 @@ extern "C" {
 }
 
 #include "slra_basic.h"
+#include "Structure.h"
 #include "SDependentStructure.h"
 #include "StationaryStructure.h"
 #include "StripedStructure.h"

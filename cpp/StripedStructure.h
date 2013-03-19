@@ -29,7 +29,8 @@ public:
   virtual size_t getN() const { return myN; }
   virtual size_t getNp() const { return myNp; }
   virtual size_t getM() const { return myStripe[0]->getM(); }
-  virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
+  virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p,
+                                bool premultInvW = false ) ;
   virtual void correctP( gsl_vector* p, const gsl_matrix *R, 
                          const gsl_vector *yr, long wdeg = 2 );
   virtual Cholesky *createCholesky( size_t D ) const;
