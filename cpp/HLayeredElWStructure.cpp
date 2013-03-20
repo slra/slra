@@ -29,53 +29,25 @@ HLayeredElWStructure::~HLayeredElWStructure() {
   gsl_vector_free(myInvSqrtWeights);
 }
 
-void HLayeredElWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p, 
-                                            bool premultInvW ) {
-  size_t sum_np = 0, sum_nl = 0, l, j;
-  gsl_vector_view c_col, invw_sub;
- 
-  for (l = 0; l < getQ(); 
-       sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-    for (j = 0; j < getLayerLag(l); j++) {
-      gsl_vector_const_view psub = gsl_vector_const_subvector(p, sum_np + j, 
-                                                              getN());
-      c_col = gsl_matrix_column(c, j + sum_nl);
-      gsl_vector_memcpy(&c_col.vector, &psub.vector);
-      if (premultInvW) {
-        invw_sub = gsl_vector_subvector(myInvWeights, sum_np + j, getN());
-        gsl_vector_mul(&c_col.vector, &invw_sub.vector);
-      }
-    }  
-  }
+void HLayeredElWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
+  myBase.fillMatrixFromP(c, p);
 }
 
-void HLayeredElWStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
-                                   const gsl_vector *yr, long wdeg ) {
-  size_t l, k, sum_np = 0, sum_nl = 0, p_len;
-  gsl_matrix yr_matr = gsl_matrix_const_view_vector(yr, getN(), R->size2).matrix;
-  gsl_vector yr_matr_row;
-  gsl_vector_view res_sub, p_chunk_sub, inv_w_chunk;
-  gsl_vector *res = gsl_vector_alloc(R->size1), 
-             *weights = (wdeg == 2) ? myInvWeights : myInvSqrtWeights;
+void HLayeredElWStructure::multByGtUnweighted( gsl_vector* p, 
+          const gsl_matrix *R, const gsl_vector *y, 
+          double alpha, double beta, bool skipFixedBlocks ) {
+  myBase.multByGtUnweighted(p, R, y, alpha, beta, skipFixedBlocks);        
+}
 
-  for (k = 0; k < getN(); k++) {
-    yr_matr_row = gsl_matrix_row(&yr_matr, k).vector; 
-    gsl_blas_dgemv(CblasNoTrans, 1.0, R,  &yr_matr_row, 0.0, res); 
-    
-    for (l = 0, sum_np = 0, sum_nl = 0; l < getQ(); 
-         sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-      res_sub = gsl_vector_subvector(res, sum_nl, getLayerLag(l));
-      p_chunk_sub =  gsl_vector_subvector(p, k + sum_np, getLayerLag(l));
-      if (wdeg != 0) {
-        inv_w_chunk = gsl_vector_subvector(myInvWeights, k + sum_np, 
-                                           getLayerLag(l));
-        gsl_vector_mul(&res_sub.vector, &inv_w_chunk.vector);              
-      }
-      gsl_vector_sub(&p_chunk_sub.vector, &res_sub.vector); 
-    }
+void HLayeredElWStructure::multByWInv( gsl_vector* p, long deg ) {
+  if (deg == 0) {
+    return;
   }
-
-  gsl_vector_free(res);
+  if (deg == 1) {
+    gsl_vector_mul(p, myInvSqrtWeights);              
+  } else if (deg == 2) {
+    gsl_vector_mul(p, myInvWeights);              
+  }
 }
 
 void HLayeredElWStructure::mulInvWij( gsl_matrix *matr, long i  ) const {

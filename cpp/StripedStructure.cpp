@@ -26,8 +26,7 @@ StripedStructure::~StripedStructure()  {
   }
 }
 
-void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p,
-                                bool premultInvW ) {
+void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
   size_t n_row = 0, sum_np = 0;
   gsl_matrix_view sub_c;
   
@@ -36,22 +35,32 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p,
     sub_c = gsl_matrix_submatrix(c, n_row, 0, getBlock(k)->getN(), c->size2);    
     gsl_vector_const_view sub_p = gsl_vector_const_subvector(p, sum_np, 
         myStripe[k]->getNp());
-    myStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector, premultInvW);
+    myStripe[k]->fillMatrixFromP(&sub_c.matrix, &sub_p.vector);
   }
 }
 
-void StripedStructure::correctP( gsl_vector* p, const gsl_matrix *R, 
-                                 const gsl_vector *yr, long wdeg ) {
+void StripedStructure::multByGtUnweighted( gsl_vector* p, const gsl_matrix *R, 
+         const gsl_vector *y, double alpha, double beta, bool skipFixedBlocks ){
   size_t n_row = 0, sum_np = 0, D = R->size2;
-  gsl_vector_view sub_p;
+  gsl_vector subp, suby;
   
   for (size_t k = 0; k < getBlocksN(); 
-       sum_np += myStripe[k]->getNp(), n_row += getBlock(k)->getN()*D, k++) {
-    gsl_vector_const_view sub_yr = 
-        gsl_vector_const_subvector(yr, n_row, getBlock(k)->getN() * D);    
-    sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp());
-    myStripe[k]->correctP(&sub_p.vector, R, &sub_yr.vector, wdeg);
-  }
+       sum_np += myStripe[k]->getNp(), n_row += getBlock(k)->getN() * D, k++) {
+    suby = gsl_vector_const_subvector(y, n_row, getBlock(k)->getN() * D).vector;    
+    subp = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp()).vector;
+    myStripe[k]->multByGtUnweighted(&subp, R, &suby, alpha, beta, 
+                                    skipFixedBlocks);
+  }                         
+}
+
+void StripedStructure::multByWInv( gsl_vector* p, long deg ) {
+  size_t sum_np = 0;
+  gsl_vector sub_p;
+  
+  for (size_t k = 0; k < getBlocksN(); sum_np += myStripe[k]->getNp(), k++) {
+    sub_p = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp()).vector;
+    myStripe[k]->multByWInv(&sub_p, deg);
+  }                         
 }
 
 Cholesky *StripedStructure::createCholesky( size_t D ) const {

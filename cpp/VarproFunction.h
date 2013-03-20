@@ -5,6 +5,7 @@ class VarproFunction  {
   Cholesky *myGam;
   DGamma *myDeriv;
   double myReggamma;
+  bool myIsGCD;
 
   gsl_matrix *myPhi;
   gsl_matrix *myMatr;
@@ -14,6 +15,7 @@ class VarproFunction  {
   gsl_vector *myTmpYr;  
   gsl_vector *myTmpCorr;  
   gsl_vector *myP;
+  double myPWnorm;
 
   gsl_vector *myPhiPermCol;  
   gsl_vector *myTmpJacobianCol;  
@@ -35,29 +37,30 @@ protected:
                    const gsl_matrix *Rorig, const gsl_matrix *perm, gsl_matrix *jac );
   virtual void computeGradFromYr( const gsl_vector* yr, const gsl_matrix *Rorig, 
                                   const gsl_matrix *perm, gsl_matrix *grad );
+  const gsl_vector *getP() { return myP; }
+  virtual const gsl_matrix * getOrigSMatr() { return myMatr; }
 public:
-  VarproFunction( const gsl_vector *p, Structure *s, size_t d, gsl_matrix *Phi );
+  VarproFunction( const gsl_vector *p, Structure *s, size_t d, gsl_matrix *Phi,
+                  bool isGCD = false );
   virtual ~VarproFunction();
   
   size_t getD() { return myD; }
   size_t getN() { return myStruct->getN(); }
   size_t getNrow() { return myPhi->size2; }
   size_t getNp() { return myStruct->getNp(); }
-  const gsl_vector *getP() { return myP; }
   double getReggamma() { return myReggamma; }
   void setReggamma( double reg_gamma ) { myReggamma = reg_gamma; }
 
-  void computeDefaultRTheta( gsl_matrix *RTheta ); 
 
-  virtual void computePhat( gsl_vector* p, gsl_matrix* R );
-  virtual void computeCorrectionAndJacobian( gsl_matrix* R, gsl_matrix *perm,
-                                    gsl_vector *res, gsl_matrix *jac  );
-  virtual void computeFuncAndPseudoJacobianLs( const gsl_matrix* R, gsl_matrix *perm,
-                   gsl_vector *res, gsl_matrix *jac, double factor = 0.5 );
   virtual void computeFuncAndGrad( const gsl_matrix* R, double* f, 
                                    const gsl_matrix *perm, gsl_matrix *gradR );
+  virtual void computePhat( gsl_vector* p, const gsl_matrix* R );
+  virtual void computeCorrectionAndJacobian( const gsl_matrix* R, 
+                   const gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac  );
 
-  virtual const gsl_matrix * getOrigSMatr() { return myMatr; }
+  void computeDefaultRTheta( gsl_matrix *RTheta ); 
+  virtual void computeFuncAndPseudoJacobianLs( const gsl_matrix* R, gsl_matrix *perm,
+                   gsl_vector *res, gsl_matrix *jac, double factor = 0.5 );
 };
 
 

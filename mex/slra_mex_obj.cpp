@@ -41,13 +41,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     if (!strcmp("optimize", str_buf)) {
       OptimizationOptions opt;
-      gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 }, rhm = { 0, 0, 0, 0, 0, 0 }, vhm =  { 0, 0, 0, 0, 0, 0 };
+      gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 }, 
+                 rhm = { 0, 0, 0, 0, 0, 0 }, vhm =  { 0, 0, 0, 0, 0, 0 };
       if (nrhs > 2) {
         mexFillOpt(prhs[2], opt, rini, psi, m, m-d); 
       }  
       int mtheta = psi.data != NULL ? psi.size2 : m;
       /* Prepare output info */
-      plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getP()->size, 1, mxREAL);
+      plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getNp(), 1, mxREAL);
       gsl_vector p_out = M2vec(plhs[0]);
       if (nlhs > 1) {
         mwSize l = 1;
@@ -105,7 +106,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
     if (!strcmp("getPh", str_buf)) {
       gsl_vector pout = 
-           M2vec(plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getP()->size, 1, mxREAL));
+           M2vec(plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getNp(), 1, mxREAL));
       slraObj->getF()->computePhat(&pout, &R);      
       return;
     }

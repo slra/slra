@@ -4,8 +4,8 @@
 #include "slra.h"
 
 VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d, 
-                         gsl_matrix *Phi ) : myP(NULL), myD(d), myStruct(s), 
-                         myReggamma(SLRA_DEF_reggamma) {
+                    gsl_matrix *Phi, bool isGCD ) : myP(NULL), myD(d), myStruct(s), 
+                         myReggamma(SLRA_DEF_reggamma), myIsGCD(isGCD) {
   if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
   }
@@ -51,7 +51,14 @@ VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d,
   myTmpJac = gsl_matrix_alloc(myStruct->getM() * getD(), myStruct->getN() * getD());
   myTmpJac2 = gsl_matrix_alloc(myStruct->getN() * getD(), getNrow() * getD());
   myTmpCorr = gsl_vector_alloc(myStruct->getNp());
-  myStruct->fillMatrixFromP(myMatr, p);
+  if (myIsGCD) {
+    gsl_vector_memcpy(myTmpCorr, getP());
+    myStruct->multByWInv(myTmpCorr, 1);
+    myStruct->fillMatrixFromP(myMatr, myTmpCorr);
+    myPWnorm = gsl_blas_dnrm2(myTmpCorr);
+  } else {
+    myStruct->fillMatrixFromP(myMatr, getP());
+  }
 }
   
 VarproFunction::~VarproFunction() {
@@ -138,21 +145,20 @@ void VarproFunction::computeJacobianOfCorrection( const gsl_vector* yr,
 
   for (size_t i = 0; i < perm->size2; i++) {
     for (size_t j = 0; j < getD(); j++) {
-      
-      gsl_vector_set_zero(myTmpCorr);
+      gsl_vector_view jac_col = gsl_matrix_column(jac, i * getD() + j);
 
       /* Compute first term (correction of Gam^{-1} z_{ij}) */
       mulZmatPerm(myTmpJacobianCol, perm, i, j);
       myGam->multInvGammaVector(myTmpJacobianCol);
-      myStruct->correctP(myTmpCorr, Rorig, myTmpJacobianCol, 1);
+      myStruct->multByGtUnweighted(myTmpCorr, Rorig, myTmpJacobianCol, -1, 0);
 
       /* Compute second term (gamma * dG_{ij} * yr) */
       gsl_matrix_set_zero(myTmpGradR);
       setPhiPermCol(i, perm);
       gsl_matrix_set_col(myTmpGradR, j, myPhiPermCol);
-      myStruct->correctP(myTmpCorr, myTmpGradR, yr, 1);
+      myStruct->multByGtUnweighted(myTmpCorr, Rorig, myTmpJacobianCol, -1, 1);
 
-      gsl_vector_view jac_col = gsl_matrix_column(jac, i * getD() + j);
+      myStruct->multByWInv(myTmpCorr, 1);
       gsl_vector_memcpy(&jac_col.vector, myTmpCorr);
     }
   }
@@ -177,9 +183,6 @@ void VarproFunction::computeGradFromYr( const gsl_vector* yr,
   }
 }
 
-
-
-
 void VarproFunction::computeFuncAndGrad( const gsl_matrix* R, double * f, 
                                        const gsl_matrix *perm, gsl_matrix *gradR ) {
   computeGammaSr(R, myRorig, myTmpYr, true);
@@ -187,6 +190,9 @@ void VarproFunction::computeFuncAndGrad( const gsl_matrix* R, double * f,
   if (f != NULL) {
     myGam->multInvCholeskyVector(myTmpYr, 1);
     gsl_blas_ddot(myTmpYr, myTmpYr, f);
+    if (myIsGCD) {
+      *f =  myPWnorm - *f;
+    }
   }
   if (gradR != NULL) {
     if (f != NULL) {
@@ -195,11 +201,58 @@ void VarproFunction::computeFuncAndGrad( const gsl_matrix* R, double * f,
       myGam->multInvGammaVector(myTmpYr);
     }
     computeGradFromYr(myTmpYr, myRorig, perm, gradR);
+    if (myIsGCD) {
+      gsl_matrix_scale(gradR, -1);
+    }
   }
 }
 
+void VarproFunction::computeCorrectionAndJacobian( const gsl_matrix *R, 
+         const gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac ) {
+  computeGammaSr(R, myRorig, myTmpYr, true);                  
+  myGam->multInvGammaVector(myTmpYr);
+  if (res != NULL) {
+    if (myIsGCD) {
+      gsl_vector_memcpy(res, getP());
+      myStruct->multByGtUnweighted(res, myRorig, myTmpYr, -1, 1);
+    } else {
+      myStruct->multByGtUnweighted(res, myRorig, myTmpYr, -1, 0);
+    }
+    myStruct->multByWInv(res, 1);
+  }
+  if (jac != NULL) {  
+    computeJacobianOfCorrection(myTmpYr, R, perm, jac);
+  } 
+}
+
+void VarproFunction::computePhat( gsl_vector* p, const gsl_matrix *R ) {
+  try  {
+    computeGammaSr(R, myRorig, myTmpYr, true);
+  } catch (Exception *e) {
+    if (!strncmp(e->getMessage(), "Gamma", 5)) {
+      delete e;
+      e = new Exception("Gamma matrix is singular. "
+                        "Unable to compute the correction.\n");
+    }
+    throw e;
+  }
+  myGam->multInvGammaVector(myTmpYr);
+  
+  if (myIsGCD) {
+    myStruct->multByGtUnweighted(p, myRorig, myTmpYr, 1, 0, false);
+  } else {
+    myStruct->multByGtUnweighted(p, myRorig, myTmpYr, -1, 0);
+    myStruct->multByWInv(p, 2);
+    gsl_vector_add(p, getP());
+  }
+}
+
+
 void VarproFunction::computeFuncAndPseudoJacobianLs( const gsl_matrix *R, 
          gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac, double factor ) {
+  if (myIsGCD)  {
+    throw new Exception("Pseudojacobian not allowed for GCD computations\n");
+  }
   computeGammaSr(R, myRorig, myTmpYr, true);
   if (res != NULL) {
     myGam->multInvCholeskyVector(myTmpYr, 1);
@@ -213,35 +266,6 @@ void VarproFunction::computeFuncAndPseudoJacobianLs( const gsl_matrix *R,
     }
     computePseudoJacobianLsFromYr(myTmpYr, myRorig, perm, jac, factor);
   } 
-}
-
-void VarproFunction::computeCorrectionAndJacobian( gsl_matrix *R, 
-                       gsl_matrix *perm, gsl_vector *res, gsl_matrix *jac ) {
-  computeGammaSr(R, myRorig, myTmpYr, true);                  
-  myGam->multInvGammaVector(myTmpYr);
-  if (res != NULL) {
-    gsl_vector_set_zero(res);
-    myStruct->correctP(res, myRorig, myTmpYr, 1);
-  }
-  if (jac != NULL) {  
-    computeJacobianOfCorrection(myTmpYr, R, perm, jac);
-  } 
-}
-
-void VarproFunction::computePhat( gsl_vector* p, gsl_matrix *R ) {
-  try  {
-    computeGammaSr(R, myRorig, myTmpYr, true);
-  } catch (Exception *e) {
-    if (!strncmp(e->getMessage(), "Gamma", 5)) {
-      delete e;
-      e = new Exception("Gamma matrix is singular. "
-                        "Unable to compute the correction.\n");
-    }
-    throw e;
-  }
-  myGam->multInvGammaVector(myTmpYr);
-  gsl_vector_memcpy(p, getP());
-  myStruct->correctP(p, myRorig, myTmpYr);
 }
 
 void VarproFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
