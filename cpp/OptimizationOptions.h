@@ -52,6 +52,7 @@
 #define SLRA_DEF_maxx     0
 #define SLRA_DEF_step     0.001
 #define SLRA_DEF_tol      1e-6
+#define SLRA_DEF_epscov   1e-5
 #define SLRA_DEF_reggamma 0.000
 #define SLRA_DEF_ls_correction 0
 /* @} */
@@ -93,8 +94,9 @@ public:
   
   /** @name Method-specific parameters */  
   ///@{
-  double step;  ///< 'step_size' for fdfminimizer_set, fminimizer_set 
-  double tol;   ///< 'tol' for fdfminimizer_set, fminimizer_set
+  double step;   ///< 'step_size' for fdfminimizer_set, fminimizer_set 
+  double tol;    ///< 'tol' for fdfminimizer_set, fminimizer_set
+  double epscov; ///< Eps for cutoff when computing covariance matrix
   ///@}
   
   /** @name Advanced parameters */  

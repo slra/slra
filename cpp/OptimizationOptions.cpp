@@ -201,7 +201,7 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
     /* return the results */
     gsl_vector_memcpy(x_vec, solverlm->x);
     if (v != NULL) {
-      gsl_multifit_covar(solverlm->J, this->epsrel, v); /* ??? Different eps */
+      gsl_multifit_covar(solverlm->J, this->epscov, v); /* ??? Different eps */
     }
     /* assign the opt output fields */
     gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);

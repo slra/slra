@@ -44,7 +44,6 @@ void HLayeredBlWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )
   }
 }
 
-
 void HLayeredBlWStructure::computeWkParams() {
   size_t k, l, i, imax, sum_nl, rep;
   gsl_matrix *zk;
@@ -78,7 +77,6 @@ void HLayeredBlWStructure::computeStats() {
     }
   }
 }
-
 
 void HLayeredBlWStructure::multByGtUnweighted( gsl_vector* p, 
           const gsl_matrix *R, const gsl_vector *y, 

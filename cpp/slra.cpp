@@ -24,7 +24,7 @@ void slra( VarproFunction *costFun,
     time_t t_b = clock();
 
     costFun->setReggamma(opt->reggamma);
-    if (opt->ls_correction) {
+    if (opt->ls_correction || costFun->isGCD()) {
       optFun = new OptFunctionSLRACorrection(*costFun, Psi);
     } else { 
       optFun = new OptFunctionSLRACholesky(*costFun, Psi);

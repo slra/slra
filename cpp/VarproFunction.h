@@ -15,7 +15,7 @@ class VarproFunction  {
   gsl_vector *myTmpYr;  
   gsl_vector *myTmpCorr;  
   gsl_vector *myP;
-  double myPWnorm;
+  double myPWnorm2;
 
   gsl_vector *myPhiPermCol;  
   gsl_vector *myTmpJacobianCol;  
@@ -44,6 +44,8 @@ public:
                   bool isGCD = false );
   virtual ~VarproFunction();
   
+  bool isGCD() { return myIsGCD; }
+
   size_t getD() { return myD; }
   size_t getN() { return myStruct->getN(); }
   size_t getNrow() { return myPhi->size2; }

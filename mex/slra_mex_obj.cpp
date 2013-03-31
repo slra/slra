@@ -17,10 +17,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         throw new Exception("At least three parameters (p, s, r) are needed.");
       }
       const mxArray *as = prhs[2];
+      gsl_vector isgcd = M2vec(mxGetField(as, 0, GCD_STR));
       SLRAObject *slraObj = new SLRAObject(M2vec(prhs[1]), 
          M2vec(mxGetField(as, 0, ML_STR)), M2vec(mxGetField(as, 0, NK_STR)),
          M2trmat(mxGetField(as, 0, PERM_STR)), M2vec(mxGetField(as, 0, WK_STR)), 
-         M2vec(prhs[3]));
+         M2vec(prhs[3]), (isgcd.data != NULL) && (*isgcd.data));
                                
       plhs[0] = convertPtr2Mat<SLRAObject>(slraObj);                             
       return;

@@ -30,6 +30,7 @@
 #define NK_STR "n"
 #define PERM_STR "phi"
 #define WK_STR "w"
+#define GCD_STR "gcd"
 
 /* field names for opt */
 #define RINI_STR "Rini"

@@ -55,7 +55,7 @@ VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d,
     gsl_vector_memcpy(myTmpCorr, getP());
     myStruct->multByWInv(myTmpCorr, 1);
     myStruct->fillMatrixFromP(myMatr, myTmpCorr);
-    myPWnorm = gsl_blas_dnrm2(myTmpCorr);
+    gsl_blas_ddot(myTmpCorr, myTmpCorr, &myPWnorm2);
   } else {
     myStruct->fillMatrixFromP(myMatr, getP());
   }
@@ -191,7 +191,7 @@ void VarproFunction::computeFuncAndGrad( const gsl_matrix* R, double * f,
     myGam->multInvCholeskyVector(myTmpYr, 1);
     gsl_blas_ddot(myTmpYr, myTmpYr, f);
     if (myIsGCD) {
-      *f =  myPWnorm - *f;
+      *f =  myPWnorm2 - *f;
     }
   }
   if (gradR != NULL) {

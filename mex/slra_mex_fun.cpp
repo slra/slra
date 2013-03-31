@@ -75,8 +75,8 @@ size_t SLRAObject::myObjCnt = 0;
 
 
 SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
-                        gsl_matrix perm, gsl_vector wk, gsl_vector rvec ) :
-                        old_gsl_err_h(NULL)  {
+                        gsl_matrix perm, gsl_vector wk, gsl_vector rvec,
+                        bool isgcd ) :  old_gsl_err_h(NULL)  {
   double tmp_n;
   if (ml.size == 0) {
     throw new Exception("s.m should be a nonempty vector");   
@@ -102,7 +102,7 @@ SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
     throw new Exception("Incorrect rank\n");   
   }
     
-  myF = new VarproFunction(vecChkNIL(p_in), myS, m-r, matChkNIL(perm));
+  myF = new VarproFunction(vecChkNIL(p_in), myS, m-r, matChkNIL(perm), isgcd);
   old_gsl_err_h = gsl_set_error_handler(myMexErrorH);
   ++myObjCnt;
 }
