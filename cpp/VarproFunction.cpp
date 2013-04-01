@@ -19,7 +19,8 @@ VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d,
   }
 
   if (myStruct->getN() * getD() * myStruct->getM() * getD() >= 10000000L) {
-    throw new Exception("Too much memory required: the Jacobian would have more than 10^8 elements. This is currently not allowed.\n");
+    throw new Exception("Too much memory required: the Jacobian would have "
+                  "more than 10^8 elements. This is currently not allowed.\n");
   }
 
   if (Phi != NULL) {
@@ -141,22 +142,23 @@ void VarproFunction::computeJacobianOfCorrection( const gsl_vector* yr,
   gsl_matrix_set_zero(jac);
   gsl_matrix_set_zero(myTmpGradR);
 
-  fillZmatTmpJac(yr, Rorig, 11);
+  fillZmatTmpJac(yr, Rorig, 1);
 
   for (size_t i = 0; i < perm->size2; i++) {
     for (size_t j = 0; j < getD(); j++) {
       gsl_vector_view jac_col = gsl_matrix_column(jac, i * getD() + j);
 
       /* Compute first term (correction of Gam^{-1} z_{ij}) */
+      gsl_vector_set_zero(myTmpCorr);
       mulZmatPerm(myTmpJacobianCol, perm, i, j);
       myGam->multInvGammaVector(myTmpJacobianCol);
-      myStruct->multByGtUnweighted(myTmpCorr, Rorig, myTmpJacobianCol, -1, 0);
+      myStruct->multByGtUnweighted(myTmpCorr, Rorig, myTmpJacobianCol, -1, 1);
 
       /* Compute second term (gamma * dG_{ij} * yr) */
       gsl_matrix_set_zero(myTmpGradR);
       setPhiPermCol(i, perm);
       gsl_matrix_set_col(myTmpGradR, j, myPhiPermCol);
-      myStruct->multByGtUnweighted(myTmpCorr, Rorig, myTmpJacobianCol, -1, 1);
+      myStruct->multByGtUnweighted(myTmpCorr, myTmpGradR, yr, -1, 1);
 
       myStruct->multByWInv(myTmpCorr, 1);
       gsl_vector_memcpy(&jac_col.vector, myTmpCorr);
@@ -216,7 +218,8 @@ void VarproFunction::computeCorrectionAndJacobian( const gsl_matrix *R,
       gsl_vector_memcpy(res, getP());
       myStruct->multByGtUnweighted(res, myRorig, myTmpYr, -1, 1);
     } else {
-      myStruct->multByGtUnweighted(res, myRorig, myTmpYr, -1, 0);
+      gsl_vector_set_zero(res);
+      myStruct->multByGtUnweighted(res, myRorig, myTmpYr, -1, 1);
     }
     myStruct->multByWInv(res, 1);
   }
@@ -238,10 +241,11 @@ void VarproFunction::computePhat( gsl_vector* p, const gsl_matrix *R ) {
   }
   myGam->multInvGammaVector(myTmpYr);
   
+  gsl_vector_set_zero(p);
   if (myIsGCD) {
-    myStruct->multByGtUnweighted(p, myRorig, myTmpYr, 1, 0, false);
+    myStruct->multByGtUnweighted(p, myRorig, myTmpYr, 1, 1, false);
   } else {
-    myStruct->multByGtUnweighted(p, myRorig, myTmpYr, -1, 0);
+    myStruct->multByGtUnweighted(p, myRorig, myTmpYr, -1, 1);
     myStruct->multByWInv(p, 2);
     gsl_vector_add(p, getP());
   }
