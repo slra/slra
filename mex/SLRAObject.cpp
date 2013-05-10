@@ -1,4 +1,4 @@
-#include "slra_mex_fun.h"
+#include "SLRAObject.h"
 
 void myMexErrorH( const char *reason, const char *F, int ln, int gsl_err ) {
   throw new Exception("GSL error #%d at %s:%d: %s", ln, 

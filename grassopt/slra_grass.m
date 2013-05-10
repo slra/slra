@@ -1,7 +1,7 @@
 % SLRA - solves the structured low-rank approximation problem 
 function varargout = slra_grass(p, s, r, opts)
   addpath ..;
-  addpath '../../src/manopt/';
+  addpath '~/src/manopt/';
   import manopt.solvers.trustregions.*;
   import manopt.manifolds.grassmann.*;
   import manopt.tools.*;
@@ -23,6 +23,12 @@ function varargout = slra_grass(p, s, r, opts)
   if isfield(opts, 'epsgrad'),      
     params.tolgradnorm = opts.epsgrad;
   end
+  if ~isfield(opts, 'epsabs'),      
+    params.epsabs = 0; 
+  end
+  if ~isfield(opts, 'epsrel'),      
+    params.epsrel = 1e-5; 
+  end
 
   if isfield(opts, 'disp') 
     if (strcmp(opts.disp, 'iter'))
@@ -39,6 +45,8 @@ function varargout = slra_grass(p, s, r, opts)
   problem.cost = @(x) slra_mex_obj('func', obj, x');
   problem.grad = @(x) manifold.proj(x, slra_mex_obj('grad', obj, x')');
   x0 = opts.Rini';
+
+  problem.stopnow = @(problem,x,info,last) ((last >=2) && prod(double(abs(info(last-1).x - x) < params.epsabs + params.epsrel * abs(x))) ) ;
 
   [x xcost stats] = trustregions(problem, x0, params);
   

@@ -12,6 +12,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
+#include "Timer.h"
 
 
 void meas_time( VarproFunction &costFun,
@@ -21,16 +22,18 @@ void meas_time( VarproFunction &costFun,
   gsl_vector *grad = gsl_vector_alloc(optFun.getNvar());
   gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNsq(), optFun.getNvar());
 
+  
+
   optFun.computeDefaultx(x);
     
   Log::lprintf(Log::LOG_LEVEL_NOTIFY,"Test costfun evaluation:\n");
-  timespec st, et;
 #define meas_op(rep, op, tm)  \
    do {                                                                     \
-     clock_gettime(CLOCK_REALTIME, &st);                                    \
+     Timer timer;                                                           \
+     timer.start();                                                         \
      for (int i = 0; i < rep; i++) { op; }                                  \
-     clock_gettime(CLOCK_REALTIME, &et);                                    \
-     tm = (1E-9 * (et.tv_nsec - st.tv_nsec) + et.tv_sec - st.tv_sec) / rep; \
+     timer.stop();                                                          \
+     tm = timer.getElapsedTime();                                           \
    } while (0)  
 
   double res;      

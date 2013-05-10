@@ -17,8 +17,48 @@ OptimizationOptions::OptimizationOptions() : disp(SLRA_DEF_disp),
     ls_correction(SLRA_DEF_ls_correction) {
 }
 
-int OptimizationOptions::gslOptimize( OptFunction *F, 
-                                      gsl_vector* x_vec, gsl_matrix *v ) {
+void OptimizationOptions::str2Method( const char *str )  {
+  char meth_codes[] = "lqn", 
+       sm_codes_lm[] = "ls", sm_codes_qn[] = "b2pf", sm_codes_nm[] = "n2r";
+  char *submeth_codes[] = { sm_codes_lm, sm_codes_qn, sm_codes_nm };
+
+  size_t submeth_codes_max[] = { 
+    sizeof(sm_codes_lm) / sizeof(sm_codes_lm[0]) - 1, 
+    sizeof(sm_codes_qn) / sizeof(sm_codes_qn[0]) - 1, 
+    sizeof(sm_codes_nm) / sizeof(sm_codes_nm[0]) - 1
+  };
+  size_t meth_code_max = sizeof(submeth_codes_max) / sizeof(submeth_codes_max[0]);
+  long i;
+  
+  if (str[0] == 0) {
+    return;
+  }
+  for (i = meth_code_max - 1; i >= 0; --i)  {
+    if (str[0] == meth_codes[i]) {
+      method = i;
+      break;
+    }
+  } 
+  
+  if (str[0] == 0 || i < 0)  {
+    MYWARNING("Ignoring optimization option 'method'. Unrecognized value.\n");
+    return;
+  }
+
+  for (i = submeth_codes_max[method] - 1; i >= 0; i--)  {
+    if (str[1] == submeth_codes[method][i]) {
+      submethod = i;
+      break;
+    }
+  } 
+  if (str[1] == 0 || i < 0)  {
+    MYWARNING("Unrecognized submethod - using default.\n");
+  }
+}
+
+
+int OptimizationOptions::gslOptimize( OptFunction *F, gsl_vector* x_vec, 
+        gsl_matrix *v, IterationLogger *itLog ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     { gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder };
   const gsl_multimin_fdfminimizer_type *Tqn[] = 
@@ -100,21 +140,27 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
   status_grad = GSL_CONTINUE;  
   this->iter = 0;
   
-  if ((this->method == SLRA_OPT_METHOD_LM || 
-       this->method == SLRA_OPT_METHOD_QN) && 
-      Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-    if (this->method == SLRA_OPT_METHOD_LM) { 
-      gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
-      gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
-      x_norm = gsl_blas_dnrm2(solverlm->x);
-      g_norm = gsl_blas_dnrm2(g);
-    } else {
-      this->fmin = gsl_multimin_fdfminimizer_minimum(solverqn);
-      x_norm = gsl_blas_dnrm2(solverqn->x);
-      g_norm = gsl_blas_dnrm2(solverqn->gradient);
+  switch (this->method) {
+  case SLRA_OPT_METHOD_LM:
+    gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
+    gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
+    gsl_vector_scale(g, sqrt(2));
+    if (itLog != NULL) {
+      itLog->reportIteration(0, solverlm->x, this->fmin, g);
     }
-    Log::lprintf("  0: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
-                this->fmin, sqrt(2) * g_norm, x_norm);
+    break;
+  case SLRA_OPT_METHOD_QN:
+    this->fmin = gsl_multimin_fdfminimizer_minimum(solverqn);
+    if (itLog != NULL) {
+      itLog->reportIteration(0, solverqn->x, this->fmin, solverqn->gradient);
+    }
+    break;
+  case SLRA_OPT_METHOD_NM:
+    this->fmin = gsl_multimin_fminimizer_minimum( solvernm );
+    if (itLog != NULL) {
+      itLog->reportIteration(this->iter, solvernm->x, this->fmin, NULL);
+    }
+    break;
   }
 
   while (status_dx == GSL_CONTINUE && 
@@ -122,23 +168,19 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
 	 status == GSL_SUCCESS &&
 	 this->iter < this->maxiter) {
   	if (this->method == SLRA_OPT_METHOD_LM && this->maxx > 0) {
-  	  if (gsl_vector_max(solverlm->x) > this->maxx || gsl_vector_min(solverlm->x) < -this->maxx){
+  	  if (gsl_vector_max(solverlm->x) > this->maxx || 
+  	      gsl_vector_min(solverlm->x) < -this->maxx ){
   	    break;
 	    }
 	  }
 
-    /* print_vec(solverlm->x); */
     this->iter++;
     switch (this->method) {
-    case SLRA_OPT_METHOD_LM: /* Levenberge-Marquardt */
-
+    case SLRA_OPT_METHOD_LM: /* Levenberg-Marquardt */
       status = gsl_multifit_fdfsolver_iterate(solverlm);
-      /* check for convergence problems */
-      if (status == GSL_ETOLF || 
-          status == GSL_ETOLX || 
-          status == GSL_ETOLG) {
-        break; /* <- THIS IS WRONG */
-      }
+      gsl_multifit_gradient(solverlm->J, solverlm->f, g);
+      gsl_vector_scale(g, sqrt(2));
+
       /* check the convergence criteria */
       if (this->epsabs != 0 || this->epsrel != 0) {
         status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, 
@@ -146,35 +188,23 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
 	  	} else {
 	  	  status_dx = GSL_CONTINUE;
 	  	}
-      gsl_multifit_gradient(solverlm->J, solverlm->f, g);
       status_grad = gsl_multifit_test_gradient(g, this->epsgrad);
-      /* print information */
-      if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-        gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
-        x_norm = gsl_blas_dnrm2(solverlm->x);
-        g_norm = gsl_blas_dnrm2(g);
-        Log::lprintf("%3u: f0 = %15.10e,  ||f0'|| = %15.7e,  ||x|| = %10.8f\n",
-                     this->iter, this->fmin, sqrt(2) * g_norm, x_norm);
-      }  
+      gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
+      if (itLog != NULL) {
+        itLog->reportIteration(this->iter, solverlm->x, this->fmin, g);
+      }
       break;
     case SLRA_OPT_METHOD_QN:
       status = gsl_multimin_fdfminimizer_iterate( solverqn );
-/*      if (status == GSL_ENOPROG) {
-	break; /* <- THIS IS WRONG * /
-      }*/
 
       /* check the convergence criteria */
       status_grad = gsl_multimin_test_gradient(
-          gsl_multimin_fdfminimizer_gradient(solverqn), this->epsgrad );
-		    
+          gsl_multimin_fdfminimizer_gradient(solverqn), this->epsgrad);
       status_dx = gsl_multifit_test_delta(solverqn->dx, solverqn->x, 
 	 				 this->epsabs, this->epsrel);  		    
-      if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-        this->fmin = gsl_multimin_fdfminimizer_minimum(solverqn);
-        x_norm = gsl_blas_dnrm2(solverqn->x);
-        g_norm = gsl_blas_dnrm2(solverqn->gradient);
-        Log::lprintf("%3u: f0 = %16.11f,  ||f0'|| = %16.8f,  ||x|| = %10.8f\n", 
-                    this->iter, this->fmin, g_norm, x_norm);
+      this->fmin = gsl_multimin_fdfminimizer_minimum(solverqn);      
+      if (itLog != NULL) {
+        itLog->reportIteration(this->iter, solverqn->x, this->fmin, solverqn->gradient);
       }
       break;
     case SLRA_OPT_METHOD_NM:
@@ -182,12 +212,9 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
       /* check the convergence criteria */
       size = gsl_multimin_fminimizer_size( solvernm );
       status_dx = gsl_multimin_test_size( size, this->epsx );
-      /* print information */
-      if (Log::getMaxLevel() >= Log::LOG_LEVEL_ITER) {
-        this->fmin = gsl_multimin_fminimizer_minimum( solvernm );
-        x_norm = gsl_blas_dnrm2(solvernm->x);
-        Log::lprintf("%3u: f0 = %15.10e,  ||x|| = %9.7e\n", 
-	            this->iter, this->fmin, g_norm, x_norm);
+      this->fmin = gsl_multimin_fminimizer_minimum( solvernm );
+      if (itLog != NULL) {
+        itLog->reportIteration(this->iter, solvernm->x, this->fmin, NULL);
       }
       break;
     }
@@ -198,12 +225,10 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
 
   switch (this->method) {
   case  SLRA_OPT_METHOD_LM:
-    /* return the results */
     gsl_vector_memcpy(x_vec, solverlm->x);
     if (v != NULL) {
       gsl_multifit_covar(solverlm->J, this->epscov, v); /* ??? Different eps */
     }
-    /* assign the opt output fields */
     gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
     break;
   case SLRA_OPT_METHOD_QN:
@@ -211,10 +236,7 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
     this->fmin = solverqn->f;
     break;
   case SLRA_OPT_METHOD_NM:
-    /* return the results */
     gsl_vector_memcpy(x_vec, solvernm->x);
-    /* gsl_multifit_covar( J??, this->epsrel, v); */
-    /* assign the opt output fields */
     this->fmin = solvernm->fval;
     break;
   }
@@ -250,7 +272,7 @@ int OptimizationOptions::gslOptimize( OptFunction *F,
     
     } else {
       if (status_grad != GSL_CONTINUE) {
-	Log::lprintf("Optimization terminated by reaching the convergence "
+        Log::lprintf("Optimization terminated by reaching the convergence "
 	            "tolerance for the gradient.\n");
       } else {
         Log::lprintf("Optimization terminated by reaching the convergence "

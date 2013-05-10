@@ -57,6 +57,13 @@
 #define SLRA_DEF_ls_correction 0
 /* @} */
 
+
+class IterationLogger {
+public:
+  virtual void reportIteration( int no, const gsl_vector *x, double fmin, 
+                                   const gsl_vector *grad ) = 0;
+};
+
 /** Optimization options structure.
  * This structure contains input and output parameters 
  * for 'gsl_optimize' function. */
@@ -71,7 +78,8 @@ public:
    *                       the minimum point 
    * @param [out]    v     Covariance matrix for x
    */
-  int gslOptimize( OptFunction *F, gsl_vector* x_vec, gsl_matrix *v );
+  int gslOptimize( OptFunction *F, gsl_vector* x_vec, gsl_matrix *v,
+                   IterationLogger *itLog );
 
   /** Initialize method and submethod fields from string */
   void str2Method( const char *str );

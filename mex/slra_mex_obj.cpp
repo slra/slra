@@ -1,4 +1,4 @@
-#include "slra_mex_fun.h"
+#include "SLRAObject.h"
 #include <typeinfo>
 using namespace std;
 #include "class_handle.hpp"

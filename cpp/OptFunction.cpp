@@ -13,7 +13,8 @@ OptFunctionSLRA::OptFunctionSLRA( VarproFunction &fun, gsl_matrix *Psi ) :
     }
     gsl_matrix_memcpy(myPsi, Psi); 
   }
-  
+  myPsiSubm = gsl_matrix_submatrix(myPsi, 0, 0, myFun.getNrow(), 
+                  getRank()).matrix;
   myTmpR = gsl_matrix_alloc(myFun.getNrow(), myFun.getD());
   myTmpXId = gsl_matrix_alloc(myPsi->size2, myFun.getD());
 }
@@ -22,14 +23,6 @@ OptFunctionSLRA::~OptFunctionSLRA()  {
   gsl_matrix_free(myTmpR);
   gsl_matrix_free(myTmpXId);
   gsl_matrix_free(myPsi);
-}
-
-size_t OptFunctionSLRA::getNvar() { 
-  return getRank() * myFun.getD(); 
-}
-
-gsl_matrix OptFunctionSLRA::x2xmat( const gsl_vector *x ) {
-  return gsl_matrix_const_view_vector(x, getRank(), myFun.getD()).matrix;
 }
 
 void OptFunctionSLRA::computeR( const gsl_vector * x, gsl_matrix *R ) { 
@@ -46,33 +39,14 @@ void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f,
   } else {
     gsl_matrix grad_matr = gsl_matrix_view_vector(grad, getRank(), 
                                                   myFun.getD()).matrix;
-    gsl_matrix psi_sub_matr = gsl_matrix_submatrix(myPsi, 0, 0, 
-                                      myFun.getNrow(), getRank()).matrix;
-    myFun.computeFuncAndGrad(myTmpR, f, &psi_sub_matr, &grad_matr);
+    myFun.computeFuncAndGrad(myTmpR, f, &myPsiSubm, &grad_matr);
   }                   
-}   
-
-void OptFunctionSLRACholesky::computeFuncAndJac( const gsl_vector* x, 
-         gsl_vector *res, gsl_matrix *jac ) {
-  gsl_matrix psi_sub_matr = gsl_matrix_submatrix(myPsi, 0, 0, 
-                                 myFun.getNrow(), getRank()).matrix;   
-  computeR(x, myTmpR);
-  myFun.computeFuncAndPseudoJacobianLs(myTmpR, &psi_sub_matr, res, jac); 
-}   
-
-void OptFunctionSLRACorrection::computeFuncAndJac( const gsl_vector* x, 
-         gsl_vector *res, gsl_matrix *jac ) {
-  gsl_matrix psi_sub_matr = gsl_matrix_submatrix(myPsi, 0, 0, 
-                                 myFun.getNrow(), getRank()).matrix;         
-  computeR(x, myTmpR);
-  myFun.computeCorrectionAndJacobian(myTmpR, &psi_sub_matr, res, jac); 
 }   
 
 void OptFunctionSLRA::X2XId( const gsl_matrix *x, gsl_matrix *XId ) { 
   gsl_vector diag;
   gsl_matrix sm;
   size_t n = x->size1, d = x->size2;
-
   /* set block (1,1) of x_ext to [ x_mat; -I_d ] */
   gsl_matrix_memcpy(&(sm = gsl_matrix_submatrix(XId, 0, 0, n, d).matrix), x); 
   gsl_matrix_set_all(&(sm = gsl_matrix_submatrix(XId, n, 0, d, d).matrix), 0);
@@ -126,5 +100,3 @@ void OptFunctionSLRA::computePhat( gsl_vector* p, const gsl_vector* x ) {
   computeR(x, myTmpR);
   myFun.computePhat(p, myTmpR);
 }
-
-
