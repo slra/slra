@@ -5,6 +5,8 @@ function varargout = slra_grass(p, s, r, opts)
   import manopt.solvers.trustregions.*;
   import manopt.manifolds.grassmann.*;
   import manopt.tools.*;
+  
+  importmanopt;
 
   obj = slra_mex_obj('new', p,s,r);
 
@@ -48,6 +50,11 @@ function varargout = slra_grass(p, s, r, opts)
 
   problem.stopnow = @(problem,x,info,last) ((last >=2) && prod(double(abs(info(last-1).x - x) < params.epsabs + params.epsrel * abs(x))) ) ;
 
+
+  if isfield(opts, 'checkgradient') 
+    checkgradient(problem);
+  end
+
   [x xcost stats] = trustregions(problem, x0, params);
   
   info.Rh = x';
@@ -55,6 +62,11 @@ function varargout = slra_grass(p, s, r, opts)
   info.iter = length(stats)-1;
   info.time = sum(stats(end).time);
   info.fmin = xcost;
+  info.iterinfo = zeros(3, length(stats));
+  info.iterinfo(1,:) = [stats.time];
+  info.iterinfo(2,:) = [stats.cost];
+  info.iterinfo(3,:) = [stats.gradnorm];
+  
   slra_mex_obj('delete', obj);
   [varargout{1:nargout}] = deal(ph, info);
 end

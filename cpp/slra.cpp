@@ -1,18 +1,7 @@
 /* stls.c: implementations of the functions from stls.h */
-
 #include <time.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_permutation.h>
-
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_rng.h>
-
 #include "slra.h"
 #include "Timer.h"
-
 
 class MyIterationLogger : public IterationLogger {
   Timer myTimer;
@@ -28,7 +17,6 @@ public:
     myInfo = info;  
     myTimer.start();    
   }
-
   virtual void reportIteration( int no, const gsl_vector *x, double fmin, 
                                    const gsl_vector *grad ) {
     double tm = myTimer.getElapsedTime();
@@ -42,30 +30,29 @@ public:
       }
       Log::lprintf("\n");
     }  
-    if (myRs != NULL && no >= 0 && no < myRs->size2) {
+    if (myRs != NULL && no >= 0 && no < myRs->size1) {
       gsl_vector RsRow = gsl_matrix_row(myRs, no).vector;
       gsl_matrix R = gsl_matrix_view_vector(&RsRow, myFun->getM(), 
                                             myFun->getD()).matrix;
       myFun->x2RTheta(&R, x);                                            
     }
     
-    if (myInfo != NULL && no >= 0 && no < myInfo->size2) {
-      gsl_vector InfoRow = gsl_matrix_row(myRs, no).vector;
+    if (myInfo != NULL && no >= 0 && no < myInfo->size1) {
+      gsl_vector InfoRow = gsl_matrix_row(myInfo, no).vector;
       gsl_vector_set(&InfoRow, 0, tm);
       if (InfoRow.size > 1) {
         gsl_vector_set(&InfoRow, 1, fmin);
       }
       if (InfoRow.size > 2 && grad != NULL) {
-        gsl_vector_set(&InfoRow, 2, fmin);
+        gsl_vector_set(&InfoRow, 2, grad_nrm);
       }
     }
   }
 };
 
-void slra( VarproFunction *costFun, 
-           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
-           gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out,
-           gsl_matrix *Rs, gsl_matrix *info ) { 
+void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini, 
+           gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *r_out, 
+           gsl_matrix *v_out, gsl_matrix *Rs, gsl_matrix *info ) { 
   OptFunctionSLRA *optFun = NULL;
   gsl_vector *x = NULL;
   double old_reg = costFun->getReggamma();
@@ -79,7 +66,6 @@ void slra( VarproFunction *costFun,
     } else { 
       optFun = new OptFunctionSLRACholesky(*costFun, Psi);
     }
-
     x = gsl_vector_alloc(optFun->getNvar());
 
     MyIterationLogger itLog(optFun, Rs, info);
@@ -91,7 +77,6 @@ void slra( VarproFunction *costFun,
     } else {
       optFun->RTheta2x(Rini, x);
     }
-
     opt->gslOptimize(optFun, x, v_out, &itLog);
 
     if (p_out != NULL) {

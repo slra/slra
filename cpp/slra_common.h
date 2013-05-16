@@ -41,12 +41,14 @@
 #define INFO_STR "info"
 
 /* field names for info */
-#define RH_STR "Rh"
-#define VH_STR "Vh"
-#define FMIN_STR "fmin"
-#define ITER_STR "iter"
-#define TIME_STR "time"
-#define PSI_STR "psi"
+#define RH_STR        "Rh"
+#define VH_STR        "Vh"
+#define FMIN_STR      "fmin"
+#define ITER_STR      "iter"
+#define TIME_STR      "time"
+#define RS_STR        "RhK"
+#define INF_ITER_STR  "iterinfo"
+#define PSI_STR       "psi"
           
 #define mymax(a, b) ((a) > (b) ? (a) : (b)) 
 #define mymin(a, b) ((a) < (b) ? (a) : (b))

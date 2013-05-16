@@ -73,7 +73,6 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
 
 size_t SLRAObject::myObjCnt = 0;
 
-
 SLRAObject::SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
                         gsl_matrix perm, gsl_vector wk, gsl_vector rvec,
                         bool isgcd ) :  old_gsl_err_h(NULL)  {
