@@ -3,7 +3,7 @@
 *.so
 *.a
 # Ignore mex files
-*.mex*
+#*.mex*
 # Ignore R files and libraries
 Rslra.Rcheck
 Rslra*.tar.gz
