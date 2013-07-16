@@ -51,10 +51,14 @@ function varargout = slra_mex_chp(p, s, r, opt)
   opt.psi = eye(m);
   switches = 0;
   iters = 0;
+  mytime = 0;
+  iterinfo = zeros(3,opt.maxiter+1);
   while (opt.maxiter > 0) 
     [ph, info] = slra_mex_obj('optimize', obj, opt);
     opt.maxiter = opt.maxiter - info.iter;
+    iterinfo(:, iters+1 + (0:info.iter)) = info.iterinfo+ [mytime * ones(1, info.iter+1);zeros(1, info.iter+1);zeros(1, info.iter+1)]; 
     iters = iters + info.iter;
+    mytime = iterinfo(1,iters+1);
     
     if (opt.maxx == 0 | max(abs(info.Rh(:))) <= opt.maxx)
       break;
@@ -80,6 +84,7 @@ function varargout = slra_mex_chp(p, s, r, opt)
   end
   info.switches = switches;
   info.iter = iters;
+  info.iterinfo = iterinfo(:, 1:(iters+1));
   
   [varargout{1:nargout}] = deal(ph, info);
   slra_mex_obj('delete', obj);

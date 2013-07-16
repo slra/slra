@@ -20,13 +20,23 @@ function varargout = slra_fmincon(p, s, r, opt)
   t2R = @(th) reshape(th * opt.psi, m - r, m); 
   R2t = @(R)  (opt.psi' \  R(:))';
     
-  prob.options = opt; 
+  t_slra_start = 0;
+  iterinfo = zeros(3, opt.MaxIter+1);
+  function  stop = outfun(x, optimValues, state)
+    iterinfo(1, optimValues.iteration + 1) = toc(t_slra_start);
+    iterinfo(2, optimValues.iteration + 1) = optimValues.fval;
+    stop = false;
+  end
+
+    
+  prob.options = optimset(opt, 'OutputFcn',@outfun); 
+%  prob.options = opt; 
   prob.x0 = R2t(opt.Rini); 
   prob.solver = 'fmincon'; 
   prob.objective = @(th) slra_mex_obj('func', obj, t2R(th));
   prob.nonlcon = @(th) deal([], t2R(th) * t2R(th)' - eye(m - r));
-  tic, [x, fval, flag, info] = fmincon(prob); t_slra = toc; 
+  t_slra_start = tic; [x, fval, flag, info] = fmincon(prob); t_slra = toc(t_slra_start); 
   Rh = t2R(x);
   ph = slra_mex_obj('getPh', obj, Rh);
-  [varargout{1:nargout}] = deal(ph, struct('Rh', Rh, 'Vh', [], 'fmin', fval, 'iter', info.iterations, 'time', t_slra));
+  [varargout{1:nargout}] = deal(ph, struct('Rh', Rh, 'Vh', [], 'fmin', fval, 'iter', info.iterations, 'time', t_slra,'iterinfo', iterinfo(:,1:info.iterations+1)));
 end

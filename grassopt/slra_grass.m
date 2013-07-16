@@ -3,6 +3,8 @@ function varargout = slra_grass(p, s, r, opts)
   addpath ..;
   addpath '~/src/manopt/';
   import manopt.solvers.trustregions.*;
+  import manopt.solvers.conjugategradient.*;
+    import manopt.solvers.steepestdescent.*;
   import manopt.manifolds.grassmann.*;
   import manopt.tools.*;
   
@@ -56,6 +58,16 @@ function varargout = slra_grass(p, s, r, opts)
   end
 
   [x xcost stats] = trustregions(problem, x0, params);
+%  params.linesearch = @manopt.solvers.linesearch.linesearch;
+%  params.beta_type = 'D';
+%  params.orth_value = Inf;
+%   [x xcost stats] = conjugategradient(problem, x0, params);
+%   [x xcost stats] = steepestdescent(problem, x0, params);
+
+%  figure;  
+ % plotprofile(problem, x0, problem.grad(x0)/norm(problem.grad(x0),2), linspace(-2,2, 1000));
+ % figure;
+ % plotprofile(problem, x, problem.grad(x)/norm(problem.grad(x0),2), linspace(-2,2, 1000));
   
   info.Rh = x';
   ph = slra_mex_obj('getPh', obj, info.Rh);

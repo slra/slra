@@ -13,5 +13,14 @@ function decades_equal(hAxes,xLimits,yLimits)
   set(hAxes,'Xlim',xLimits,...
             'YLim',yLimits,...
             'DataAspectRatio',[1 logScale/powerScale 1]);
+ 
+ set(hAxes, 'Position', get(gca, 'OuterPosition') - ...
+   get(hAxes, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);           
+    set(hAxes, 'LooseInset', [0,0,0,0]);
+%  m = get(hAxes,'PlotBoxAspectRatio')
+%  set(hAxes,'PlotBoxAspectRatioMode', 'manual')
+%  set(hAxes,'PlotBoxAspectRatio', [1 1 1]);
+            
+            
 
 end
