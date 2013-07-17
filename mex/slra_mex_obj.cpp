@@ -1,4 +1,4 @@
-#include "slra_mex_fun.h"
+#include "SLRAObject.h"
 #include <typeinfo>
 using namespace std;
 #include "class_handle.hpp"
@@ -17,10 +17,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         throw new Exception("At least three parameters (p, s, r) are needed.");
       }
       const mxArray *as = prhs[2];
+      gsl_vector isgcd = M2vec(mxGetField(as, 0, GCD_STR));
       SLRAObject *slraObj = new SLRAObject(M2vec(prhs[1]), 
          M2vec(mxGetField(as, 0, ML_STR)), M2vec(mxGetField(as, 0, NK_STR)),
          M2trmat(mxGetField(as, 0, PERM_STR)), M2vec(mxGetField(as, 0, WK_STR)), 
-         M2vec(prhs[3]));
+         M2vec(prhs[3]), (isgcd.data != NULL) && (*isgcd.data));
                                
       plhs[0] = convertPtr2Mat<SLRAObject>(slraObj);                             
       return;
@@ -38,36 +39,51 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     SLRAObject * slraObj = convertMat2Ptr<SLRAObject>(prhs[1]);
     int m =  slraObj->getF()->getNrow(), d =  slraObj->getF()->getD();
     
-
     if (!strcmp("optimize", str_buf)) {
       OptimizationOptions opt;
-      gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 }, rhm = { 0, 0, 0, 0, 0, 0 }, vhm =  { 0, 0, 0, 0, 0, 0 };
+      mxArray *rh, *vh, *rs, *infit;
+      gsl_matrix rini = { 0, 0, 0, 0, 0, 0 }, psi = { 0, 0, 0, 0, 0, 0 }, 
+                 rhm = { 0, 0, 0, 0, 0, 0 }, vhm =  { 0, 0, 0, 0, 0, 0 },
+                 rsm = { 0, 0, 0, 0, 0, 0 }, infitm =  { 0, 0, 0, 0, 0, 0 };
       if (nrhs > 2) {
         mexFillOpt(prhs[2], opt, rini, psi, m, m-d); 
       }  
+      mwSize rs_dims[] = { d, m, opt.maxiter + 1 };
       int mtheta = psi.data != NULL ? psi.size2 : m;
       /* Prepare output info */
-      plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getP()->size, 1, mxREAL);
+      plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getNp(), 1, mxREAL);
       gsl_vector p_out = M2vec(plhs[0]);
-      if (nlhs > 1) {
+      if (nlhs > 0) {
+        gsl_vector rs_vec;
         mwSize l = 1;
-        const char *names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR };
-        plhs[1] = mxCreateStructArray(1, &l, 5, names);
-        mxArray *rh, *vh;
+        const char *names[] = { RH_STR, VH_STR, FMIN_STR, ITER_STR, TIME_STR,
+                                RS_STR, INF_ITER_STR };
+        plhs[1] = mxCreateStructArray(1, &l, sizeof(names) / sizeof(names[0]), names);
         rhm = M2trmat(rh = mxCreateDoubleMatrix(d, m, mxREAL));
         vhm = M2trmat(vh = mxCreateDoubleMatrix(d*(mtheta-d), d*(mtheta-d), mxREAL));
+        infitm = M2trmat(infit = mxCreateDoubleMatrix(3, rs_dims[2], mxREAL));
+        
+        rs_vec = M2vec(rs = mxCreateNumericArray(3, rs_dims, mxDOUBLE_CLASS, mxREAL));
+        rsm = gsl_matrix_view_vector(&rs_vec, rs_dims[2], 
+                                     rs_dims[0] * rs_dims[1]).matrix;
         mxSetField(plhs[1], 0, RH_STR, rh);
         mxSetField(plhs[1], 0, VH_STR, vh);
+        mxSetField(plhs[1], 0, RS_STR, rs);
+        mxSetField(plhs[1], 0, INF_ITER_STR, infit);
       }
       
       /* Call slra solver and output info */
       slra(slraObj->getF(), &opt, matChkNIL(rini), matChkNIL(psi), 
-           vecChkNIL(p_out), matChkNIL(rhm), matChkNIL(vhm));
+           vecChkNIL(p_out), matChkNIL(rhm), matChkNIL(vhm),
+           matChkNIL(rsm), matChkNIL(infitm));
 
       if (nlhs > 1) {
         mxSetField(plhs[1], 0, FMIN_STR, mxCreateDoubleScalar(opt.fmin));
         mxSetField(plhs[1], 0, ITER_STR, mxCreateDoubleScalar(opt.iter));
         mxSetField(plhs[1], 0, TIME_STR, mxCreateDoubleScalar(opt.time));
+        rs_dims[2] = opt.iter + 1;
+        mxSetDimensions(rs,rs_dims, 3);
+        mxSetN(infit, rs_dims[2]);
       }
       return;
     }
@@ -103,24 +119,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       return;
     }
-    if (!strcmp("hess", str_buf)) {
-      gsl_matrix hess_m = M2trmat(plhs[0] = mxCreateDoubleMatrix(d*m, d*m, mxREAL));
-      slraObj->getF()->computeHessian(&R, &hess_m);      
-
-      return;
-    }
-    if (!strcmp("hessMult", str_buf)) {
-      if (nrhs < 4) {
-        throw new Exception("Argument Hin needed.");        
-      }
-      gsl_matrix hin = M2trmat(prhs[3]);
-      gsl_matrix hout = M2trmat(plhs[0] = mxCreateDoubleMatrix(d, m, mxREAL));
-      slraObj->getF()->multiplyByHessian(&R, &hin, &hout);      
-      return;
-    }
     if (!strcmp("getPh", str_buf)) {
       gsl_vector pout = 
-           M2vec(plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getP()->size, 1, mxREAL));
+           M2vec(plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getNp(), 1, mxREAL));
       slraObj->getF()->computePhat(&pout, &R);      
       return;
     }

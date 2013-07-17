@@ -105,11 +105,11 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
   SEXP _p_out = R_NilValue, _r_out = R_NilValue, _v_out = R_NilValue;
   
   Structure *myStruct = NULL;
-  CostFunction *myF = NULL;
+  VarproFunction *myF = NULL;
   int was_error = 0;
   try {
     /* Create output info */
-    myStruct = createMosaicStructure(&vec_ml, &vec_nk, vecChkNIL(vec_wk), np);  
+    myStruct = createMosaicStructure(&vec_ml, &vec_nk, vecChkNIL(vec_wk));  
     int m = phi.size2;
     if (compute_ph) {
       PROTECT(_p_out = allocVector(REALSXP, np));
@@ -128,7 +128,7 @@ SEXP call_slra( SEXP _p, SEXP _s, SEXP _r, SEXP _opt,
       throw new Exception("Incorrect Rini\n");   
     }
  
-    myF = new CostFunction(vecChkNIL(p_in), myStruct, m-r, &phi);
+    myF = new VarproFunction(vecChkNIL(p_in), myStruct, m-r, &phi);
     
     slra(myF, &opt, matChkNIL(rini), NULL, 
          vecChkNIL(p_out), matChkNIL(r_out), matChkNIL(v_out));

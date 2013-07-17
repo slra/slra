@@ -18,7 +18,9 @@ function myinf = run_test(slra_fun, num, opt)
     opt.Rini = reshape(r_raw, m-r, m);
   end
   
+  st = tic;
   [ph, myinf] = slra_fun(p, s, r, opt);
+  myinf.time = toc(st);
   myinf.m = m;
   myinf.d = m-r;
   myinf.q = s_raw(2);

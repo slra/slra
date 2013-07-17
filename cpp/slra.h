@@ -6,74 +6,67 @@
 #ifndef _SLRA_H_
 #define _SLRA_H_
 
+extern "C" {
+#include <gsl/gsl_vector.h>
 #include <gsl/gsl_vector_uint.h>
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_math.h>
 #include <gsl/gsl_multifit_nlin.h> /* Levenberge-Marquardt */
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
-#include <gsl/gsl_blas.h>
+}
 
-#include "slra_optimization.h"
 #include "slra_basic.h"
-#include "slra_striped.h"
+#include "Structure.h"
+#include "SDependentStructure.h"
+#include "StationaryStructure.h"
+#include "StripedStructure.h"
+#include "StripedCholesky.h"
+#include "StripedDGamma.h"
+#include "HLayeredBlWStructure.h"
+#include "HLayeredElWStructure.h"
+#include "SDependentCholesky.h"
+#include "StationaryCholesky.h"
+#include "StationaryCholeskySlicot.h"
+#include "SDependentDGamma.h"
+#include "StationaryDGamma.h"
 
-#include "slra_layered_hankel.h"
-#include "slra_layered_hankel_weighted.h"
-#include "slra_cholesky_btbanded.h"
-#include "slra_dgamma_btbanded.h"
+#include "VarproFunction.h"
+#include "OptFunction.h"
 
-#include "slra_computation.h"
-#include "slra_optfun.h"
+#include "OptimizationOptions.h"
 
 #include "slra_common.h"
+#include "Log.h"
 #include "slralapack.h"
-
-
-/** Function that creates appropriate Mosaic structure from weights and checks its
- *    consistence with \f$n_p\f$
- * @ingroup MainFunctions 
- * @param [in]     ml      Vector of \f$\bf m\f$ \sa MosaicHStructure
- * @param [in]     nk      Vector of \f$\bf n\f$ \sa MosaicHStructure  
- * @param [in]     wk      Vector of weights. If NULL, or of sizes \f$q\f$, \f$qN\f$ - 
- *                         MosaicHStructure is constructed, otherwise - WMosaicHStructure
- * @param [in]     d       Rank reduction  (\f$m-r\f$) 
- * @param [in]     np_comp Value of \f$n_p\f$
- */                
-Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
-               gsl_vector * wk, size_t np_comp );
 
 
 
 /** Main function that runs SLRA optimization
  * @ingroup MainFunctions 
- * @param [in]     p_in  Input parameter vector \f$p\f$  
- * @param [in]     s     Structure specification  
- * @param [in]     d     Rank reduction  
- * @param [in,out] opt   OptimizationOptions object
- * @param [in]     Rini  Matrix for initial approximation  
- * @param [in]     Phi   \f$\Phi\f$ matrix
- *                    (identity if <tt>Phi == NULL</tt> )   
- * @param [in]     Psi   \f$\Psi\f$ matrix
- *                       (identity if <tt>Psi == NULL</tt> )   
- * @param [out]    p_out Approximation \f$\widehat{p}\f$  
- *                       (not computed if <tt>p_out == NULL</tt> )
- * @param [out]    R_out Output parameter vector 
- *                       (not computed if <tt>R_out == NULL</tt> )
- * @param [out]    v_out Covariance matrix for X
+ * @param [in]     costFunction  VarproFunction object  
+ * @param [in]     s             Structure specification  
+ * @param [in]     d             Rank reduction  
+ * @param [in,out] opt           OptimizationOptions object
+ * @param [in]     Rini          Matrix for initial approximation  
+ * @param [in]     Psi           \f$\Psi\f$ matrix
+ *                               (identity if <tt>Psi == NULL</tt> )   
+ * @param [out]    p_out         Approximation \f$\widehat{p}\f$  
+ *                               (not computed if <tt>p_out == NULL</tt> )
+ * @param [out]    R_out         Output parameter vector 
+ *                               (not computed if <tt>R_out == NULL</tt> )
+ * @param [out]    v_out         Covariance matrix for X
+ * @param [out]    Rs            Matrix of vectorized Rs at each iteration  
+ *                               (not computed if <tt>Rs == NULL</tt> )
+ * @param [out]    info          Matrix of info (time, fmin, ...) 
+ *                               (not computed if <tt>info == NULL</tt> )
  */
-void slra( CostFunction *costFun, 
+void slra( VarproFunction *costFun, 
           OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
-          gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out );
+          gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out,
+          gsl_matrix *Rs = NULL, gsl_matrix *info = NULL );
 
-/** Main function that runs GSL optimization
- * @ingroup MainFunctions 
- * @param [in]     F     OptFunction object
- * @param [in,out] opt   Optimization options
- * @param [in,out] x_vec Vector containing initial approximation and returning
- *                       the minimum point 
- * @param [out]    v     Covariance matrix for x
- */
-int gsl_optimize( OptFunction *F, OptimizationOptions *opt, 
-                       gsl_vector* x_vec, gsl_matrix *v );
 
 /** @defgroup MainFunctions
  * Global functions. */
@@ -137,14 +130,14 @@ TECHREPORT{MarkovskyUsevich12-Software,
  * The Cholesky and DGamma instances are optimized for a specific structures.
  *
  * Computation of cost functions and derivatives
- * are performed by CostFunction object, which is constructed 
+ * are performed by VarproFunction object, which is constructed 
  * given Structure, \f$\Phi\f$ matrix, and rank reduction.
  *
- * CostFunction object implements high-level algorithms for computing
+ * VarproFunction object implements high-level algorithms for computing
  * cost function, gradient, pseudo-Jacobian and Jacobian given a general affine
  * structure.
  *
- * CostFunction object also contains functions for computing initial approximation.
+ * VarproFunction object also contains functions for computing initial approximation.
  *
  * \subsection opt_sec Optimization options
  * Optimization options are implemented in OptimizationOptions class,

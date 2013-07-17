@@ -20,6 +20,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+This program contains the Timer class for cross-platform time measurements.
+(Copyright (c) 2003 Song Ho Ahn, (song.ahn@gmail.com).)
+
     Ivan Markovsky and Konstantin Usevich
     Vrije Universiteit Brussel
     Department ELEC

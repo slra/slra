@@ -12,25 +12,28 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_multifit_nlin.h>
 #include "slra.h"
+#include "Timer.h"
 
 
-void meas_time( CostFunction &costFun,
+void meas_time( VarproFunction &costFun,
                 double &tm_func, double &tm_grad, double &tm_pjac ) {
   OptFunctionSLRACholesky optFun(costFun, NULL);                
   gsl_vector *x = gsl_vector_alloc(optFun.getNvar());
   gsl_vector *grad = gsl_vector_alloc(optFun.getNvar());
   gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNsq(), optFun.getNvar());
 
+  
+
   optFun.computeDefaultx(x);
     
   Log::lprintf(Log::LOG_LEVEL_NOTIFY,"Test costfun evaluation:\n");
-  timespec st, et;
 #define meas_op(rep, op, tm)  \
    do {                                                                     \
-     clock_gettime(CLOCK_REALTIME, &st);                                    \
+     Timer timer;                                                           \
+     timer.start();                                                         \
      for (int i = 0; i < rep; i++) { op; }                                  \
-     clock_gettime(CLOCK_REALTIME, &et);                                    \
-     tm = (1E-9 * (et.tv_nsec - st.tv_nsec) + et.tv_sec - st.tv_sec) / rep; \
+     timer.stop();                                                          \
+     tm = timer.getElapsedTime();                                           \
    } while (0)  
 
   double res;      
@@ -77,7 +80,7 @@ void run_test( const char * testname, double & time, double& fmin,
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
   Structure *S = NULL;
-  CostFunction * myCostFun = NULL;
+  VarproFunction * myCostFun = NULL;
 
   try {
     /* Read structure  and allocate structure object */
@@ -93,28 +96,32 @@ void run_test( const char * testname, double & time, double& fmin,
     if (hasW) {
       gsl_vector_fscanf(file, w_k);
       fclose(file);
-      if (elementwise_w) {
-        gsl_vector *el_wk = gsl_vector_alloc(compute_np(m_k, n_l));
-        int i = 0;
-        size_t T;
-        gsl_vector sv;
-        for (size_t l = 0; l < s_N; l++) {
-          for (size_t k = 0; k < s_q; k++, i += T) {
-            T = gsl_vector_get(m_k, k) + gsl_vector_get(n_l, l) - 1;
-            sv = gsl_vector_subvector(el_wk, i, T).vector;
-            gsl_vector_set_all(&sv, gsl_vector_get(w_k, k));
-          }
+    } else {
+      gsl_vector_set_all(w_k, 1);
+    }  
+     
+    if (elementwise_w) {
+      gsl_vector *el_wk = gsl_vector_alloc(compute_np(m_k, n_l));
+      int i = 0;
+      size_t T;
+      gsl_vector sv;
+      for (size_t l = 0; l < s_N; l++) {
+        for (size_t k = 0; k < s_q; k++, i += T) {
+          T = gsl_vector_get(m_k, k) + gsl_vector_get(n_l, l) - 1;
+          sv = gsl_vector_subvector(el_wk, i, T).vector;
+          gsl_vector_set_all(&sv, gsl_vector_get(w_k, k));
         }
-        gsl_vector_free(w_k);
-        w_k = el_wk;
       }
-    } else {  
       gsl_vector_free(w_k);
-      w_k = NULL;
+      w_k = el_wk;
+    } else {
+      if (!hasW) {
+        gsl_vector_free(w_k); 
+        w_k = NULL;
+      }
     }
     
-    S = elementwise_w ? (Structure *)new WMosaicHStructure(m_k, n_l, w_k) : 
-                        (Structure *)new MosaicHStructure(m_k, n_l, w_k);
+    S = createMosaicStructure(m_k, n_l, w_k);
     gsl_vector_free(n_l);  
     if (w_k != NULL) {
       gsl_vector_free(w_k);  
@@ -129,7 +136,7 @@ void run_test( const char * testname, double & time, double& fmin,
     read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname);
     /* call slra */  
 
-    myCostFun = new CostFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
+    myCostFun = new VarproFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
 
     if (test_type[0] == 'd') {
       slra(myCostFun, &opt, (hasR ? R : NULL), NULL, p2, R, v);

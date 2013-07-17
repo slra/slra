@@ -37,3 +37,10 @@ fprintf(fid, '\n');
 fclose(fid);
 save('iters.txt', 'iters', '-ascii', '-append');
 
+timess = [res{3}];
+fid = fopen('timess.txt', 'wt');
+fprintf(fid, '   {%s}', methnames{:});
+fprintf(fid, '\n');
+fclose(fid);
+save('timess.txt', 'timess', '-ascii', '-append');
+
