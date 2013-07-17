@@ -22,14 +22,19 @@
 % XINI - initial condition under which WH is obtained by SYSH
 function [sysh, info, wh, xini] = ident(w, m, ell, opt)
 if ~exist('opt'), opt = []; end
+if ~isfield(opt, 'exct'), opt.exct = []; end
 if ~iscell(w)
   [T, q, N] = size(w); T = ones(N, 1) * T;
 else
   N = length(w); for k = 1:N, [T(k), q] = size(w{k}); end, T = T(:);
 end, p = q - m; n = p * ell; 
 s.m = (ell + 1) * ones(q, 1); s.n = T - ell; r = (ell + 1) * m + n;
-if isfield(opt, 'exct') && ~isempty(opt.exct) 
-  s.w = ones(q, 1); s.w(opt.exct) = inf; 
+if ~isempty(opt.exct)
+  if iscell(opt.exct)
+    for i = 1:N s.w(:, i) = ones(q, 1); s.w(opt.exct{i}) = inf; end
+  else 
+    s.w = ones(q, 1); s.w(opt.exct) = inf; 
+  end
 end
 if isfield(opt, 'wini')
   if iscell(w)
@@ -45,6 +50,7 @@ if isfield(opt, 'wini')
   elseif opt.wini == 0
     opt.wini = zeros(ell, q, N);
   end
+  if isfield(s, 'w'), s = rmfield(s, 'w'); end
   if ~iscell(opt.wini) && ~isempty(opt.wini)
     W = ones(T, q, N); W(:, opt.exct, :) = inf;
     s.n = s.n + ell; T = T + ell;
@@ -52,7 +58,7 @@ if isfield(opt, 'wini')
     w   = [opt.wini; w];
   elseif iscell(opt.wini) && ~isempty(cell2mat(opt.wini))
     for k = 1:N
-      W = ones(T(k), q); W(:, opt.exct) = inf;
+      W = ones(T(k), q); W(:, opt.exct{k}) = inf;
       if ~isempty(opt.wini{k})
         s.n(k) = s.n(k) + ell; T(k) = T(k) + ell;
         s.w{k} = [inf * ones(ell, q); W]; 
@@ -64,12 +70,20 @@ if isfield(opt, 'wini')
   end
 end
 if isfield(opt, 'sys0') && isa(opt.sys0, 'lti'), opt.Rini = ss2r(opt.sys0); end
-par = w2p(w); if isfield(s, 'w') && length(s.w) == length(par), s.w = w2p(s.w); end
-
-save example
-
-[ph, info] = slra(par, s, r, opt); info.M = info.fmin;
+par = w2p(w); if isfield(s, 'w') && isfield(opt, 'wini'), s.w = w2p(s.w); end
+[ph, info] = slra(par, s, r, opt); info.M = info.fmin; 
 wh = p2w(ph, q, N, T, iscell(w)); sysh = r2ss(info.Rh, m, ell); 
+if isfield(opt, 'wini')
+  if ~iscell(opt.wini) && ~isempty(opt.wini)
+    wh = wh(ell + 1:end, :, :);
+  elseif iscell(opt.wini) && ~isempty(cell2mat(opt.wini))
+    for k = 1:N
+      if ~isempty(opt.wini{k})
+        wh{k} = wh{k}(ell + 1:end, :);
+      end
+    end  
+  end
+end
 if nargout > 3, xini = inistate(wh, sysh); end
 function p = w2p(w)
 if ~iscell(w), p = w(:); else
@@ -84,11 +98,11 @@ else
   for k = 1:N, w{k} = p2w(p(1:q * T(k)), q, 1, T(k), 0); p(1:q * T(k)) = []; end
 end
 function R = ss2r(sys)
-[a, b, c, d] = ssdata(ss(sys)); [p, m] = size(d); n = size(a, 1); 
+sys = ss(sys); a = sys.a; b = sys.b; c = sys.c; d = sys.d; 
+[p, m] = size(d); n = size(a, 1); 
 ell1 = n / p + 1; L = ell1; O = c; for t = 2:L, O = [O; O(end - p + 1:end, :) * a]; end, P = null(O')';
 if (m > 0)
-  F = [d; O(1:(end - p), :) * b];
-  TT = zeros(ell1 * p, ell1 * m);
+  F = [d; O(1:(end - p), :) * b]; TT = zeros(ell1 * p, ell1 * m);
   for i = 1:ell1
     TT((i - 1) * p + 1:end, (i - 1) * m + 1: i * m) = F(1:(ell1 + 1 - i) * p, :);
   end
@@ -98,33 +112,28 @@ R = permute([reshape(Q, p, m, ell1), -reshape(P, p, p, ell1)], [1 3 2]);
 R = reshape(R, p, (m + p) * ell1);
 function sysh = r2ss(R, m, ell)
 [p, tmp] = size(R); ell1 = ell + 1; q = tmp / ell1; n = ell * p;
-if m > 0 
-  R = permute(reshape(R, p, ell1, q), [1 3 2]);
-  Q = R(:, 1:m, :); P = - R(:, m + 1:q, :); inv_Pl = pinv(P(:, :, ell + 1));
-  a = zeros(n); b = zeros(n, m); c = [];
-  if n > 0
-    a(p + 1:end, 1:n - p) = eye(n - p); 
-    c = [zeros(p, n - p) eye(p)];
-  end
-  d = inv_Pl * Q(:, :, ell1); ind_j = (n - p + 1):n;
-  for i = 1:ell
-    ind_i = ((i - 1) * p + 1):(i * p); Pi = P(:, :, i);
-    a(ind_i, ind_j) = - inv_Pl * Pi; 
-    b(ind_i, :) = inv_Pl * (Q(:, :, i) - Pi * d);
-  end
-  sysh = ss(a, b, c, d, 1);
-else 
-  O = null(R); a = O(1:end - p, :) \ O(p + 1:end, :); c = O(1:p, :);
-  sysh = ss(a, [], c, [], 1); 
+R = permute(reshape(R, p, ell1, q), [1 3 2]);
+Q = R(:, 1:m, :); P = - R(:, m + 1:q, :); inv_Pl = pinv(P(:, :, ell + 1));
+a = zeros(n); b = zeros(n, m); c = [];
+if n > 0
+  a(p + 1:end, 1:n - p) = eye(n - p); 
+  c = [zeros(p, n - p) eye(p)];
 end
+d = inv_Pl * Q(:, :, ell1); ind_j = (n - p + 1):n;
+for i = 1:ell
+  ind_i = ((i - 1) * p + 1):(i * p); Pi = P(:, :, i);
+  a(ind_i, ind_j) = - inv_Pl * Pi; 
+  b(ind_i, :) = inv_Pl * (Q(:, :, i) - Pi * d);
+end
+sysh = ss(a, b, c, d, 1);
 function xini = inistate(w, sys, use_all_data)
-[a, b, c, d] = ssdata(sys); [p, m] = size(d); n = size(a, 1); 
+a = sys.a; c = sys.c; [p, m] = size(sys.d); n = size(a, 1); 
 if ~iscell(w)
   [T, q, N] = size(w); T = ones(N, 1) * T;
 else
   N = length(w); for k = 1:N, [T(k), q] = size(w{k}); end, T = T(:);
 end 
-if ~exist('use_all_data') || use_all_data ~= 1, T = n * ones(1, N); end
+if ~exist('use_all_data') || use_all_data ~= 1, T = max(n, 2) * ones(1, N); end
 L = max(T); O = c; for t = 2:L, O = [O; O(end - p + 1:end, :) * a]; end
 sys.Ts = -1; xini = zeros(n, N);  
 for k = 1:N

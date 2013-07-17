@@ -1,12 +1,12 @@
 % DEMO - Demo file for structured low rank approximation
 clear all, rand('state', 0), randn('state', 0), addpath '..';
 
-opt.disp = 'iter';
+opt.disp = 'iter'; opt.solver = 'm';
 
 %% Least squares problem
 
 % Define dimensions and generate random data
-m = 100; n = 5; d = 2; sigma = 0.1;
+m = 20; n = 5; d = 2; sigma = 0.1;
 a0 = rand(m, n); x0 = rand(n, d); b0 = a0 * x0;
 a = a0; b = b0 + sigma * randn(m, d);
 
@@ -41,7 +41,7 @@ error = i_slra.Rh(:,1:end-d) - x_lra
 pause
 %% Deconvolution problem
 
-m = 200; % length(p_a0)
+m = 50; % length(p_a0)
 n = 2;   % length(b0)
 sigma = 0.25; % noise level
 
@@ -62,7 +62,7 @@ tic, xh_tls = tls(a, b); t_tls = toc
 
 % Solve the deconvolution problem via SLRA
 s.m = [n 1];
-s.n = 200;
+s.n = 50;
 s.phi = [0 1 0; 1 0 0; 0 0 1];
 opt =  rmfield(opt, 'Rini');
 tic, [p_slra, i_slra] = slra([p_a; b], s, n, opt); t_slra = toc

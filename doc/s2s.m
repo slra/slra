@@ -1,11 +1,12 @@
 function S = s2s(s, np)
-if nargin > 1, p = 1:np; end
-if ~isfield(s, 'phi'), s.phi = eye(sum(s.m)); end
-if ~isfield(s, 'n'), s.n = (length(p) - sum(s.m)) + 1; end
-[m, mp] = size(s.phi); q = length(s.m); N = length(s.n); n = sum(s.n); 
-s2np = @(s) sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
-                                   - length(s.m) * length(s.n);, np = s2np(s); % = N * mp + q * n - q * N; 
-p = 1:np; 
+q = length(s.m); if exist('p'), 
+                   np = length(p); 
+                 else
+                   np = sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
+                                               - length(s.m) * length(s.n);
+                 end, if ~isfield(s, 'n'), s.n = np - sum(s.m) + 1; end
+N = length(s.n); n  = sum(s.n);, p = 1:np;  
+if ~isfield(s, 'phi'), s.phi = eye(sum(s.m)); end, [m, mp] = size(s.phi); 
 tmp = cumsum([1; s.m(:)]); Imb = tmp(1:end - 1); Ime = tmp(2:end) - 1;
 tmp = cumsum([1; s.n(:)]); Inb = tmp(1:end - 1); Ine = tmp(2:end) - 1;
 S = zeros(mp, n); ind = 1;

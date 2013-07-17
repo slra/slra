@@ -23,4 +23,4 @@ O =  sqrt_s(ones(size(U, 1), 1), :) .* U(:, 1:n);
 C = (sqrt_s(ones(size(V, 1), 1), :) .* V(:, 1:n))'; 
 b = C(:, 1:m); c = O(1:p, :); 
 a = O(1:end - p, :) \ O((p + 1):end, :);, sys = ss(a, b, c, h(:, :, 1), -1);
-if nargout > 1, hh = shiftdim(impulse(sys, T), 1); end 
+if nargout > 1, hh = impulse(sys, T); hh = hh(1:T, :, :); end 

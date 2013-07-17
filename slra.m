@@ -31,25 +31,21 @@
 %
 % Note: it is required that length(p) > n * (m - r).
 
-function varargout = slra(p, s, r, opt)
-
-tol_missing = 1e-6; % tolerance for missing value weights in the C solver
-
-% default options
+function [ph, info] = slra(p, s, r, opt)
 if ~exist('opt'), opt = struct; end
-if ~isfield(opt, 'solver'), opt.solver = 'c'; end % C solver
-if ~isfield(opt, 'disp'), opt.disp = 'off'; end % no display 
-
-% convert NaNs in p to 0s and create or modify s.w accordingly
+if ~isfield(opt, 'solver'), opt.solver = 'c'; end 
+if ~isfield(opt, 'disp'), opt.disp = 'off'; end 
+if ~isfield(opt, 'tol_m'), opt.tol_m = 1e-6; end 
 Im = find(isnan(p));
 if ~isempty(Im)
-  % define constants
-  q = length(s.m); np = length(p);
-  if ~isfield(s, 'n'), s.n = (np - sum(s.m)) + 1; end % default s.n
-  N = length(s.n); n = sum(s.n);
-  if ~isfield(s, 'w'),
-    s.w = ones(size(p));
-  elseif length(s.w(:)) ~= q || all(size(s.w) == [q N])
+  q = length(s.m); if exist('p'), 
+                     np = length(p); 
+                   else
+                     np = sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
+                                                 - length(s.m) * length(s.n);
+                   end, if ~isfield(s, 'n'), s.n = np - sum(s.m) + 1; end
+  N = length(s.n); n  = sum(s.n);
+  if length(s.w(:)) == q || all(size(s.w) == [q N])
     % convert q x 1 s.w to q x N
     if isvector(s.w), s.w = s.w(:); s.w = s.w(:, ones(1, N)); end
     % convert q x N s.w to np x 1
@@ -60,26 +56,61 @@ if ~isempty(Im)
       end
     end
     s.w = w;
-  else
-    error('Wrong size of s.w.')
   end
-  p(Im) = 0; s.w(Im) = 0;
+  if ~isfield(s, 'w'), s.w = ones(size(p)); end, p(Im) = 0; s.w(Im) = 0;
 end
-if (opt.solver == 'c') && isfield(s, 'w'), s.w(find(s.w == 0)) = tol_missing; end
-
-% call the solver
 if opt.solver == 'c'
+  if isfield(s, 'w'), s.w(find(s.w == 0)) = opt.tol_m; end
   opt = rmfield(opt, 'solver');
   obj = slra_mex_obj('new', p, s, r);
-  [varargout{1:nargout}] = slra_mex_obj('optimize', obj, opt);
+  [ph, info] = slra_mex_obj('optimize', obj, opt);
   slra_mex_obj('delete', obj);
 else
   if ~isfield(s, 'w'), s.w = []; end
-  if ~isfield(s, 'phi'), s.phi = []; end
+  q = length(s.m); if exist('p'), 
+                     np = length(p); 
+                   else
+                     np = sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
+                                                 - length(s.m) * length(s.n);
+                   end, if ~isfield(s, 'n'), s.n = np - sum(s.m) + 1; end
+  N = length(s.n); n  = sum(s.n);
+  if length(s.w(:)) == q || all(size(s.w) == [q N])
+    % convert q x 1 s.w to q x N
+    if isvector(s.w), s.w = s.w(:); s.w = s.w(:, ones(1, N)); end
+    % convert q x N s.w to np x 1
+    w = [];
+    for j = 1:N
+      for i = 1:q
+        wij = s.w(i, j) * ones(s.m(i) + s.n(j) - 1, 1); w = [w; wij];
+      end
+    end
+    s.w = w;
+  end
+  if ~all(size(s.w) == [length(p(:)) length(p(:))]), s.w = s.w(:); end
+  if ~isfield(s,   'phi' ), s.phi = []; end
   if ~isfield(opt, 'Rini'), opt.Rini = []; end
-  if ~isfield(opt, 'psi'), opt.psi = []; end
-  dir_str = fileparts(which('slra')); addpath([dir_str '/doc']); np = length(p);
-  warning_state = warning; warning('off');
-  [varargout{1:nargout}] = slra_ext(s2s(s, np), p, r, s.w, opt.Rini, s.phi, opt.psi, opt);
+  if ~isfield(opt, 'psi' ), opt.psi = []; end
+  np = length(p); warning_state = warning; warning('off');
+  [ph, info] = slra_ext(s2s(s, np), p, r, s.w, opt.Rini, s.phi, opt.psi, opt);
   warning('warning_state');
+end
+function S = s2s(s, np)
+q = length(s.m); if exist('p'), 
+                   np = length(p); 
+                 else
+                   np = sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
+                                               - length(s.m) * length(s.n);
+                 end, if ~isfield(s, 'n'), s.n = np - sum(s.m) + 1; end
+N = length(s.n); n  = sum(s.n);, p = 1:np;  
+if ~isfield(s, 'phi'), s.phi = eye(sum(s.m)); end, [m, mp] = size(s.phi); 
+tmp = cumsum([1; s.m(:)]); Imb = tmp(1:end - 1); Ime = tmp(2:end) - 1;
+tmp = cumsum([1; s.n(:)]); Inb = tmp(1:end - 1); Ine = tmp(2:end) - 1;
+S = zeros(mp, n); ind = 1;
+for j = 1:N
+  for i = 1:q
+    npij = s.m(i) + s.n(j) - 1;
+    pij = p(ind:(ind + npij - 1)); ind = ind + npij;
+    Hij = hankel(pij(1:s.m(i)), pij(s.m(i):end));
+    S(Imb(i):Ime(i), Inb(j):Ine(j)) = Hij;
+  end
 end
