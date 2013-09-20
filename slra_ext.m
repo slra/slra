@@ -59,7 +59,6 @@ if exist('w') & ~isempty(w)
   bfs = double(bfs); p(Ig) = sqrt_w * p(Ig); 
   bfs(:, Ig) = bfs(:, Ig) * inv_sqrt_w;
 end
-
 if reg
   if ~exist('opt') || ~isfield(opt, 'g') || isempty(opt.g) 
     opt.g = norm(p(Ig)) ^ 2; 

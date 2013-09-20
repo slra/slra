@@ -1,4 +1,4 @@
-clear all; randn('seed', 0); load aut_sys_traj; opt.solver = 'c';
+clear all; randn('seed', 0); load aut_sys_traj; opt.solver = 'r';
 size(null(blkhank(y0, ell + 1)')', 1) 
 y2R = @(y, ell) null(blkhank(y, ell + 1)')'; R0 = y2R(y0, ell);
 nl = 0.4; y = y0 + nl * std(y0) * randn(T, 1); 
@@ -22,6 +22,7 @@ R = info_f.Rh; yini = yh_f(end - ell + 1:end); X = - R(1:ell) / R(end); yvh = yi
                                                  yvh = [yvh; X * yvh(end - ell + 1:end)]; 
                                                end  
                                                yvh = yvh(ell + 1:end);, plot(yvh, 'k-.')
+%[yvh_f, infov_f] = misfit(yv, s, info_f.Rh); 
 ax = axis; axis([1 T ax(3:4)]), print_fig('slra-f2v')
 s.m = ell + 1; s.n = T - ell; r = ell; 
 Im = (ell + 1):(ell + 1):T; opt.psi = [];

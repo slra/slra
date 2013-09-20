@@ -71,7 +71,7 @@ if isfield(opt, 'wini')
 end
 if isfield(opt, 'sys0') && isa(opt.sys0, 'lti'), opt.Rini = ss2r(opt.sys0); end
 par = w2p(w); if isfield(s, 'w') && isfield(opt, 'wini'), s.w = w2p(s.w); end
-[ph, info] = slra(par, s, r, opt); info.M = info.fmin; 
+[ph, info] = slra(par, s, r, opt); info.M = info.fmin;
 wh = p2w(ph, q, N, T, iscell(w)); sysh = r2ss(info.Rh, m, ell); 
 if isfield(opt, 'wini')
   if ~iscell(opt.wini) && ~isempty(opt.wini)

@@ -1,0 +1,9 @@
+The results in
+
+I. Markovsky. A software package for system identification in the behavioral setting. Control Engineering Practice, 21:1422-1436, 2013.
+
+are reproduced by executing the script "run_all_examples". The following tools and data files need to downloaded and installed seperately:
+
+- the method of "R. Pintelon and J. Schoukens. Frequency domain system identification with missing data. IEEE Trans. Automat. Control, 45(2):364–369, February 2000." (available upon request from R. Pintelon <rik.pintelon@vub.ac.be> for the comparison in Section 7.
+
+- Data file for the DAISY benchmarks in Section 8, available from http://homepages.vub.ac.be/~imarkovs/daisy.tgz.

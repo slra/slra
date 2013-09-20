@@ -38,6 +38,7 @@ if ~isfield(opt, 'disp'), opt.disp = 'off'; end
 if ~isfield(opt, 'tol_m'), opt.tol_m = 1e-6; end 
 Im = find(isnan(p));
 if ~isempty(Im)
+  if ~isfield(s, 'w'), s.w = ones(size(p)); end 
   q = length(s.m); if exist('p'), 
                      np = length(p); 
                    else
@@ -57,7 +58,7 @@ if ~isempty(Im)
     end
     s.w = w;
   end
-  if ~isfield(s, 'w'), s.w = ones(size(p)); end, p(Im) = 0; s.w(Im) = 0;
+  p(Im) = 0; s.w(Im) = 0;
 end
 if opt.solver == 'c'
   if isfield(s, 'w'), s.w(find(s.w == 0)) = opt.tol_m; end
@@ -65,6 +66,33 @@ if opt.solver == 'c'
   obj = slra_mex_obj('new', p, s, r);
   [ph, info] = slra_mex_obj('optimize', obj, opt);
   slra_mex_obj('delete', obj);
+elseif opt.solver == 'r'
+  if isfield(s, 'w')
+    q = length(s.m); if exist('p'), 
+                       np = length(p); 
+                     else
+                       np = sum(s.m) * length(s.n) + length(s.m) * sum(s.n) ...
+                                                   - length(s.m) * length(s.n);
+                     end, if ~isfield(s, 'n'), s.n = np - sum(s.m) + 1; end
+    N = length(s.n); n  = sum(s.n);
+    if length(s.w(:)) == q || all(size(s.w) == [q N])
+      % convert q x 1 s.w to q x N
+      if isvector(s.w), s.w = s.w(:); s.w = s.w(:, ones(1, N)); end
+      % convert q x N s.w to np x 1
+      w = [];
+      for j = 1:N
+        for i = 1:q
+          wij = s.w(i, j) * ones(s.m(i) + s.n(j) - 1, 1); w = [w; wij];
+        end
+      end
+      s.w = w;
+    end
+    opt.w = s.w; 
+  end
+  if isfield(opt, 'Rini'), opt.P_init = null(opt.Rini); end
+  np = length(p); s.tts = s2s(s, np); 
+  [ph, info] = reg_slra(p, s, r, opt);
+  info.Rh = null(info.P')'; info.Rh = info.Rh(1:sum(s.m) - r, :);
 else
   if ~isfield(s, 'w'), s.w = []; end
   q = length(s.m); if exist('p'), 

@@ -52,15 +52,14 @@ Directories `test_m` and `test_r` contain demo files for MATLAB/Octave and R.
 
 If you use the package in your research, please cite the following reference:
 
-    @@TechReport{slra-package,
-      author      = {Markovsky, I. and Usevich, K.},
-      title       = {Software for weighted structured low-rank approximation},
-      institution =  {ECS, Univ. of Southampton},
-      number = 	 {339974},
-      address =      {\url{http://eprints.soton.ac.uk/339974/ }},
-      year        = {2012}
+    @Article{slra-software,
+	author = {I. Markovsky and K. Usevich},
+    	title = {Software for weighted structured low-rank approximation},
+    	journal = {J. Comput. Appl. Math.},
+  	volume = {256},
+  	pages = {278--292},
+  	year = {2013},
     }
-
 
 Installation instructions
 -------------------------
@@ -93,19 +92,19 @@ Linux distributions.
 2. Compile
 	 * type `make matlab` to produce a MEX binary file for MATLAB
 	 * type `make octave` to produce a MEX binary file for Octave
-	 * type `make octave` to produce an R package and install it 
+	 * type `make R` to produce an R package and install it 
 
 3. Install
    * MATLAB/Octave MEX files (slra.mex<xxx>) can be installed by copying them
      to directory of your *.m scripts or by using "addpath" command.
    * If you downloaded a precompiled R package, you should run
   
-        install.packages(repos=NULL, pkgs="Rslra_x.x.xxx"); 
+        `install.packages(repos=NULL, pkgs="Rslra_x.x.xxx");` 
   
      in the R console launched in the same directory where the package is.
    * The R package should be loaded each time before using it by typing
 
-        library(Rslra);
+        `library(Rslra);`
 
      in the R console.
     
