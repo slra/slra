@@ -17,13 +17,22 @@ MEX_SRC_FILES = mex/slra_mex_obj.cpp mex/SLRAObject.cpp
 
 BUILD_MODE=BUILD_DEFAULT
 
+# Windows-specific defines (for compilation with Mingw64)
+MINGWPATH=c:/Rtools/gcc-4.6.3
+MATLABROOT=c:/Progra~1/MATLAB/R2013a
+WINLIBS= -L$(MATLABROOT)/bin/win64 -L$(MATLABROOT)/extern/lib/win64/microsoft  -lmex -lmx -lmwlapack -lmwblas -leng 
+WINGSL=mex/libgsl.a mex/libgslcblas.a
+WINMEX=$(MINGWPATH)/bin/g++ -m64 -shared mex/mex.def -DMATLAB_MEX_FILE -DBUILD_MEX_WINDOWS -I$(MATLABROOT)/extern/include -Wno-write-strings  
+
 # Main targets
 matlab: clean $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
 	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra_mex_obj 
 
 matlab-win: $(MEX_SRC_FILES) 
-	$(MEXWIN) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) 
+	$(WINMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(WINGSL) \
+	$(WINLIBS) -o slra_mex_obj.mexw64
+	
 
 octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
