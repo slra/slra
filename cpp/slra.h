@@ -33,7 +33,7 @@ extern "C" {
 #include "StationaryDGamma.h"
 
 #include "VarproFunction.h"
-#include "OptFunction.h"
+#include "NLSFunction.h"
 
 #include "OptimizationOptions.h"
 
