@@ -6,12 +6,12 @@
 class MyIterationLogger : public IterationLogger {
   Timer myTimer;
   double myStartTime;
-  OptFunctionSLRA *myFun;
+  NLSVarpro *myFun;
   gsl_matrix *myRs;
   gsl_matrix *R;
   gsl_matrix *myInfo;
 public:
-  MyIterationLogger( OptFunctionSLRA *fun, gsl_matrix *Rs, gsl_matrix *info ) {
+  MyIterationLogger( NLSVarpro *fun, gsl_matrix *Rs, gsl_matrix *info ) {
     myFun = fun;
     myRs = Rs;
     myInfo = info;  
@@ -53,7 +53,7 @@ public:
 void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini, 
            gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *r_out, 
            gsl_matrix *v_out, gsl_matrix *Rs, gsl_matrix *info ) { 
-  OptFunctionSLRA *optFun = NULL;
+  NLSVarpro *optFun = NULL;
   gsl_vector *x = NULL;
   double old_reg = costFun->getReggamma();
   
@@ -62,9 +62,9 @@ void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini,
 
     costFun->setReggamma(opt->reggamma);
     if (opt->ls_correction || costFun->isGCD()) {
-      optFun = new OptFunctionSLRACorrection(*costFun, Psi);
+      optFun = new NLSVarproPsiXICorrection(*costFun, Psi);
     } else { 
-      optFun = new OptFunctionSLRACholesky(*costFun, Psi);
+      optFun = new NLSVarproPsiXICholesky(*costFun, Psi);
     }
     x = gsl_vector_alloc(optFun->getNvar());
 

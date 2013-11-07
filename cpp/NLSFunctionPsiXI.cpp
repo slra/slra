@@ -1,7 +1,7 @@
 #include <memory.h>
 #include "slra.h"
 
-OptFunctionSLRA::OptFunctionSLRA( VarproFunction &fun, gsl_matrix *Psi ) : 
+NLSVarproPsiXI::NLSVarproPsiXI( VarproFunction &fun, gsl_matrix *Psi ) : 
     myFun(fun) {
   if (Psi == NULL) {
     myPsi = gsl_matrix_alloc(myFun.getNrow(), myFun.getNrow());
@@ -19,19 +19,19 @@ OptFunctionSLRA::OptFunctionSLRA( VarproFunction &fun, gsl_matrix *Psi ) :
   myTmpXId = gsl_matrix_alloc(myPsi->size2, myFun.getD());
 }
 
-OptFunctionSLRA::~OptFunctionSLRA()  {
+NLSVarproPsiXI::~NLSVarproPsiXI()  {
   gsl_matrix_free(myTmpR);
   gsl_matrix_free(myTmpXId);
   gsl_matrix_free(myPsi);
 }
 
-void OptFunctionSLRA::computeR( const gsl_vector * x, gsl_matrix *R ) { 
+void NLSVarproPsiXI::computeR( const gsl_vector * x, gsl_matrix *R ) { 
   gsl_matrix x_mat = x2xmat(x);
   X2XId(&x_mat, myTmpXId);
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPsi, myTmpXId, 0, R);
 }
 
-void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f, 
+void NLSVarproPsiXI::computeFuncAndGrad( const gsl_vector* x, double* f, 
                                          gsl_vector *grad ) {
   computeR(x, myTmpR);
   if (grad == NULL) {
@@ -43,7 +43,7 @@ void OptFunctionSLRA::computeFuncAndGrad( const gsl_vector* x, double* f,
   }                   
 }   
 
-void OptFunctionSLRA::X2XId( const gsl_matrix *x, gsl_matrix *XId ) { 
+void NLSVarproPsiXI::X2XId( const gsl_matrix *x, gsl_matrix *XId ) { 
   gsl_vector diag;
   gsl_matrix sm;
   size_t n = x->size1, d = x->size2;
@@ -53,7 +53,7 @@ void OptFunctionSLRA::X2XId( const gsl_matrix *x, gsl_matrix *XId ) {
   gsl_vector_set_all(&(diag = gsl_matrix_diagonal(&sm).vector), -1);
 }
 
-void OptFunctionSLRA::PQ2XId( const gsl_matrix *R, gsl_matrix * x ) {
+void NLSVarproPsiXI::PQ2XId( const gsl_matrix *R, gsl_matrix * x ) {
   gsl_matrix *tR = gsl_matrix_alloc(R->size1, R->size2);
   gsl_matrix_memcpy(tR, R);
   size_t status = 0, s1_s2 = tR->size1 - tR->size2;
@@ -69,7 +69,7 @@ void OptFunctionSLRA::PQ2XId( const gsl_matrix *R, gsl_matrix * x ) {
   gsl_matrix_free(tR);
 }
 
-void OptFunctionSLRA::RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) {
+void NLSVarproPsiXI::RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) {
   gsl_matrix x_mat = x2xmat(x);
   if (myPsi == NULL) {
     gsl_matrix_memcpy(myTmpXId, RTheta);
@@ -79,7 +79,7 @@ void OptFunctionSLRA::RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) {
   PQ2XId(myTmpXId, &x_mat);
 }
 
-void OptFunctionSLRA::x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ) {
+void NLSVarproPsiXI::x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ) {
   gsl_matrix x_mat = x2xmat(x);
   X2XId(&x_mat, myTmpXId);
   if (myPsi == NULL) {
@@ -89,14 +89,14 @@ void OptFunctionSLRA::x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ) {
   }
 }
 
-void OptFunctionSLRA::computeDefaultx( gsl_vector *x ) {
+void NLSVarproPsiXI::computeDefaultx( gsl_vector *x ) {
  gsl_matrix *Rtheta = gsl_matrix_alloc(myFun.getNrow(), myFun.getD());
  myFun.computeDefaultRTheta(Rtheta);
  RTheta2x(Rtheta, x);
  gsl_matrix_free(Rtheta);
 }
 
-void OptFunctionSLRA::computePhat( gsl_vector* p, const gsl_vector* x ) {
+void NLSVarproPsiXI::computePhat( gsl_vector* p, const gsl_vector* x ) {
   computeR(x, myTmpR);
   myFun.computePhat(p, myTmpR);
 }

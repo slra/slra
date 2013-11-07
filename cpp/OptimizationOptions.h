@@ -73,12 +73,12 @@ public:
   OptimizationOptions();
 
   /** Main function that runs GSL optimization
-   * @param [in]     F     OptFunction object
+   * @param [in]     F     Nonlinear least squares function
    * @param [in,out] x_vec Vector containing initial approximation and returning
    *                       the minimum point 
    * @param [out]    v     Covariance matrix for x
    */
-  int gslOptimize( OptFunction *F, gsl_vector* x_vec, gsl_matrix *v,
+  int gslOptimize( NLSFunction *F, gsl_vector* x_vec, gsl_matrix *v,
                    IterationLogger *itLog );
 
   /** Initialize method and submethod fields from string */

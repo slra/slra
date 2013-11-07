@@ -57,7 +57,7 @@ void OptimizationOptions::str2Method( const char *str )  {
 }
 
 
-int OptimizationOptions::gslOptimize( OptFunction *F, gsl_vector* x_vec, 
+int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec, 
         gsl_matrix *v, IterationLogger *itLog ) {
   const gsl_multifit_fdfsolver_type *Tlm[] =
     { gsl_multifit_fdfsolver_lmder, gsl_multifit_fdfsolver_lmsder };
