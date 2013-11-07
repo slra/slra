@@ -26,19 +26,18 @@ for testno=1:5
   i_fmin = info4.iterinfo;
   
   yLimits = [min([i_gr(2,end), i_perm(2,end), i_perm0(2,end), i_reg(2,end), i_fmin(2,end)]) max([i_gr(2,1), i_perm(2,1), i_perm0(2,1), i_reg(2,1), i_fmin(2,1)])];
-  
-  logYlim = log10(yLimits);
-  logYlim = mean(logYlim) + [-0.75; 0.75 ];
-  yLimits = (10.^(logYlim));
+  xLimits = [min([i_gr(1,1), i_perm(1,1), i_perm0(1,1), i_reg(1,1), i_fmin(1,1)]) max([i_gr(1,end), i_perm(1,end), i_perm0(1,end), i_reg(1,end), i_fmin(1,end)]) ];
+  yLimits = (10.^(log10(yLimits) + [-0.125 0.125]))';
+  xLimits = (10.^(log10(xLimits) + [-0.125 0.125]))';
    
  
  
   hFig = figure;
-  graph1 = loglog(i_gr(1,:), i_gr(2,:), 'b.-', i_perm(1,:), i_perm(2,:), 'rx-', i_perm0(1,:), i_perm0(2,:), 'mo-', i_reg(1,:), i_reg(2,:), 'gv-',i_fmin(1,:), i_fmin(2,:), 'ks-');
+  graph1 = loglog(i_gr(1,:), i_gr(2,:), 'm.-', i_perm(1,:), i_perm(2,:), 'rs-', i_perm0(1,:), i_perm0(2,:), 'bo-', i_reg(1,:), i_reg(2,:), 'gs-',i_fmin(1,:), i_fmin(2,:), 'k*-');
   title(['Test #' num2str(testno)]);
   xlabel('time, s.');
   ylabel('fmin');
-  decades_equal(gca, [0.2 * 10^(-3) ;5], yLimits);
+  decades_equal(gca, xLimits, yLimits);
   set(gcf, 'Position', get(gcf, 'Position') - [0 0 0 140]);
   
   i_gr = info.iterinfo';
