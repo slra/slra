@@ -35,6 +35,7 @@ extern "C" {
 #include "VarproFunction.h"
 #include "NLSFunction.h"
 #include "NLSVarproPsiXI.h"
+#include "NLSVarproVecR.h"
 
 #include "OptimizationOptions.h"
 

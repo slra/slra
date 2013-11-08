@@ -68,6 +68,7 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
     MATStoreOption(Mopt, opt, tol, 0, 1);
     MATStoreOption(Mopt, opt, reggamma, 0, numeric_limits<double>::max());
     MATStoreOption(Mopt, opt, ls_correction, 0, 1);
+    MATStoreOption(Mopt, opt, avoid_xi, 0, 1);
   }
 }
 

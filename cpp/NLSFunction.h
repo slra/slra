@@ -8,6 +8,8 @@ public:
   virtual ~NLSFunction() {}
   /** Returns \f$n\f$ --- the number of variables */
   virtual size_t getNvar() = 0;
+  /** Returns the number of essential variables */
+  virtual size_t getNEssVar() { getNvar(); }
   /** Returns \f$n_s\f$ --- the number of squares (dimension of \f$g\f$) */
   virtual size_t getNsq() = 0;
   /** Computes function \f$ff$ and gradient */
@@ -53,8 +55,7 @@ public:
   virtual size_t getNvar() = 0;
   /** Returns \f$n_s\f$ --- the number of squares (dimension of \f$g\f$) */
   virtual size_t getNsq() = 0;
-  
-  
+    
   /** Computes function \f$ff$ and gradient */
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, 
                                    gsl_vector *grad ) = 0;

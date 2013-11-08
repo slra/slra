@@ -14,18 +14,19 @@ OptimizationOptions::OptimizationOptions() : disp(SLRA_DEF_disp),
     epsabs(SLRA_DEF_epsabs), epsrel(SLRA_DEF_epsrel), 
     epsgrad(SLRA_DEF_epsgrad), epsx(SLRA_DEF_epsx), maxx(SLRA_DEF_maxx),
     step(SLRA_DEF_step), tol(SLRA_DEF_tol), reggamma(SLRA_DEF_reggamma),
-    ls_correction(SLRA_DEF_ls_correction) {
+    ls_correction(SLRA_DEF_ls_correction), avoid_xi(SLRA_DEF_avoid_xi) {
 }
 
 void OptimizationOptions::str2Method( const char *str )  {
-  char meth_codes[] = "lqn", 
-       sm_codes_lm[] = "ls", sm_codes_qn[] = "b2pf", sm_codes_nm[] = "n2r";
-  char *submeth_codes[] = { sm_codes_lm, sm_codes_qn, sm_codes_nm };
+  char meth_codes[] = "lqnp", 
+       sm_codes_lm[] = "ls", sm_codes_qn[] = "b2pf", sm_codes_nm[] = "n2r", sm_codes_lmpinv[] = "su";
+  char *submeth_codes[] = { sm_codes_lm, sm_codes_qn, sm_codes_nm, sm_codes_lmpinv };
 
   size_t submeth_codes_max[] = { 
     sizeof(sm_codes_lm) / sizeof(sm_codes_lm[0]) - 1, 
     sizeof(sm_codes_qn) / sizeof(sm_codes_qn[0]) - 1, 
-    sizeof(sm_codes_nm) / sizeof(sm_codes_nm[0]) - 1
+    sizeof(sm_codes_nm) / sizeof(sm_codes_nm[0]) - 1,
+    sizeof(sm_codes_lmpinv) / sizeof(sm_codes_lmpinv[0]) - 1
   };
   size_t meth_code_max = sizeof(submeth_codes_max) / sizeof(submeth_codes_max[0]);
   long i;
@@ -144,7 +145,7 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
   case SLRA_OPT_METHOD_LM:
     gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
-    gsl_vector_scale(g, sqrt(2));
+    gsl_vector_scale(g, 2);
     if (itLog != NULL) {
       itLog->reportIteration(0, solverlm->x, this->fmin, g);
     }
@@ -179,7 +180,7 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
     case SLRA_OPT_METHOD_LM: /* Levenberg-Marquardt */
       status = gsl_multifit_fdfsolver_iterate(solverlm);
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
-      gsl_vector_scale(g, sqrt(2));
+      gsl_vector_scale(g, 2);
 
       /* check the convergence criteria */
       if (this->epsabs != 0 || this->epsrel != 0) {
@@ -299,5 +300,203 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
   return GSL_SUCCESS; /* <- correct with status */
 }
 
+static void normalizeJacobian( gsl_matrix *jac, gsl_vector *scaling ) {
+  for (int i = 0; i < jac->size2; i++) {
+    gsl_vector jac_col = gsl_matrix_column(jac, i).vector;
+    gsl_vector_set(scaling, i, 1 / gsl_blas_dnrm2(&jac_col));
+    gsl_vector_scale(&jac_col, gsl_vector_get(scaling, i));
+  }
+}			   
+
+static void moveGN( const gsl_matrix *Vt, const gsl_vector *sig2,  const gsl_vector *ufuncsig,
+               double lambda2, gsl_vector * dx, int k, gsl_vector * scaling ) {
+  gsl_vector_set_zero(dx);
+  for (int i = 0; i < k; i++) {
+    gsl_vector VtRow = gsl_matrix_const_row(Vt, i).vector;
+	gsl_blas_daxpy(gsl_vector_get(ufuncsig, i) / 
+                   (gsl_vector_get(sig2, i) * gsl_vector_get(sig2, i) + lambda2), &VtRow, dx);
+  }
+
+  if (scaling != NULL) {
+    gsl_vector_mul(dx, scaling);
+  }
+}			   
+
+int OptimizationOptions::lmpinvOptimize( NLSFunction *F, gsl_vector* x_vec, 
+        IterationLogger *itLog ) {
+  int status, status_dx, status_grad, k;
+  double g_norm, x_norm;
+
+  if (this->maxiter < 0 || this->maxiter > 5000) {
+    throw new Exception("opt.maxiter should be in [0;5000].\n");   
+  }
+  int scaled = 1; //this->submethod;
+  
+  /* LM */
+  gsl_matrix *jac = gsl_matrix_alloc(F->getNsq(), F->getNvar());
+  gsl_vector *func = gsl_vector_alloc(F->getNsq());
+  gsl_vector *g = gsl_vector_alloc(F->getNvar());
+  gsl_vector *x_cur = gsl_vector_alloc(F->getNvar());
+  gsl_vector *x_new = gsl_vector_alloc(F->getNvar());
+  gsl_vector *dx = gsl_vector_alloc(F->getNvar());
+  gsl_vector *scaling = scaled ? gsl_vector_alloc(F->getNvar()) : NULL;
+
+  gsl_matrix *tempv = gsl_matrix_alloc(jac->size2, jac->size2);
+  gsl_vector *tempufuncsig = gsl_vector_alloc(jac->size2);
+  gsl_vector *templm = gsl_vector_alloc(jac->size2);
+  gsl_vector *sig = gsl_vector_alloc(mymin(jac->size1, jac->size2));
+
+  double lambda2 = 0, f_new;
+  int start_lm = 1;
+  
+  /* Determine optimal work */
+  size_t status_svd = 0, minus1 = -1;
+  double tmp;
+  dgesvd_("A", "O", &jac->size2, &jac->size1, jac->data, &jac->tda, sig->data,
+     tempv->data, &tempv->size2, NULL, &jac->size1, &tmp, &minus1, &status_svd);
+  gsl_vector *work_vec = gsl_vector_alloc(tmp);
+  
+  /* optimization loop */
+  Log::lprintf(Log::LOG_LEVEL_FINAL, "SLRA optimization:\n");
+    
+  status = GSL_SUCCESS;  
+  status_dx = GSL_CONTINUE;
+  status_grad = GSL_CONTINUE;  
+  this->iter = 0;
+  
+  gsl_vector_memcpy(x_cur, x_vec);
+  
+  F->computeFuncAndJac(x_cur, func, jac);
+  gsl_multifit_gradient(jac, func, g);
+  gsl_vector_scale(g, 2);
+  gsl_blas_ddot(func, func, &this->fmin);
+  if (itLog != NULL) {
+    itLog->reportIteration(0, x_cur, this->fmin, g);
+  }
+  while (status_dx == GSL_CONTINUE && 
+         status_grad == GSL_CONTINUE &&
+         status == GSL_SUCCESS &&
+         this->iter < this->maxiter) {
+	/* Check convergence criteria (except dx) */
+    if (this->maxx > 0) {
+  	  if (gsl_vector_max(x_cur) > this->maxx || gsl_vector_min(x_cur) < -this->maxx ){
+  	    break;
+	  }
+	}
+  
+	this->iter++;
+	
+    if (scaling != NULL) {
+      normalizeJacobian(jac, scaling);
+    }
+    
+    /* Compute the SVD */
+    dgesvd_("A", "O", &jac->size2, &jac->size1, jac->data, &jac->tda, sig->data,
+        tempv->data, &tempv->size2, NULL, &jac->size1, work_vec->data, 
+		&work_vec->size, &status_svd);
+
+    gsl_blas_dgemv(CblasTrans, -1.0, jac, func, 0.0, tempufuncsig); 
+	gsl_vector_mul(tempufuncsig, sig);
+    
+	while (1) {
+	  moveGN(tempv, sig, tempufuncsig, lambda2, dx, F->getNEssVar(), scaling);
+      gsl_vector_memcpy(x_new, x_cur);
+      gsl_vector_add(x_new, dx);
+      F->computeFuncAndGrad(x_new, &f_new, NULL);
+	  
+	  if (f_new <= this->fmin + 1e-16) {
+        lambda2 = 0.4 * lambda2;
+	    break;
+	  }
+	  /* Else: update lambda */
+	  if (start_lm) {
+        lambda2 = gsl_vector_get(sig, 0) * gsl_vector_get(sig, 0);
+	    start_lm = 0;
+	  } else {
+        lambda2 = 10 * lambda2; 
+        Log::lprintf(Log::LOG_LEVEL_ITER, "lambda: %f\n", lambda2);
+      }
+	} 
+    /* check the dx convergence criteria */
+    if (this->epsabs != 0 || this->epsrel != 0) {
+      status_dx = gsl_multifit_test_delta(dx, x_cur, this->epsabs, this->epsrel);
+    }     
+	gsl_vector_memcpy(x_cur, x_new);
+
+    F->computeFuncAndJac(x_cur, func, jac);
+	gsl_multifit_gradient(jac, func, g);
+    gsl_vector_scale(g, 2);
+    gsl_blas_ddot(func, func, &this->fmin);
+
+    if (itLog != NULL) {
+      itLog->reportIteration(this->iter, x_cur, this->fmin, g);
+    }
+    status_grad = gsl_multifit_test_gradient(g, this->epsgrad);
+  } 
+  if (this->iter >= this->maxiter) {
+    status = EITER;
+  }
+
+  gsl_blas_ddot(func, func, &this->fmin);
+  
+  /* print exit information */  
+  if (Log::getMaxLevel() >= Log::LOG_LEVEL_FINAL) { /* unless "off" */
+    switch (status) {
+    case EITER: 
+      Log::lprintf("SLRA optimization terminated by reaching " 
+                  "the maximum number of iterations.\n" 
+                  "The result could be far from optimal.\n");
+      break;
+    case GSL_ETOLF:
+      Log::lprintf("Lack of convergence: "
+                  "progress in function value < machine EPS.\n");
+      break;
+    case GSL_ETOLX:
+      Log::lprintf("Lack of convergence: "
+                  "change in parameters < machine EPS.\n");
+      break;
+    case GSL_ETOLG:
+      Log::lprintf("Lack of convergence: "
+                  "change in gradient < machine EPS.\n");
+      break;
+    case GSL_ENOPROG:
+      Log::lprintf("Possible lack of convergence: no progress.\n");
+      break;
+    }
+    
+    if (status_grad != GSL_CONTINUE && status_dx != GSL_CONTINUE) {
+      Log::lprintf("Optimization terminated by reaching the convergence "
+                  "tolerance for both X and the gradient.\n"); 
+    
+    } else {
+      if (status_grad != GSL_CONTINUE) {
+        Log::lprintf("Optimization terminated by reaching the convergence "
+	            "tolerance for the gradient.\n");
+      } else {
+        Log::lprintf("Optimization terminated by reaching the convergence "
+                    "tolerance for X.\n");
+      }
+    }
+  }
+
+  gsl_vector_memcpy(x_vec, x_cur);
+
+  gsl_vector_free(work_vec);
+  gsl_matrix_free(jac);
+  gsl_vector_free(func);
+  gsl_vector_free(g);
+  gsl_vector_free(x_cur);
+  gsl_vector_free(x_new);
+  if (scaling != NULL) {
+    gsl_vector_free(scaling);
+  }
+  gsl_vector_free(dx);
+  gsl_matrix_free(tempv);
+  gsl_vector_free(tempufuncsig);
+  gsl_vector_free(templm);
+  gsl_vector_free(sig);
+  
+  return GSL_SUCCESS; /* <- correct with status */
+}
 
 
