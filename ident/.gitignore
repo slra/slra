@@ -1,5 +1,4 @@
 *
-!test_daisy.m
-!m2c.m
+!*.m
 !read-me.txt
 !.gitignore

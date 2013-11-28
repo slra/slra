@@ -11,5 +11,6 @@ opt.solver = 'm'; [wh, info] = slra([vec(w); vec(w2)], s, q * ell + 1, opt);
 sh = wh(T * q + T2 * m + ell + 1:end); 
 s0 = step(sys0, T2 - ell - 1);
 plot(sh(2:end), '--b'), hold on, plot(s0(2:end), '-r')
+legend('sh', 'sb  .', 'Location', 'SouthEast')
 ax = axis; axis([1, T2 - ell - 1, ax(3:4)]), print_fig('slra-ext-f2')
 % test_overview_ddsim.m

@@ -11,7 +11,7 @@ s.w = [z1; ones(n2 + 1, 1); z1; ones(n3 + 1, 1);
        z1; z2; ones(n1 + 1, 1); z2];
 r = s.m(1) + n2  + n3 - 3 * ell + 2;
 p = zeros(size(s.w)); p(s.w == 1) = [p1 p2 p3]';
-opt.solver = 'r'; [ph, info] = slra(p, s, r, opt);
+opt.solver = 'm'; [ph, info] = slra(p, s, r, opt);
 ph123 = ph(s.w == 1); 
 r_ph1 = roots(ph123(1:n1 + 1))
 r_ph2 = roots(ph123(n1 + 2:n1 + n2 + 2))

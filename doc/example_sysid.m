@@ -9,4 +9,5 @@ Qh = fliplr(info.Rh(1:ell + 1)); Ph = -fliplr(info.Rh(ell + 2:end));
 sysh = tf(Qh, Ph, 1);
 s0 = step(sys0, T2 - ell); sh = step(sysh, T2 - ell); 
 plot(sh(2:end), '--b'), hold on, plot(s0(2:end), '-r')
+legend('sh', 'sb  .', 'Location', 'SouthEast')
 ax = axis; axis([1, T2 - 1, ax(3:4)]), print_fig('f-sysid')

@@ -29,7 +29,7 @@ else
   prob.solver = 'fmincon'; 
 end
 pext = [0; p]; 
-Rini = - Rini(:, end - size(Rini, 1) + 1:end) \ Rini; % quick and dirty fix needed for slra_armax
+%Rini = - Rini(:, end - size(Rini, 1) + 1:end) \ Rini; % quick and dirty fix needed for slra_armax
 prob.x0 = R2th(Rini, phi * (s0 + pext(tts + 1)), psi, opt.R0); 
 Im = find(isnan(p)); 
 if exist('w') && length(w(:)) == length(p), 

@@ -92,7 +92,7 @@ elseif opt.solver == 'r'
   if isfield(opt, 'Rini'), opt.P_init = null(opt.Rini); end
   np = length(p); s.tts = s2s(s, np); 
   [ph, info] = reg_slra(p, s, r, opt);
-  info.Rh = null(info.P')'; info.Rh = info.Rh(1:sum(s.m) - r, :);
+  info.Rh = null(info.P')';
 else
   if ~isfield(s, 'w'), s.w = []; end
   q = length(s.m); if exist('p'), 
