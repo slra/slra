@@ -57,3 +57,11 @@ public:
   Structure *getS() { return myS; }
   VarproFunction *getF() { return myF; }
 };
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] );
+#ifdef __cplusplus
+}
+#endif

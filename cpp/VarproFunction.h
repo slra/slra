@@ -11,7 +11,7 @@ class VarproFunction  {
   gsl_matrix *myMatr;
   gsl_matrix *myRorig;
   gsl_matrix *myTmpGradR, *myTmpGradR2;
-  gsl_matrix *myTmpJac, *myTmpJac2;  
+  gsl_matrix *myTmpJac, *myTmpJac2, *myTmpJtJ, *myTmpEye;
   gsl_vector *myTmpYr;  
   gsl_vector *myTmpCorr;  
   gsl_vector *myP;
@@ -63,6 +63,7 @@ public:
   void computeDefaultRTheta( gsl_matrix *RTheta ); 
   virtual void computeFuncAndPseudoJacobianLs( const gsl_matrix* R, gsl_matrix *perm,
                    gsl_vector *res, gsl_matrix *jac, double factor = 0.5 );
+  virtual void computeJtJmulE( const gsl_matrix* R, const gsl_matrix* E,  gsl_matrix *out, int useJtJ = 1 );
 };
 
 

@@ -125,6 +125,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       slraObj->getF()->computePhat(&pout, &R);      
       return;
     }
+    if (!strcmp("mhess", str_buf)) {
+      if (nrhs < 4) {
+        throw new Exception("The fourth argument should be the matrix E.");        
+      }
+	  
+      gsl_matrix E = M2trmat(prhs[3]);
+      gsl_matrix mhess_m = M2trmat(plhs[0] = mxCreateDoubleMatrix(d, m, mxREAL));
+      slraObj->getF()->computeJtJmulE(&R, &E, &mhess_m);      
+
+      return;
+    }
   } catch (Exception *e) {
     strncpy0(str_buf, e->getMessage(), STR_MAX_LEN);
     was_error = 1;

@@ -51,6 +51,9 @@ VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d,
   myTmpJacobianCol = gsl_vector_alloc(myStruct->getN() * getD());
   myTmpJac = gsl_matrix_alloc(myStruct->getM() * getD(), myStruct->getN() * getD());
   myTmpJac2 = gsl_matrix_alloc(myStruct->getN() * getD(), getNrow() * getD());
+  myTmpJtJ = gsl_matrix_alloc(getNrow() * getD(), getNrow() * getD());
+  myTmpEye = gsl_matrix_alloc(getNrow(), getNrow());
+  gsl_matrix_set_identity(myTmpEye);
   myTmpCorr = gsl_vector_alloc(myStruct->getNp());
   if (myIsGCD) {
     gsl_vector_memcpy(myTmpCorr, getP());
@@ -75,6 +78,8 @@ VarproFunction::~VarproFunction() {
   gsl_vector_free(myTmpYr);
   gsl_matrix_free(myTmpJac);
   gsl_matrix_free(myTmpJac2);
+  gsl_matrix_free(myTmpJtJ);
+  gsl_matrix_free(myTmpEye);
   gsl_vector_free(myTmpJacobianCol);
   gsl_vector_free(myTmpCorr);
 }
@@ -316,6 +321,24 @@ void VarproFunction::computeDefaultRTheta( gsl_matrix *RTheta ) {
   delete [] work;  
   gsl_matrix_free(tempc);
   gsl_matrix_free(tempu);
+}
+
+void VarproFunction::computeJtJmulE( const gsl_matrix* R, const gsl_matrix* E, gsl_matrix *out, int useJtJ ) {
+  gsl_vector vecE = gsl_vector_const_view_array(E->data, E->size1 * E->size2).vector;   
+  gsl_vector vecOut = gsl_vector_const_view_array(out->data, out->size1 * out->size2).vector;   
+  
+  if (R->size1 * R->size2 != 0) { 
+    computeFuncAndPseudoJacobianLs(R, myTmpEye, NULL, myTmpJac2);
+  } /* Otherwise use the precomputed Jacobian */
+  if (useJtJ) {
+    if (R->size1 * R->size2 != 0) { 
+	  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, myTmpJac2, myTmpJac2, 0, myTmpJtJ);
+	} /* Otherwise use the precomputed JtJ */
+    gsl_blas_dgemv(CblasNoTrans, 2.0, myTmpJtJ, &vecE, 0.0, &vecOut);  
+  } else {
+    gsl_blas_dgemv(CblasNoTrans, 1.0, myTmpJac2, &vecE, 0.0, myTmpJacobianCol);  
+    gsl_blas_dgemv(CblasTrans, 2.0, myTmpJac2, myTmpJacobianCol, 0.0, &vecOut);  
+  }
 }
 
 

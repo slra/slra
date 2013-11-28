@@ -1,7 +1,7 @@
 % DEMO - Demo file for structured low rank approximation
 clear all, rand('state', 0), randn('state', 0), addpath '..';
 
-opt.disp = 'iter'; opt.solver = 'm';
+opt.disp = 'iter'; opt.solver = 'c';
 
 %% Least squares problem
 

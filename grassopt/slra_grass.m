@@ -1,15 +1,7 @@
 % SLRA - solves the structured low-rank approximation problem 
 function varargout = slra_grass(p, s, r, opts)
   addpath ..;
-  addpath '~/src/manopt/';
-  import manopt.solvers.trustregions.*;
-  import manopt.solvers.conjugategradient.*;
-    import manopt.solvers.steepestdescent.*;
-  import manopt.manifolds.grassmann.*;
-  import manopt.tools.*;
   
-  importmanopt;
-
   obj = slra_mex_obj('new', p,s,r);
 
   % Currently without psi
@@ -37,24 +29,52 @@ function varargout = slra_grass(p, s, r, opts)
   if isfield(opts, 'disp') 
     if (strcmp(opts.disp, 'iter'))
       params.verbosity = 2;
-    else if (strcmp(opts.disp, 'notify'))  
-      params.verbosity = 1;
-    else  
-      params.verbosity = 0;
+    else
+      if (strcmp(opts.disp, 'notify'))
+        params.verbosity = 1;
+      else  
+        params.verbosity = 0;
+      end  
     end  
   end
 
   manifold = grassmannfactory(sum(s.m), sum(s.m)-r,1);
   problem.M = manifold;
-  problem.cost = @(x) slra_mex_obj('func', obj, x');
-  problem.grad = @(x) manifold.proj(x, slra_mex_obj('grad', obj, x')');
-  x0 = opts.Rini';
+  problem.cost = @cost;
+  function [fval,store] = cost(x, store)
+    fval = slra_mex_obj('func', obj, x');
+  end  
+  problem.grad = @grad;
+  function [rgrad, store] = grad(x, store)
+    store.egrad = slra_mex_obj('grad', obj, x')';
+    rgrad = problem.M.egrad2rgrad(x, store.egrad);
+  end  
+ 
+  problem.hess = @hess;
+  function [rhess,store] = hess(x, eta, store)
+    if ~isfield(store, 'egrad')  
+      store.egrad = slra_mex_obj('grad', obj, x')';  
+    end    
+    R = x';
+    if isfield(store, 'cache_jacobian')
+      R = [];  
+    else
+      store.cache_jacobian = 1;
+    end
+    
+    rhess = problem.M.ehess2rhess(x, store.egrad, slra_mex_obj('mhess', obj, R, eta')', eta);
+  end    
+    
+  
+  [x0, ignore] = qr(opts.Rini',0);
 
   problem.stopnow = @(problem,x,info,last) ((last >=2) && prod(double(abs(info(last-1).x - x) < params.epsabs + params.epsrel * abs(x))) ) ;
 
 
   if isfield(opts, 'checkgradient') 
     checkgradient(problem);
+    pause
+    checkhessian(problem);
   end
 
   [x xcost stats] = trustregions(problem, x0, params);

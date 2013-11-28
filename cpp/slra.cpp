@@ -6,12 +6,12 @@
 class MyIterationLogger : public IterationLogger {
   Timer myTimer;
   double myStartTime;
-  OptFunctionSLRA *myFun;
+  NLSVarpro *myFun;
   gsl_matrix *myRs;
   gsl_matrix *R;
   gsl_matrix *myInfo;
 public:
-  MyIterationLogger( OptFunctionSLRA *fun, gsl_matrix *Rs, gsl_matrix *info ) {
+  MyIterationLogger( NLSVarpro *fun, gsl_matrix *Rs, gsl_matrix *info ) {
     myFun = fun;
     myRs = Rs;
     myInfo = info;  
@@ -53,7 +53,7 @@ public:
 void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini, 
            gsl_matrix *Psi, gsl_vector *p_out, gsl_matrix *r_out, 
            gsl_matrix *v_out, gsl_matrix *Rs, gsl_matrix *info ) { 
-  OptFunctionSLRA *optFun = NULL;
+  NLSVarpro *optFun = NULL;
   gsl_vector *x = NULL;
   double old_reg = costFun->getReggamma();
   
@@ -61,10 +61,17 @@ void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini,
     time_t t_b = clock();
 
     costFun->setReggamma(opt->reggamma);
-    if (opt->ls_correction || costFun->isGCD()) {
-      optFun = new OptFunctionSLRACorrection(*costFun, Psi);
+    if (costFun->isGCD()) {
+      opt->ls_correction = 1;
+    }
+    if (opt->ls_correction) {
+      optFun = new NLSVarproPsiXICorrection(*costFun, Psi);
     } else { 
-      optFun = new OptFunctionSLRACholesky(*costFun, Psi);
+      if (!opt->avoid_xi) {
+        optFun = new NLSVarproPsiXICholesky(*costFun, Psi);
+      } else {
+        optFun = new NLSVarproVecR(*costFun);
+      }
     }
     x = gsl_vector_alloc(optFun->getNvar());
 
@@ -77,7 +84,15 @@ void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini,
     } else {
       optFun->RTheta2x(Rini, x);
     }
-    opt->gslOptimize(optFun, x, v_out, &itLog);
+    if (opt->avoid_xi) {
+      opt->method = SLRA_OPT_METHOD_LMPINV;
+    }
+
+    if (opt->method == SLRA_OPT_METHOD_LMPINV) {
+      opt->lmpinvOptimize(optFun, x, &itLog);
+    } else {
+      opt->gslOptimize(optFun, x, v_out, &itLog);
+    } 
 
     if (p_out != NULL) {
       optFun->computePhat(p_out, x);

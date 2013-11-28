@@ -35,6 +35,12 @@
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX       0 /**< ..._nmsimplex */
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2      1 /**< ..._nmsimplex2 */
 #define SLRA_OPT_SUBMETHOD_NM_SIMPLEX2_RAND 2 /**< ..._nmsimplex2_rand */
+/** Nonlinear Least-Squares Fitting  -
+ * Levenberg-Marquardt method (own implementation using the pseudoinverse) */
+#define SLRA_OPT_METHOD_LMPINV 3
+#define SLRA_OPT_SUBMETHOD_LMPINV_SCALED   0 /**< ..._lmder */
+#define SLRA_OPT_SUBMETHOD_LMPINV_UNSCALED 1 /**< ..._lmsder */
+
 /*@}*/
  
 /** @memberof OptimizationOptions 
@@ -55,6 +61,7 @@
 #define SLRA_DEF_epscov   1e-5
 #define SLRA_DEF_reggamma 0.000
 #define SLRA_DEF_ls_correction 0
+#define SLRA_DEF_avoid_xi 0
 /* @} */
 
 
@@ -73,13 +80,20 @@ public:
   OptimizationOptions();
 
   /** Main function that runs GSL optimization
-   * @param [in]     F     OptFunction object
+   * @param [in]     F     Nonlinear least squares function
    * @param [in,out] x_vec Vector containing initial approximation and returning
    *                       the minimum point 
    * @param [out]    v     Covariance matrix for x
    */
-  int gslOptimize( OptFunction *F, gsl_vector* x_vec, gsl_matrix *v,
+  int gslOptimize( NLSFunction *F, gsl_vector* x_vec, gsl_matrix *v,
                    IterationLogger *itLog );
+
+  /** Main function that runs LM optimization (for the method SLRA_OPT_METHOD_LMPINV)
+   * @param [in]     F     Nonlinear least squares function
+   * @param [in,out] x_vec Vector containing initial approximation and returning
+   *                       the minimum point 
+   */
+  int lmpinvOptimize( NLSFunction *F, gsl_vector* x_vec, IterationLogger *itLog );
 
   /** Initialize method and submethod fields from string */
   void str2Method( const char *str );
@@ -111,6 +125,7 @@ public:
   ///@{
   double reggamma;   ///< regularization parameter for gamma, absolute 
   int ls_correction; ///< Use correction computation in Levenberg-Marquardt 
+  int avoid_xi;      ///< Avoid [X I] representation, and use own Levenberg-Marquardt
   ///@}
 
   /** @name Output info */  
