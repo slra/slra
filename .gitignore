@@ -24,3 +24,6 @@ test_m/support/octave-core
 *.eps
 *.*~
 *~
+reg-slra
+examples.org
+demo.m
