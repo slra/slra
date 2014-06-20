@@ -39,7 +39,7 @@ void StripedStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
   }
 }
 
-void StripedStructure::multByGtUnweighted( gsl_vector* p, const gsl_matrix *R, 
+void StripedStructure::multByGtUnweighted( gsl_vector* p, const gsl_matrix *Rt, 
          const gsl_vector *y, double alpha, double beta, bool skipFixedBlocks ){
   size_t n_row = 0, sum_np = 0, D = R->size2;
   gsl_vector subp, suby;
@@ -48,7 +48,7 @@ void StripedStructure::multByGtUnweighted( gsl_vector* p, const gsl_matrix *R,
        sum_np += myStripe[k]->getNp(), n_row += getBlock(k)->getN() * D, k++) {
     suby = gsl_vector_const_subvector(y, n_row, getBlock(k)->getN() * D).vector;    
     subp = gsl_vector_subvector(p, sum_np, myStripe[k]->getNp()).vector;
-    myStripe[k]->multByGtUnweighted(&subp, R, &suby, alpha, beta, 
+    myStripe[k]->multByGtUnweighted(&subp, Rt, &suby, alpha, beta, 
                                     skipFixedBlocks);
   }                         
 }

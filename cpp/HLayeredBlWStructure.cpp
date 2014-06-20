@@ -79,21 +79,21 @@ void HLayeredBlWStructure::computeStats() {
 }
 
 void HLayeredBlWStructure::multByGtUnweighted( gsl_vector* p, 
-          const gsl_matrix *R, const gsl_vector *y, 
+          const gsl_matrix *Rt, const gsl_vector *y, 
           double alpha, double beta, bool skipFixedBlocks ) {
-  size_t l, k, sum_np = 0, sum_nl = 0, D = R->size2;
-  gsl_matrix Y = gsl_matrix_const_view_vector(y,getN(), D).matrix, Rl;
+  size_t l, k, sum_np = 0, sum_nl = 0, D = Rt->size2;
+  gsl_matrix Y = gsl_matrix_const_view_vector(y,getN(), D).matrix, RtSub;
   gsl_vector Y_row, psub;
 
   for (l = 0; l < getQ(); 
        sum_np += getLayerNp(l), sum_nl += getLayerLag(l), ++l) {
-    Rl = gsl_matrix_const_submatrix(R, sum_nl, 0, getLayerLag(l), D).matrix; 
+    RtSub = gsl_matrix_const_submatrix(Rt, sum_nl, 0, getLayerLag(l), D).matrix; 
               
     if (!(skipFixedBlocks && isLayerExact(l))) {  
       for (k = 0; k < getN(); k++) {
         psub = gsl_vector_subvector(p, k + sum_np, getLayerLag(l)).vector;
         Y_row = gsl_matrix_row(&Y, k).vector; 
-        gsl_blas_dgemv(CblasNoTrans, alpha, &Rl, &Y_row, beta, &psub); 
+        gsl_blas_dgemv(CblasNoTrans, alpha, &RtSub, &Y_row, beta, &psub); 
       }
     } 
   }

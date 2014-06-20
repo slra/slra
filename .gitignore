@@ -2,8 +2,6 @@
 *.o
 *.so
 *.a
-# Ignore mex files
-#*.mex*
 # Ignore R files and libraries
 Rslra.Rcheck
 Rslra*.tar.gz
@@ -28,3 +26,4 @@ reg-slra
 examples.org
 demo.m
 doxydoc
+*.bak

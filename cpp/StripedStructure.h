@@ -31,7 +31,7 @@ public:
   virtual size_t getM() const { return myStripe[0]->getM(); }
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) ;
   
-  virtual void multByGtUnweighted( gsl_vector* p, const gsl_matrix *R, 
+  virtual void multByGtUnweighted( gsl_vector* p, const gsl_matrix *Rt, 
                                    const gsl_vector *y, 
                                    double alpha = -1, double beta = 1,
                                    bool skipFixedBlocks = true ); 

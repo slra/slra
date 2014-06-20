@@ -34,9 +34,9 @@ void HLayeredElWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p )
 }
 
 void HLayeredElWStructure::multByGtUnweighted( gsl_vector* p, 
-          const gsl_matrix *R, const gsl_vector *y, 
+          const gsl_matrix *Rt, const gsl_vector *y, 
           double alpha, double beta, bool skipFixedBlocks ) {
-  myBase.multByGtUnweighted(p, R, y, alpha, beta, skipFixedBlocks);        
+  myBase.multByGtUnweighted(p, Rt, y, alpha, beta, skipFixedBlocks);        
 }
 
 void HLayeredElWStructure::multByWInv( gsl_vector* p, long deg ) {

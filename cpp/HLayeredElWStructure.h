@@ -24,7 +24,7 @@ public:
   virtual void fillMatrixFromP( gsl_matrix* c, const gsl_vector* p );
   virtual Cholesky *createCholesky( size_t D ) const;
   virtual DGamma *createDGamma( size_t D ) const;
-  virtual void multByGtUnweighted( gsl_vector* p, const gsl_matrix *R, 
+  virtual void multByGtUnweighted( gsl_vector* p, const gsl_matrix *Rt, 
                                    const gsl_vector *y, 
                                    double alpha = -1, double beta = 1,
                                    bool skipFixedBlocks = true ); 
