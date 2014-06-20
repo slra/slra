@@ -28,12 +28,18 @@ function varargout = slra_fmincon(p, s, r, opt)
     stop = false;
   end
 
+  function [f, g, Hinfo] = myobjective(th)
+    f = slra_mex_obj('func', obj, t2R(th));
+    if nargout > 1
+      g = R2t(slra_mex_obj('grad', obj, t2R(th)));
+    end
+  end
     
   prob.options = optimset(opt, 'OutputFcn',@outfun); 
 %  prob.options = opt; 
   prob.x0 = R2t(opt.Rini); 
   prob.solver = 'fmincon'; 
-  prob.objective = @(th) slra_mex_obj('func', obj, t2R(th));
+  prob.objective = @myobjective;
   prob.nonlcon = @(th) deal([], t2R(th) * t2R(th)' - eye(m - r));
   t_slra_start = tic; [x, fval, flag, info] = fmincon(prob); t_slra = toc(t_slra_start); 
   Rh = t2R(x);

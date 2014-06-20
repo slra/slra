@@ -1,73 +1,80 @@
+clear all;
 addpath '..';
 addpath '../..';
 addpath '../../test_c';
 
-testno = 1;
 opt.maxiter = 200;
 %opt.checkgradient = 'no';
-opt.epsrel = 1e-3;
+opt.epsrel = 1e-4;
 opt.epsabs = 1e-5;
-opt.epsgrad = 1e-5;
+opt.epsgrad = 1e-7;
 opt.gradtol = 1e-5;
 opt.disp = 'off';
+%opt1 = opt;
+%opt1.method = 'ps';
+%opt1.avoid_xi = 1;
+%opt2 = opt;
+opt.method = 'ps';
 
-opt1 = opt;
-opt1.method = 'ps';
-opt1.avoid_xi = 1;
+optini = opt;
+optini.maxiter = 0;
 
-opt2 = opt;
-opt2.method = 'ps';
-
-for testno=1:5
-  eval(['info = run_test(@slra_grass, testno, opt);']);
-  info1 = run_test(@slra_mex_chp, testno, opt);
-  %info2 = run_test(@slra, testno, opt);
-  %info3 = run_test(@slra_reg, testno, opt);
-  %info4 = run_test(@slra_fmincon, testno, opt);
-  info2 = run_test(@slra, testno, opt1);
-  info3 = run_test(@slra_mex_chp, testno, opt2);
-  info4 = run_test(@slra, testno, opt2);
+%tests = { 'manopt'  'run_test(@slra_grass, testno, opt)'	'm.-';
+%          'chp gsl' 'run_test(@slra_mex_chp, testno, opt)'  'rs-';
+%          'fxp gsl' 'run_test(@slra, testno, opt)'          'bs-';
+%          'chp svd' 'run_test(@slra_mex_chp, testno, opt2)' 'r*-'; 
+%          'fxp svd' 'run_test(@slra, testno, opt2)'         'b*-';
+%          'lm pinv' 'run_test(@slra, testno, opt1)'         'cv-'    
+%          };
+      
+tests = { 'gr'      'run_test(@slra_grass, testno, opt)'	'm.-';
+          'perm'    'run_test(@slra_mex_chp, testno, opt)'  'rs-';
+          'perm0'   'run_test(@slra, testno, opt)'          'bo';
+          'reg'     'run_test(@slra_reg, testno, opt)'      'gs-'; 
+          'ddlc'    'run_test(@slra_ddlc, testno, opt)'     'cv-' };      
+      
+for testno=1:7
+  infoini = run_test(@slra, testno, optini);
+  [Q,~] = qr(infoini.Rh',0);
+  opt.Rini = Q';
     
-  i_gr = info.iterinfo;
-  i_perm = info1.iterinfo;
-  i_perm0 = info2.iterinfo;
-  i_reg = info3.iterinfo;
-  i_fmin = info4.iterinfo;
+  info = cell(size(tests, 1), 1);
+  xMax = 0; xMin = 1e15; yMax = 0; yMin = 1e15;
+  for i=1:length(info)
+    eval(['info{i} = ' tests{i,2} ';']);
+    yMin = min(yMin,  min(info{i}.iterinfo(2,:)));
+    yMax = max(yMax,  max(info{i}.iterinfo(2,:)));
+    xMin = min(xMin,  min(info{i}.iterinfo(1,:)));
+    xMax = max(xMax,  max(info{i}.iterinfo(1,:)));
+  end    
   
-  min_i = min([i_gr(1,1), i_perm(1,1), i_perm0(1,1), i_reg(1,1), i_fmin(1,1)]);
-  i_gr(1,:) = i_gr(1,:) - i_gr(1,1) + min_i;
-  i_perm(1,:) = i_perm(1,:) - i_perm(1,1) + min_i;
-  i_perm0(1,:) = i_perm0(1,:) - i_perm0(1,1) + min_i;
-  i_reg(1,:) = i_reg(1,:) - i_reg(1,1) + min_i;
-  i_fmin(1,:) = i_fmin(1,:) - i_fmin(1,1) + min_i;
+  % equalize all starting points
+  for i=1:length(info)
+    info{i}.iterinfo(1,:) = info{i}.iterinfo(1,:) - min(info{i}.iterinfo(1,:))+xMin;
+  end    
   
   
-  yLimits = [min([i_gr(2,end), i_perm(2,end), i_perm0(2,end), i_reg(2,end), i_fmin(2,end)]) max([i_gr(2,1), i_perm(2,1), i_perm0(2,1), i_reg(2,1), i_fmin(2,1)])];
-  xLimits = [min([i_gr(1,1), i_perm(1,1), i_perm0(1,1), i_reg(1,1), i_fmin(1,1)]) max([i_gr(1,end), i_perm(1,end), i_perm0(1,end), i_reg(1,end), i_fmin(1,end)])];
-  yLimits = (10.^(log10(yLimits) + [-0.125 0.125]))';
-  xLimits = (10.^(log10(xLimits) + [-0.125 0.125]))';
+  yLimits = (10.^(log10([yMin yMax]) + [-0.125 0.125]))';
+  xLimits = (10.^(log10([xMin xMax]) + [-0.125 0.125]))';
    
- 
- 
   hFig = figure;
-  graph1 = loglog(i_gr(1,:), i_gr(2,:), 'm.-', i_perm(1,:), i_perm(2,:), 'rs-', i_perm0(1,:), i_perm0(2,:), 'bo-', i_reg(1,:), i_reg(2,:), 'gs-',i_fmin(1,:), i_fmin(2,:), 'k*-');
+  loglogarg = {};
+  for i=1:length(info)
+    loglogarg = [ loglogarg {info{i}.iterinfo(1,:), info{i}.iterinfo(2,:), tests{i,3}} ];
+  end
+
+  loglog(loglogarg{:});
   title(['Test #' num2str(testno)]);
   xlabel('time, s.');
   ylabel('fmin');
   decades_equal(gca, xLimits, yLimits);
   set(gcf, 'Position', get(gcf, 'Position') - [0 0 0 140]);
+  legend(tests{:,1}, 'Location', 'EastOutside');
   
-  i_gr = info.iterinfo';
-  i_perm = info1.iterinfo';
-  i_perm0 = info2.iterinfo';
-  i_reg = info3.iterinfo';
-  i_fmin = info4.iterinfo';
-   
-  save(['i_gr'  num2str(testno) '.txt'], 'i_gr', '-ascii');
-  save(['i_perm'  num2str(testno) '.txt'], 'i_perm', '-ascii');
-  save(['i_perm0'  num2str(testno) '.txt'], 'i_perm0', '-ascii');
-  save(['i_reg'  num2str(testno) '.txt'], 'i_reg', '-ascii');
-  save(['i_fmin'  num2str(testno) '.txt'], 'i_fmin', '-ascii');
+  for i=1:length(info)
+    iterinfo = info{i}.iterinfo';
+    save(['i_' tests{i,1}  num2str(testno) '.txt'], 'iterinfo', '-ascii');
+  end
 %  pba = get(gca, 'PlotBoxAspectRatio');
 %  pf = get(gcf, 'Position');
 %  print(hFig, '-depsc', '-loose', ['test' num2str(testno) '.eps']);

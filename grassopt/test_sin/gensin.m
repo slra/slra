@@ -7,14 +7,10 @@ for i=1:10
   eval([vn ' =  p0 + randn(1, T) * 0.02 * i; ']);
   save([vn '.txt'], vn, '-ascii')
   
-%  figure;
-%  eval(['plot(' vn ');']);
-  
   vn = sprintf('s%d', i);
   fid = fopen([vn '.txt'], 'wt');
   fprintf(fid, '1 1 7 6\n 394\n 7\n');
   fclose(fid);
-  
 end  
   
   
