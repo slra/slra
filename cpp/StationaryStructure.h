@@ -1,37 +1,56 @@
-/** Abstract class for stationary s-dependent structure.
- * A subclass of s-dependent structure, where
- * \f$W_{i,j} = W_{j-i}\f$.
+/** Abstract class for stationary \f$\mu\f$-dependent Structure.
+ * It a pair (structure, weights) such that the matrix \f$\mathrm{V}\f$
+ * (see eqn. \f$(\mathrm{V})\f$ in \cite slra-efficient) 
+ * is block-Toeplitz block-banded, i.e.
+ * \f$\mathrm{V}_{\#ij} = \mathrm{V}_{j-i}\f$. The matrices
+ * \f$\mathrm{V}_{k}\f$ are defined for \f$-\mu \le k \le \mu\f$.
  *
- * In other words, sequence of rows \f$S(\widetilde{p})_j\f$ is
- * stationary.
+ * A special case of StationaryStructure is considered 
+ * in (b) of Theorem 1 in \cite slra-efficient. 
  */
 class StationaryStructure : public SDependentStructure {
 
 public:
-  /** Returns \f$res \leftarrow W_{k} B\f$ */
-  virtual void WkB( gsl_matrix *res, long k, const gsl_matrix *B ) const = 0;
-  /** Returns \f$res \leftarrow \beta res + A^{\rm T} W_{k} B\f$ */
-  virtual void AtWkB( gsl_matrix *res, long k, 
-                      const gsl_matrix *A, const gsl_matrix *B, 
-                      gsl_matrix *tmpWkB, double beta = 0 ) const = 0;
-  /** Returns \f$res \leftarrow \beta res + A^{\rm T} W_{k} B\f$ */
-  virtual void AtWkV( gsl_vector *res, long k,
-                      const gsl_matrix *A, const gsl_vector *V, 
-                      gsl_vector *tmpWkV, double beta = 0 ) const = 0;
-                      
-  virtual void WijB( gsl_matrix *res, long i, long j, 
+  /** Returns \f$X \leftarrow \mathrm{V}_{k} B\f$ 
+   * for \f$B \in \mathbb{R}^{m \times Q}\f$. */
+  virtual void WkB( gsl_matrix *X, ///< [out] the \f$m \times Q\f$ matrix \f$X\f$
+                    long k,        ///< [in] index of block diagonal \f$k\f$ 
+                    const gsl_matrix *B ///< [in] matrix \f$B\f$
+                   ) const = 0;
+
+  /** Updates \f$X \leftarrow \beta X + A^{\top} \mathrm{V}_{k} B\f$, 
+   * for \f$A \in \mathbb{R}^{m \times P}\f$, \f$B \in \mathbb{R}^{m \times Q}\f$. */ 
+  virtual void AtWkB( gsl_matrix *X,  ///< [out,in] the \f$P \times Q\f$ matrix \f$X\f$ 
+                      long k,        ///< [in] index of block diagonal \f$k\f$ 
+                      const gsl_matrix *A, ///< [in]  matrix \f$A\f$
+                      const gsl_matrix *B, ///< [in]  matrix \f$B\f$
+                      gsl_matrix *tmpVkB,  ///< [out] temporary \f$m \times Q\f$  matrix 
+                      double beta = 0      ///< scalar \f$\beta\f$
+                     ) const = 0;
+
+  /** Updates \f$u \leftarrow \beta u + A^{\top} \mathrm{V}_{k} v\f$, 
+   * for \f$A \in \mathbb{R}^{m \times P}\f$. */
+  virtual void AtWkV( gsl_vector *u, ///< [out,in] vector \f$u \in \mathbb{R}^P\f$ 
+                      long k,        ///< [in] index of block diagonal \f$k\f$ 
+                      const gsl_matrix *A, ///< [in]  matrix \f$A\f$
+                      const gsl_vector *v, ///< [in] vector \f$v \in \mathbb{R}^m\f$ 
+                      gsl_vector *tmpVkV,  ///< [out] temporary vector of length \f$m\f$ 
+                      double beta = 0      ///< scalar \f$\beta\f$
+                     ) const = 0;
+
+  virtual void WijB( gsl_matrix *X, long i_1, long j_1, 
                      const gsl_matrix *B ) const {
-    WkB(res, j- i, B);
+    WkB(X, j_1 - i_1, B);
   }
-  virtual void AtWijB( gsl_matrix *res, long i, long j, 
+  virtual void AtWijB( gsl_matrix *X, long i_1, long j_1, 
                       const gsl_matrix *A, const gsl_matrix *B, 
-                      gsl_matrix *tmpWijB, double beta = 0 ) const {
-    AtWkB(res, j - i, A, B, tmpWijB, beta);
+                      gsl_matrix *tmpVijB, double beta = 0 ) const {
+    AtWkB(X, j_1 - i_1, A, B, tmpVijB, beta);
   }
 
-  virtual void AtWijV( gsl_vector *res, long i, long j, 
-                      const gsl_matrix *A, const gsl_vector *V, 
-                      gsl_vector *tmpWijV, double beta = 0 ) const {
-    AtWkV(res, j - i, A, V, tmpWijV, beta);
+  virtual void AtWijV( gsl_vector *u, long i_1, long j_1, 
+                      const gsl_matrix *A, const gsl_vector *v, 
+                      gsl_vector *tmpVijV, double beta = 0 ) const {
+    AtWkV(u, j_1 - i_1, A, v, tmpVijV, beta);
   }                      
 };

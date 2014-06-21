@@ -3,16 +3,16 @@
 #include <cstdarg>
 #include "slra.h"
 
-HLayeredBlWStructure::HLayeredBlWStructure( const double *m_l, 
-    size_t q, size_t n, const double *w  ) : myQ(q), myN(n), mySA(NULL)  {
+HLayeredBlWStructure::HLayeredBlWStructure( const double *m_vec, 
+    size_t q, size_t n, const double *w_vec  ) : myQ(q), myN(n), mySA(NULL)  {
   mySA = new Layer[myQ];
  
   for (size_t l = 0; l < myQ; l++) {
-    mySA[l].blocks_in_row = m_l[l];
-    if (w != NULL && !(w[l] > 0)) {
-      throw new Exception("This value of weight is not supported: %lf\n", w[l]);
+    mySA[l].blocks_in_row = m_vec[l];
+    if (w_vec != NULL && !(w_vec[l] > 0)) {
+      throw new Exception("This value of weight is not supported: %lf\n", w_vec[l]);
     }
-    mySA[l].inv_w = (w != NULL) ? (1 / w[l]) : 1.0;
+    mySA[l].inv_w = (w_vec != NULL) ? (1 / w_vec[l]) : 1.0;
   }    
    
   computeStats(); 
@@ -113,38 +113,37 @@ void HLayeredBlWStructure::multByWInv( gsl_vector* p, long deg ) {
 }
 
 
-Cholesky *HLayeredBlWStructure::createCholesky( size_t D ) const {
+Cholesky *HLayeredBlWStructure::createCholesky( size_t d ) const {
 #ifdef USE_SLICOT 
-  return new StationaryCholeskySlicot(this, D);
+  return new StationaryCholeskySlicot(this, d);
 #else  /* USE_SLICOT */
-  return new StationaryCholesky(this, D);
+  return new StationaryCholesky(this, d);
 #endif /* USE_SLICOT */
 }
 
-DGamma *HLayeredBlWStructure::createDGamma( size_t D ) const {
-  return new StationaryDGamma(this, D);
+DGamma *HLayeredBlWStructure::createDGamma( size_t d ) const {
+  return new StationaryDGamma(this, d);
 }
 
-
-void HLayeredBlWStructure::WkB( gsl_matrix *res, long k, 
-                             const gsl_matrix *B ) const {
-  gsl_matrix_memcpy(res, B);
+void HLayeredBlWStructure::WkB( gsl_matrix *X, long k, 
+                                const gsl_matrix *B ) const {
+  gsl_matrix_memcpy(X, B);
   gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), 
-                 CblasNonUnit, 1.0, getWk(abs(k)), res);
+                 CblasNonUnit, 1.0, getWk(abs(k)), X);
 }
 
-void HLayeredBlWStructure::AtWkB( gsl_matrix *res, long k, const gsl_matrix *A,
-         const gsl_matrix *B, gsl_matrix *tmpWkB, double beta ) const {
-  WkB(tmpWkB, k, B);
-  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpWkB, beta, res);       
+void HLayeredBlWStructure::AtWkB( gsl_matrix *X, long k, const gsl_matrix *A,
+         const gsl_matrix *B, gsl_matrix *tmpVkB, double beta ) const {
+  WkB(tmpVkB, k, B);
+  gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpVkB, beta, X);       
 }
 
-void HLayeredBlWStructure::AtWkV( gsl_vector *res, long k, const gsl_matrix *A,
-         const gsl_vector *V, gsl_vector *tmpWkV, double beta ) const {
-  gsl_blas_dcopy(V, tmpWkV);
+void HLayeredBlWStructure::AtWkV( gsl_vector *u, long k, const gsl_matrix *A,
+         const gsl_vector *v, gsl_vector *tmpVkV, double beta ) const {
+  gsl_blas_dcopy(v, tmpVkV);
   gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans),
-                 CblasNonUnit, getWk(abs(k)), tmpWkV);
-  gsl_blas_dgemv(CblasTrans, 1.0, A, tmpWkV, beta, res);       
+                 CblasNonUnit, getWk(abs(k)), tmpVkV);
+  gsl_blas_dgemv(CblasTrans, 1.0, A, tmpVkV, beta, u);       
 }
 
 

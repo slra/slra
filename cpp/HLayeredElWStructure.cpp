@@ -10,16 +10,16 @@ extern "C" {
 }
 #include "slra.h"
 
-HLayeredElWStructure::HLayeredElWStructure( const double *m_l, size_t q, size_t n, 
-    const double *w ) : myBase(m_l, q, n, NULL) {
+HLayeredElWStructure::HLayeredElWStructure( const double *m_vec, size_t q, size_t n, 
+    const double *w_vec ) : myBase(m_vec, q, n, NULL) {
   myInvWeights = gsl_vector_alloc(myBase.getNp());
   myInvSqrtWeights = gsl_vector_alloc(myBase.getNp());
 
   for (size_t l = 0; l < myInvWeights->size; l++) {
-    if (!(w[l] > 0)) {
-      throw new Exception("Value of weight not supported: %lf\n", w[l]);
+    if (!(w_vec[l] > 0)) {
+      throw new Exception("Value of weight not supported: %lf\n", w_vec[l]);
     }
-    gsl_vector_set(myInvWeights, l, (1 / w[l]));
+    gsl_vector_set(myInvWeights, l, (1 / w_vec[l]));
     gsl_vector_set(myInvSqrtWeights, l, sqrt(gsl_vector_get(myInvWeights, l)));
   }
 }
@@ -50,8 +50,8 @@ void HLayeredElWStructure::multByWInv( gsl_vector* p, long deg ) {
   }
 }
 
-void HLayeredElWStructure::mulInvWij( gsl_matrix *matr, long i  ) const {
-  size_t sum_np = i, sum_ml = 0, l, k;
+void HLayeredElWStructure::mulInvWij( gsl_matrix *matr, long i_1  ) const {
+  size_t sum_np = i_1, sum_ml = 0, l, k;
   gsl_vector matr_row;
 
   for (l = 0; l < getQ(); sum_np += getLayerNp(l), sum_ml += getLayerLag(l), ++l) {
@@ -62,72 +62,72 @@ void HLayeredElWStructure::mulInvWij( gsl_matrix *matr, long i  ) const {
   }
 }
 
-void HLayeredElWStructure::WijB( gsl_matrix *res, long i, long j, 
+void HLayeredElWStructure::WijB( gsl_matrix *X, long i_1, long j_1, 
          const gsl_matrix *B ) const {
-  gsl_matrix_memcpy(res, B);
-  if (i <= j) {
-    mulInvWij(res, j);
+  gsl_matrix_memcpy(X, B);
+  if (i_1 <= j_1) {
+    mulInvWij(X, j_1);
     gsl_blas_dtrmm(CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, 1.0, 
-        myBase.getWk(j-i), res);
+        myBase.getWk(j_1-i_1), X);
   } else {
     gsl_blas_dtrmm(CblasLeft, CblasLower, CblasTrans, CblasNonUnit, 1.0, 
-        myBase.getWk(i-j), res);
-    mulInvWij(res, i);
+        myBase.getWk(i_1-j_1), X);
+    mulInvWij(X, i_1);
   }
 }
 
-void HLayeredElWStructure::AtWijB( gsl_matrix *res, long i, long j, 
-         const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpWijB, 
+void HLayeredElWStructure::AtWijB( gsl_matrix *X, long i_1, long j_1, 
+         const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpVijB, 
          double beta ) const {
-  gsl_matrix_scale(res, beta);
+  gsl_matrix_scale(X, beta);
   size_t sum_np, ind_a, ind_b;
   size_t diff;
   
-  diff = (j >= i ? j - i : i - j);
-  ind_a = j - mymin(i, j);
-  ind_b = i - mymin(i, j);
+  diff = (j_1 >= i_1 ? j_1 - i_1 : i_1 - j_1);
+  ind_a = j_1 - mymin(i_1, j_1);
+  ind_b = i_1 - mymin(i_1, j_1);
 
-  for (size_t l = 0, sum_np = mymax(j, i); l < getQ(); 
+  for (size_t l = 0, sum_np = mymax(j_1, i_1); l < getQ(); 
        sum_np += getLayerNp(l), 
        ind_a += getLayerLag(l),
        ind_b += getLayerLag(l), ++l) {
     for (size_t k = 0; k + diff < getLayerLag(l); ++k) {
       const gsl_vector A_row = gsl_matrix_const_row(A, ind_a + k).vector;
       const gsl_vector B_row = gsl_matrix_const_row(B, ind_b + k).vector;
-      gsl_blas_dger(getInvWeight(sum_np + k), &A_row, &B_row, res);
+      gsl_blas_dger(getInvWeight(sum_np + k), &A_row, &B_row, X);
     }
   }
 }   
 
-void HLayeredElWStructure::AtWijV( gsl_vector *res, long i, long j, 
+void HLayeredElWStructure::AtWijV( gsl_vector *u, long i_1, long j_1, 
          const gsl_matrix *A, const gsl_vector *V, 
-                     gsl_vector *tmpWijV, double beta ) const {
-  gsl_vector_scale(res, beta);
+                     gsl_vector *tmpVijV, double beta ) const {
+  gsl_vector_scale(u, beta);
   size_t sum_np, ind_a, ind_v;
   size_t diff, l, k;
 
-  diff = (j >= i ? j - i : i - j);
-  ind_a = j - mymin(i, j);
-  ind_v = i - mymin(i, j);
+  diff = (j_1 >= i_1 ? j_1 - i_1 : i_1 - j_1);
+  ind_a = j_1 - mymin(i_1, j_1);
+  ind_v = i_1 - mymin(i_1, j_1);
     
-  for (l = 0, sum_np = mymax(j,i); l < getQ(); 
+  for (l = 0, sum_np = mymax(j_1,i_1); l < getQ(); 
        sum_np += getLayerNp(l), 
        ind_a += getLayerLag(l),
        ind_v += getLayerLag(l), ++l) {
     for (k = 0; k + diff < getLayerLag(l); ++k) {
       const gsl_vector A_row = gsl_matrix_const_row(A, ind_a + k).vector;
       gsl_blas_daxpy(getInvWeight(sum_np + k) * 
-                     gsl_vector_get(V, ind_v + k), &A_row, res);
+                     gsl_vector_get(V, ind_v + k), &A_row, u);
     }
   }
 }   
 
-Cholesky *HLayeredElWStructure::createCholesky( size_t D ) const {
-  return new SDependentCholesky(this, D);
+Cholesky *HLayeredElWStructure::createCholesky( size_t d ) const {
+  return new SDependentCholesky(this, d);
 }
 
-DGamma *HLayeredElWStructure::createDGamma( size_t D ) const {
-  return new SDependentDGamma(this, D);
+DGamma *HLayeredElWStructure::createDGamma( size_t d ) const {
+  return new SDependentDGamma(this, d);
 }
 
 

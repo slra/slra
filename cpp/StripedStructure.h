@@ -1,10 +1,17 @@
-/** Prototype class for striped structure.
- * Abstract class that facilitates creation of structures of form
- * \f$\mathcal{S}(p) = 
+/** Prototype class for striped structure and block-diagonal weight matrix.
+ * Abstract class for creation of Structure object for a striped structure
+ * \f[
+ *    \mathscr{S}(p) = 
  * \begin{bmatrix} 
- *   \mathcal{S}_1 (p^{(1)})\\ \vdots \\\mathcal{S}_N (p^{(N)})
- * \end{bmatrix}\f$
- * All structures must have the same \f$m\f$.
+ *   \mathscr{S}^{(1)} (p^{(1)}) & \cdots & \mathscr{S}^{(N)} (p^{(N)})
+ * \end{bmatrix}
+ * \f]
+ * and block-diagonal weight matrix
+ * \f[\mathrm{W}=\mathrm{blkdiag}(\mathrm{W}^{(1)},\ldots,\mathrm{W}^{(N)}),\f]
+ * where \f$\mathscr{S}^{(l)}: \mathbb{R}^{n_p^{(l)}} \to \mathbb{R}^{m\times n_l}\f$ and
+ * \f$\mathrm{W}^{(l)} \in \mathbb{R}^{n_p^{(l)} \times n_p^{(l)}}\f$
+ * 
+ * For more details, see Lemma 1 in \cite slra-efficient.
  */
 class StripedStructure : public Structure {
   size_t myBlocksN;
@@ -13,12 +20,17 @@ class StripedStructure : public Structure {
   /* Helper variables */
   size_t myN;
   size_t myNp;
-  size_t myMaxNkInd;
+  size_t myMaxNlInd;
   bool myIsSameGamma;
 public:
-  /** Constructs striped structure from array.
-   * @param blocksN \f$N\f$ 
-   * @param stripe array of Structure objects
+  /** Constructs StripedStructure from array of Structure  objects.
+   * @param blocksN     \f$N\f$ --- number of blocks
+   * @param stripe      array of Structure objects
+   * @param isSameGamma if `isSameGamma == true`, it is assumed that all 
+   *     \f$\Gamma_{\mathscr{S}^{(l)}}(R)\f$  are submatrices of 
+   *     \f$\Gamma_{\mathscr{S}^{(l_{max})}}(R)\f$ (where \f$l_{max}\f$ is defined  
+   *     in StripedStructure::getMaxBlock). In this case, memory is saved in 
+   *     StripedCholesky and StripedDGamma objects.
    */
   StripedStructure( size_t blocksN, Structure *stripe[], 
                     bool isSameGamma = false );
@@ -36,21 +48,26 @@ public:
                                    double alpha = -1, double beta = 1,
                                    bool skipFixedBlocks = true ); 
   virtual void multByWInv( gsl_vector* p, long deg = 2 );
-  virtual Cholesky *createCholesky( size_t D ) const;
-  virtual DGamma *createDGamma( size_t D ) const;
+  virtual Cholesky *createCholesky( size_t d ) const;
+  virtual DGamma *createDGamma( size_t d ) const;
   /**@}*/
   
-  /** @name Structure-specific methods */
+  /** @name StripedStructure-specific methods */
   /**@{*/
   size_t getBlocksN() const { return myBlocksN; } /**< Returns \f$N\f$ */
-  /** Returns \f$\mathcal{S}_{k}\f$ */
-  const Structure *getBlock( size_t k ) const { 
-    return myStripe[k]; 
+  
+  /** Returns a Structure object for the pair \f$\mathscr{S}^{(l)},\mathrm{W}^{(l)}\f$.
+   * @param l_1 index \f$0\f$-based index \f$l_1\f$ such that \f$l = l_1+1\f$ and
+   * \f$0 \le l_1 <N \f$.    
+   */
+  const Structure *getBlock( size_t l_1 ) const { 
+    return myStripe[l_1]; 
   }
-  /** Returns \f$\mathcal{S}_{k_{max}}\f$, where 
-   * \f$k_{max} = argmax \{n_k\}_{k=1}^{N}\f$  */
+
+  /** Returns \f$\mathscr{S}^{(l_{max})}\f$, where 
+   * \f$l_{max} := \mathrm{argmax}\; n_l\f$ (index of the block with maximal \f$n_l\f$) */
   const Structure *getMaxBlock() const { 
-    return getBlock(myMaxNkInd); 
+    return getBlock(myMaxNlInd); 
   }
   /**@}*/
   
