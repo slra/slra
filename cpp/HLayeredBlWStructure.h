@@ -11,6 +11,9 @@
  * The blockwise weights are the weights 
  * \f[\mathrm{col}(\omega_1,\ldots,\omega_q),\f]
  * defined in eqn. \f$(\mbox{block-wise }w)\f$ \cite slra-efficient.
+ * 
+ * The  computations are faced on the case 3(b) of Theorem 1 in 
+ * \cite slra-efficient.
  */
 class HLayeredBlWStructure : public StationaryStructure {
   typedef struct {
@@ -26,7 +29,7 @@ class HLayeredBlWStructure : public StationaryStructure {
   Layer *mySA;	/* q-element array describing C1,...,Cq; */  
 
   void computeStats();
-  void computeWkParams(); 
+  void computeVkParams(); 
 protected:
   size_t nvGetNp() const { return (myN - 1) * myQ + myM; }  
 public:
@@ -58,12 +61,12 @@ public:
  
   /** @name Implementing StationaryStructure interface */
   /**@{*/
-  virtual size_t getS() const { return myMaxLag; }
-  virtual void WkB( gsl_matrix *X, long k, const gsl_matrix *B ) const;
-  virtual void AtWkB( gsl_matrix *X, long k, 
+  virtual size_t getMu() const { return myMaxLag; }
+  virtual void VkB( gsl_matrix *X, long k, const gsl_matrix *B ) const;
+  virtual void AtVkB( gsl_matrix *X, long k, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpVkB, double beta = 0 ) const;
-  virtual void AtWkV( gsl_vector *u, long k,
+  virtual void AtVkV( gsl_vector *u, long k,
                       const gsl_matrix *A, const gsl_vector *v, 
                       gsl_vector *tmpVkV, double beta = 0 ) const;
   /**@}*/

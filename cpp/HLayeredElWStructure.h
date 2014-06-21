@@ -9,7 +9,7 @@
  * The computations are based on the expression of \f$\mathrm{V}_{\#ij}\f$ 
  * as in \f$(\mathrm{V}_{\#ij}(\mathscr{H}_{{\bf m}, n}))\f$ 
  */
-class HLayeredElWStructure : public SDependentStructure {
+class HLayeredElWStructure : public MuDependentStructure {
   HLayeredBlWStructure myBase;
   gsl_vector *myInvWeights;
   gsl_vector *myInvSqrtWeights;
@@ -21,7 +21,7 @@ public:
    * \f${\bf w} =\begin{bmatrix} w_1 & \cdots & w_{n_p} \end{bmatrix}^{\top}\f$.
    */
   HLayeredElWStructure( const double *m_vec, size_t q, size_t n, 
-                      const double *w_vec );
+                        const double *w_vec );
   virtual ~HLayeredElWStructure();
 
   /** @name Implementing Structure interface */
@@ -41,13 +41,13 @@ public:
   
   /** @name Implementing SDependentStructure interface */
   /**@{*/
-  virtual size_t getS() const { return myBase.getS(); }
-  virtual void WijB( gsl_matrix *X, long i_1, long j_1, 
+  virtual size_t getMu() const { return myBase.getMu(); }
+  virtual void VijB( gsl_matrix *X, long i_1, long j_1, 
                      const gsl_matrix *B ) const;
-  virtual void AtWijB( gsl_matrix *X, long i_1, long j_1, 
+  virtual void AtVijB( gsl_matrix *X, long i_1, long j_1, 
                       const gsl_matrix *A, const gsl_matrix *B, 
                       gsl_matrix *tmpVijB, double beta = 0 ) const;
-  virtual void AtWijV( gsl_vector *u, long i_1, long j_1,
+  virtual void AtVijV( gsl_vector *u, long i_1, long j_1,
                       const gsl_matrix *A, const gsl_vector *v, 
                       gsl_vector *tmpVijV, double beta = 0 ) const;
   /**@}*/

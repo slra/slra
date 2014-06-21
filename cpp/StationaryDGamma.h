@@ -3,13 +3,13 @@ private:
   const StationaryStructure *myW;
   size_t  myD;
   
-  gsl_vector *myTempWkColRow;
+  gsl_vector *myTempVkColRow;
   gsl_vector *myDGammaVec;
   gsl_matrix *myDGammaTrMat;
   gsl_matrix *myDGamma;
   gsl_vector *myTmpCol;
   
-  gsl_matrix *myWk_R;
+  gsl_matrix *myVk_R;
   gsl_matrix *myN_k;
   gsl_matrix *myEye;
 public:

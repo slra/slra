@@ -1,27 +1,27 @@
-class SDependentCholesky : public Cholesky {
+class MuDependentCholesky : public Cholesky {
 protected:
-  const SDependentStructure *myW;
+  const MuDependentStructure *myW;
   size_t myD;
   double my_reg_gamma;
     
-  size_t myS_1;
-  size_t myDS;
+  size_t myMu_1;
+  size_t myDMu;
   size_t myDN;
-  size_t myDS_1;
-  gsl_matrix *myTempR, *myTempWktR, *myTempGammaij;
+  size_t myDMu_1;
+  gsl_matrix *myTempR, *myTempVktR, *myTempGammaij;
   
   double *myPackedCholesky;
 protected:  
   virtual void computeGammaUpperPart( const gsl_matrix *R, double reg = 0 );
 
 public:
-  SDependentCholesky( const SDependentStructure *s, size_t D );
-  virtual ~SDependentCholesky();
+  MuDependentCholesky( const MuDependentStructure *s, size_t D );
+  virtual ~MuDependentCholesky();
 
   size_t getD() const { return myD; }
   size_t getN() const { return myW->getN(); }
   size_t getM() const { return myW->getM(); }
-  size_t getS() const { return myW->getS(); }
+  size_t getMu() const { return myW->getMu(); }
 
   virtual void calcGammaCholesky( const gsl_matrix *R, double reg = 0 );
 

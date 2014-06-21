@@ -1,4 +1,4 @@
-class StationaryCholesky : public SDependentCholesky {
+class StationaryCholesky : public MuDependentCholesky {
 public:
   StationaryCholesky( const StationaryStructure *s, size_t D );
   virtual ~StationaryCholesky();
@@ -8,7 +8,7 @@ public:
 protected:
   const StationaryStructure *myWs;
   gsl_matrix *myGamma;
-  gsl_matrix *myWkTmp;
+  gsl_matrix *myVkTmp;
   
   virtual void computeGammak( const gsl_matrix *R, double reg = 0 );
 };

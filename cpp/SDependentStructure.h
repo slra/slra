@@ -7,14 +7,14 @@
  * Thus \f$\mu\f$ is the block bandwidth of \f$\Gamma(R)\f$.
  * See also Theorems 1--3 in \cite slra-efficient.
  */
-class SDependentStructure : public Structure {
+class MuDependentStructure : public Structure {
 public:
   /** Returns \f$\mu\f$. */
-  virtual size_t getS() const = 0; 
+  virtual size_t getMu() const = 0; 
   
   /** Returns \f$X \leftarrow \mathrm{V}_{\#ij} B\f$ 
    * for \f$B \in \mathbb{R}^{m \times Q}\f$. */
-  virtual void WijB( gsl_matrix *X, ///< [out] the \f$m \times Q\f$ matrix \f$X\f$
+  virtual void VijB( gsl_matrix *X, ///< [out] the \f$m \times Q\f$ matrix \f$X\f$
                      long i_1,   ///< [in] \f$0\f$-based index \f$i_1\f$, such that 
                                  ///   \f$i=i_1+1\f$  and \f$0 \le i_1 <n \f$.   
                      long j_1,   ///< [in] \f$0\f$-based index \f$j_1\f$, such that 
@@ -24,7 +24,7 @@ public:
 
   /** Updates \f$X \leftarrow \beta X + A^{\top} \mathrm{V}_{\#ij} B\f$, 
    * for \f$A \in \mathbb{R}^{m \times P}\f$, \f$B \in \mathbb{R}^{m \times Q}\f$. */ 
-  virtual void AtWijB( gsl_matrix *X,  ///< [out,in] the \f$P \times Q\f$ matrix \f$X\f$ 
+  virtual void AtVijB( gsl_matrix *X,  ///< [out,in] the \f$P \times Q\f$ matrix \f$X\f$ 
                        long i_1,   ///< [in] \f$0\f$-based index \f$i_1\f$, such that 
                                    ///   \f$i=i_1+1\f$  and \f$0 \le i_1 <n \f$.   
                        long j_1,   ///< [in] \f$0\f$-based index \f$j_1\f$, such that 
@@ -37,7 +37,7 @@ public:
 
   /** Updates \f$u \leftarrow \beta u + A^{\top} \mathrm{V}_{\#ij} v\f$, 
    * for \f$A \in \mathbb{R}^{m \times P}\f$. */
-  virtual void AtWijV( gsl_vector *u, ///< [out,in] vector \f$u \in \mathbb{R}^P\f$ 
+  virtual void AtVijV( gsl_vector *u, ///< [out,in] vector \f$u \in \mathbb{R}^P\f$ 
                        long i_1,   ///< [in] \f$0\f$-based index \f$i_1\f$, such that 
                                    ///   \f$i=i_1+1\f$  and \f$0 \le i_1 <n \f$.   
                        long j_1,   ///< [in] \f$0\f$-based index \f$j_1\f$, such that 

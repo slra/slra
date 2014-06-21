@@ -7,16 +7,16 @@ HLayeredBlWStructure::HLayeredBlWStructure( const double *m_vec,
     size_t q, size_t n, const double *w_vec  ) : myQ(q), myN(n), mySA(NULL)  {
   mySA = new Layer[myQ];
  
-  for (size_t l = 0; l < myQ; l++) {
-    mySA[l].blocks_in_row = m_vec[l];
-    if (w_vec != NULL && !(w_vec[l] > 0)) {
-      throw new Exception("This value of weight is not supported: %lf\n", w_vec[l]);
+  for (size_t l_1 = 0; l_1 < myQ; ++l_1) {
+    mySA[l_1].blocks_in_row = m_vec[l_1];
+    if (w_vec != NULL && !(w_vec[l_1] > 0)) {
+      throw new Exception("This value of weight is not supported: %lf\n", w_vec[l_1]);
     }
-    mySA[l].inv_w = (w_vec != NULL) ? (1 / w_vec[l]) : 1.0;
+    mySA[l_1].inv_w = (w_vec != NULL) ? (1 / w_vec[l_1]) : 1.0;
   }    
    
   computeStats(); 
-  computeWkParams();
+  computeVkParams();
 }
 
 HLayeredBlWStructure::~HLayeredBlWStructure() {
@@ -32,19 +32,19 @@ HLayeredBlWStructure::~HLayeredBlWStructure() {
 }
 
 void HLayeredBlWStructure::fillMatrixFromP( gsl_matrix* c, const gsl_vector* p ) {
-  size_t sum_np = 0, sum_nl = 0, l, j;
+  size_t sum_np = 0, sum_nl = 0, l_1, j;
   gsl_vector psub;
  
-  for (l = 0; l < getQ(); sum_np += getLayerNp(l), 
-                          sum_nl += getLayerLag(l), ++l) {
-    for (j = 0; j < getLayerLag(l); ++j) {
+  for (l_1 = 0; l_1 < getQ(); sum_np += getLayerNp(l_1), 
+                              sum_nl += getLayerLag(l_1), ++l_1) {
+    for (j = 0; j < getLayerLag(l_1); ++j) {
       psub = gsl_vector_const_subvector(p, sum_np + j, getN()).vector;
       gsl_matrix_set_col(c, j + sum_nl, &psub);
     }  
   }
 }
 
-void HLayeredBlWStructure::computeWkParams() {
+void HLayeredBlWStructure::computeVkParams() {
   size_t k, l, i, imax, sum_nl, rep;
   gsl_matrix *zk;
   gsl_matrix_view wi, zkl;
@@ -99,19 +99,18 @@ void HLayeredBlWStructure::multByGtUnweighted( gsl_vector* p,
   }
 } 
 void HLayeredBlWStructure::multByWInv( gsl_vector* p, long deg ) {
-  size_t l, k, sum_np = 0;
+  size_t l_1, k, sum_np = 0;
   gsl_vector psub;
   
   if (deg == 0) {
     return;
   }
-  for (l = 0; l < getQ(); sum_np += getLayerNp(l), ++l) {
-    psub = gsl_vector_subvector(p, sum_np, getLayerNp(l)).vector;
-    gsl_vector_scale(&psub, (deg == 2) ? getLayerInvWeight(l):
-                                                sqrt(getLayerInvWeight(l)));
+  for (l_1 = 0; l_1 < getQ(); sum_np += getLayerNp(l_1), ++l_1) {
+    psub = gsl_vector_subvector(p, sum_np, getLayerNp(l_1)).vector;
+    gsl_vector_scale(&psub, (deg == 2) ? getLayerInvWeight(l_1):
+                                         sqrt(getLayerInvWeight(l_1)));
   }
 }
-
 
 Cholesky *HLayeredBlWStructure::createCholesky( size_t d ) const {
 #ifdef USE_SLICOT 
@@ -125,20 +124,20 @@ DGamma *HLayeredBlWStructure::createDGamma( size_t d ) const {
   return new StationaryDGamma(this, d);
 }
 
-void HLayeredBlWStructure::WkB( gsl_matrix *X, long k, 
+void HLayeredBlWStructure::VkB( gsl_matrix *X, long k, 
                                 const gsl_matrix *B ) const {
   gsl_matrix_memcpy(X, B);
   gsl_blas_dtrmm(CblasLeft, CblasLower, (k > 0 ? CblasNoTrans : CblasTrans), 
                  CblasNonUnit, 1.0, getWk(abs(k)), X);
 }
 
-void HLayeredBlWStructure::AtWkB( gsl_matrix *X, long k, const gsl_matrix *A,
+void HLayeredBlWStructure::AtVkB( gsl_matrix *X, long k, const gsl_matrix *A,
          const gsl_matrix *B, gsl_matrix *tmpVkB, double beta ) const {
-  WkB(tmpVkB, k, B);
+  VkB(tmpVkB, k, B);
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, A, tmpVkB, beta, X);       
 }
 
-void HLayeredBlWStructure::AtWkV( gsl_vector *u, long k, const gsl_matrix *A,
+void HLayeredBlWStructure::AtVkV( gsl_vector *u, long k, const gsl_matrix *A,
          const gsl_vector *v, gsl_vector *tmpVkV, double beta ) const {
   gsl_blas_dcopy(v, tmpVkV);
   gsl_blas_dtrmv(CblasLower, (k > 0 ? CblasNoTrans : CblasTrans),

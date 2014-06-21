@@ -62,7 +62,7 @@ void HLayeredElWStructure::mulInvWij( gsl_matrix *matr, long i_1  ) const {
   }
 }
 
-void HLayeredElWStructure::WijB( gsl_matrix *X, long i_1, long j_1, 
+void HLayeredElWStructure::VijB( gsl_matrix *X, long i_1, long j_1, 
          const gsl_matrix *B ) const {
   gsl_matrix_memcpy(X, B);
   if (i_1 <= j_1) {
@@ -76,7 +76,7 @@ void HLayeredElWStructure::WijB( gsl_matrix *X, long i_1, long j_1,
   }
 }
 
-void HLayeredElWStructure::AtWijB( gsl_matrix *X, long i_1, long j_1, 
+void HLayeredElWStructure::AtVijB( gsl_matrix *X, long i_1, long j_1, 
          const gsl_matrix *A, const gsl_matrix *B, gsl_matrix *tmpVijB, 
          double beta ) const {
   gsl_matrix_scale(X, beta);
@@ -99,7 +99,7 @@ void HLayeredElWStructure::AtWijB( gsl_matrix *X, long i_1, long j_1,
   }
 }   
 
-void HLayeredElWStructure::AtWijV( gsl_vector *u, long i_1, long j_1, 
+void HLayeredElWStructure::AtVijV( gsl_vector *u, long i_1, long j_1, 
          const gsl_matrix *A, const gsl_vector *V, 
                      gsl_vector *tmpVijV, double beta ) const {
   gsl_vector_scale(u, beta);
@@ -123,11 +123,11 @@ void HLayeredElWStructure::AtWijV( gsl_vector *u, long i_1, long j_1,
 }   
 
 Cholesky *HLayeredElWStructure::createCholesky( size_t d ) const {
-  return new SDependentCholesky(this, d);
+  return new MuDependentCholesky(this, d);
 }
 
 DGamma *HLayeredElWStructure::createDGamma( size_t d ) const {
-  return new SDependentDGamma(this, d);
+  return new MuDependentDGamma(this, d);
 }
 
 

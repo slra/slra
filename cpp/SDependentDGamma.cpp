@@ -8,7 +8,7 @@ extern "C" {
 }
 #include "slra.h"
 
-SDependentDGamma::SDependentDGamma( const SDependentStructure *s, size_t D ) :
+MuDependentDGamma::MuDependentDGamma( const MuDependentStructure *s, size_t D ) :
    myD(D), myW(s) {
   myTmp1 = gsl_vector_alloc(myD);  
   myTmp2 = gsl_vector_alloc(myW->getM());  
@@ -17,16 +17,16 @@ SDependentDGamma::SDependentDGamma( const SDependentStructure *s, size_t D ) :
   gsl_matrix_set_identity(myEye);
 }
 
-SDependentDGamma::~SDependentDGamma(){
+MuDependentDGamma::~MuDependentDGamma(){
   gsl_vector_free(myTmp1);
   gsl_vector_free(myTmp2);
   gsl_vector_free(myTmp3);
   gsl_matrix_free(myEye);
 }
 
- void SDependentDGamma::calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
+ void MuDependentDGamma::calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
                    const gsl_vector *yr ) {
-  size_t n = yr->size / myD; long S = myW->getS();
+  size_t n = yr->size / myD; long Mu = myW->getMu();
   gsl_matrix Y_r = gsl_matrix_const_view_vector(yr, n, myD).matrix;
   gsl_vector y_i, y_j;
   gsl_matrix tmp2_v = gsl_matrix_view_vector(myTmp2, myW->getM(), 1).matrix,
@@ -36,34 +36,34 @@ SDependentDGamma::~SDependentDGamma(){
   for (size_t i = 0; i < n; i++) {
     y_i = gsl_matrix_row(&Y_r, i).vector;
     
-    size_t j = (i + 1 > S ? i - S + 1 : 0);
-    for (; j < mymin(i + S, n); j++) {
+    size_t j = (i + 1 > Mu ? i - Mu + 1 : 0);
+    for (; j < mymin(i + Mu, n); j++) {
       y_j = gsl_matrix_row(&Y_r, j).vector;
 
       gsl_blas_dgemv(CblasNoTrans, 1.0, R, &y_i, 0.0, myTmp2);
-      myW->WijB(&tmp3_v, j, i, &tmp2_v);
+      myW->VijB(&tmp3_v, j, i, &tmp2_v);
       gsl_blas_dger(2.0, myTmp3, &y_j, grad);
     }
   }
 }
 
-void SDependentDGamma::calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
+void MuDependentDGamma::calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
                    size_t i, size_t j, const gsl_vector *Yr ) {
   gsl_vector perm_col = gsl_matrix_column(myEye, i).vector, yr_sub, res_sub;
-  size_t k, l, n = Yr->size / myD; long S = myW->getS();
+  size_t k, l, n = Yr->size / myD; long Mu = myW->getMu();
   double tmp;
 
   gsl_vector_set_zero(res); 
   for (k = 0; k < n; k++)  {
     res_sub = gsl_vector_subvector(res, k * myD, myD).vector;
  
-    l = (k + 1 > S ? k - S + 1 : 0);
-    for (;  l < mymin(k + S, n); l++) {
+    l = (k + 1 > Mu ? k - Mu + 1 : 0);
+    for (;  l < mymin(k + Mu, n); l++) {
       yr_sub = gsl_vector_const_subvector(Yr, l * myD, myD).vector;
-      myW->AtWijV(myTmp1, k, l, R, &perm_col, myTmp2);
+      myW->AtVijV(myTmp1, k, l, R, &perm_col, myTmp2);
       gsl_blas_daxpy(gsl_vector_get(&yr_sub, j), myTmp1, &res_sub);
 
-      myW->AtWijV(myTmp1, l, k, R, &perm_col, myTmp2);
+      myW->AtVijV(myTmp1, l, k, R, &perm_col, myTmp2);
       gsl_blas_ddot(myTmp1, &yr_sub, &tmp);
       gsl_vector_set(&res_sub, j, tmp + gsl_vector_get(&res_sub, j));
     }
