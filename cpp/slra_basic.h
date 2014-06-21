@@ -9,7 +9,7 @@ public:
 
 
 /** Abstract class for Cholesky factorization of \f$\Gamma(R)\f$.
- * Computation Cholesky factorization \f$C^T C = \Gamma(R)\f$ */
+ * Cholesky factorization \f$\mathrm{L}_{\Gamma}^T \mathrm{L}_{\Gamma} = \Gamma(R)\f$ */
 class Cholesky {
 public:  
   virtual  ~Cholesky() {}
@@ -20,10 +20,6 @@ public:
    * Computes \f$ y_r \leftarrow C^{-1} y_r\f$  if trans = 0 or 
    * \f$ y_r \leftarrow C^{-T} y_r\f$  if trans = 1 */
   virtual void multInvCholeskyVector( gsl_vector * yr, long trans ) = 0;  
-  /** Solves linear system with factor \f$C\f$. 
-   * Computes \f$M_r^T \leftarrow C^{-1} M_r^T\f$  if trans = 0 or 
-   * \f$M_r^T \leftarrow C^{-T} M_r^T\f$  if trans = 1 */
-//  virtual void multInvCholeskyTransMatrix( gsl_matrix * M_r, long trans );
   /** Solves linear system with \f$\Gamma(R)\f$ . 
    * Computes \f$y_r \leftarrow \Gamma^{-1} y_r\f$ 
    * using Cholesky factorization */

@@ -1,7 +1,7 @@
 /** Abstract class for \f$\mu\f$-dependent Structure.
  * The Structure (structure and weight pair) is called \f$\mu\f$-dependent if
  * and \f$\mathrm{V}_{\#ij} = 0\f$ (or equivalently \f$\mathrm{\Gamma}_{\#ij} = 0\f$),
- * for all \f$i,j: |i-j| > \mu\f$. (See also eqs. \f$(\mathrm{V})\f$ and
+ * for all \f$i,j: |i-j| \ge \mu\f$. (See also eqs. \f$(\mathrm{V})\f$ and
  * \f$(\Gamma_{\#ij})\f$ in \cite slra-efficient.)
  *
  * Thus \f$\mu\f$ is the block bandwidth of \f$\Gamma(R)\f$.
