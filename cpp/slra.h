@@ -17,6 +17,8 @@ extern "C" {
 #include <gsl/gsl_multimin.h>      /* BFGS Newton-type     */
 }
 
+#include "Exception.h"
+#include "Cholesky.h"
 #include "slra_basic.h"
 #include "Structure.h"
 #include "MuDependentStructure.h"
