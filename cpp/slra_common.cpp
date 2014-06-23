@@ -5,13 +5,6 @@
 
 #include "slra.h"
 
-Exception::Exception( const char *format, ... ) { 
-  va_list vl;
-  va_start(vl, format);  
-  myMsg[MSG_MAX-1] = 0;
-  vsnprintf(myMsg, MSG_MAX-1, format, vl); 
-}
-
 typedef Structure* pStructure;
 
 Structure *createMosaicStructure( gsl_vector * ml, gsl_vector *nk,

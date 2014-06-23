@@ -19,7 +19,7 @@ extern "C" {
 
 #include "Exception.h"
 #include "Cholesky.h"
-#include "slra_basic.h"
+#include "DGamma.h"
 #include "Structure.h"
 #include "MuDependentStructure.h"
 #include "StationaryStructure.h"
