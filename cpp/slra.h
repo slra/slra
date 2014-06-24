@@ -75,30 +75,20 @@ void slra( VarproFunction *costFun,
 /** @defgroup MainFunctions
  * Global functions. */
 
-/** \mainpage Using the SLRA C++ library
+/** \mainpage SLRA package C++ core library (efficient implementation of \cite slra-software)
  *
  * \section intro_sec Introduction
  *
- * This library provides efficient implementation of the \c slra function
- * described in
+ * This library provides efficient C++ implementation of the variable projection methods 
+ * for structured low-rank approximation, described in \cite slra-efficient.
  *
- * \verbatim
-TECHREPORT{MarkovskyUsevich12-Software,
-  author = {I. Markovsky and K. Usevich},
-  title = {Software for weighted structured low-rank approximation},
-  institution = {ECS, Univ. of Southampton},
-  year = {2012},
-  address = {\url{http://eprints.soton.ac.uk/}},
-  texfile = {slra-ext.nw}
-}
-\endverbatim
+ * The library is written in C++ in the object-oriented paradigm. The main mathematical objects
+ * in \cite slra-efficient are represented as C++ objects. All the object methods and functions
+ * are documented with references to correspinding formulas in \cite slra-efficient. The library
+ * uses GSL, BLAS and LAPACK, and some other libraries.
  *
- * The library uses object-oriented paradigm. Most part 
- * of mathematical objects described in the manual for SLRA package
- * have the C++ counterpart objects. 
- *
- * The library makes extensive use GSL, BLAS and LAPACK libraries, so these
- * libraries should be linked when using the \c slra library.
+ * The library is a part of the SLRA package described in \cite slra-software. Thus the library
+ *  provides interfaces to MATLAB (via mex-object) and R (via R package) languages.
  *
  * \section install_sec Entry point for the library
  * The main function for the library is slra(). The parameters for the
