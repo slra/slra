@@ -32,56 +32,56 @@ StationaryDGamma::~StationaryDGamma() {
   gsl_matrix_free(myEye);
 }
 
-void StationaryDGamma::calcYrtDgammaYr( gsl_matrix *mgrad_r, 
-         const gsl_matrix *R, const gsl_vector *yr ) {
-  size_t n = yr->size / myD;
-  gsl_matrix Yr = gsl_matrix_const_view_vector(yr, n, myD).matrix, YrB, YrT;
+void StationaryDGamma::calcYtDgammaY( gsl_matrix *At, const gsl_matrix *Rt, 
+                                      const gsl_matrix *Yt ) {
+  size_t n = Yt->size1;
+  gsl_matrix YrB, YrT;
 
-  gsl_matrix_set_zero(mgrad_r);
+  gsl_matrix_set_zero(At);
   
   for (size_t k = 0; k < myW->getMu(); k++) {
-    YrT = gsl_matrix_submatrix(&Yr, 0, 0, n - k, myD).matrix;
-    YrB = gsl_matrix_submatrix(&Yr, k, 0, n - k, myD).matrix;
+    YrT = gsl_matrix_const_submatrix(Yt, 0, 0, n - k, myD).matrix;
+    YrB = gsl_matrix_const_submatrix(Yt, k, 0, n - k, myD).matrix;
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &YrB, &YrT, 0.0, myN_k);
 
-    myW->VkB(myVk_R, k, R);
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myVk_R, myN_k, 1.0, mgrad_r);
+    myW->VkB(myVk_R, k, Rt);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 2.0, myVk_R, myN_k, 1.0, At);
 
     if (k > 0) {
-      myW->VkB(myVk_R, -k, R);
-      gsl_blas_dgemm(CblasNoTrans, CblasTrans, 2.0, myVk_R, myN_k, 1.0, mgrad_r);
+      myW->VkB(myVk_R, -k, Rt);
+      gsl_blas_dgemm(CblasNoTrans, CblasTrans, 2.0, myVk_R, myN_k, 1.0, At);
     }
   }    
 }
 
-void StationaryDGamma::calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
-         size_t i, size_t j,  const gsl_vector *yr ) {
-  gsl_vector gv_sub, perm_col = gsl_matrix_column(myEye, i).vector, dgammajrow,
-             res_stride, yr_stride;
+void StationaryDGamma::calcDijGammaYr( gsl_vector *z, const gsl_matrix *R, 
+         size_t j_1, size_t i_1, const gsl_vector *y ) {
+  gsl_vector gv_sub, e_j = gsl_matrix_column(myEye, j_1).vector, dgammajrow,
+             res_stride, y_stride;
   long S = myW->getMu();           
 
   for (long k = 1 - S; k < S; k++) {
     gv_sub = gsl_vector_subvector(myDGammaVec, (k + S - 1) * myD, 
               myD).vector;
-    myW->AtVkV(&gv_sub, -k, R, &perm_col, myTempVkColRow);
+    myW->AtVkV(&gv_sub, -k, R, &e_j, myTempVkColRow);
     gsl_matrix_set_col(myDGammaTrMat, -k + myW->getMu() - 1, &gv_sub);
   }
 
-  size_t n = yr->size / myD;
+  size_t n = y->size / myD;
   if (myD == 1) {
     dgammajrow = gsl_matrix_row(myDGammaTrMat, 0).vector;
     gsl_vector_add (myDGammaVec, &dgammajrow);
-    tmv_prod_vector(myDGammaVec, myW->getMu(), yr, n, res);  
+    tmv_prod_vector(myDGammaVec, myW->getMu(), y, n, z);  
   } else {
-    res_stride = gsl_vector_subvector_with_stride(res, j, myD, n).vector;       
-    yr_stride = gsl_vector_const_subvector_with_stride(yr, j, myD, n).vector;       
+    res_stride = gsl_vector_subvector_with_stride(z, i_1, myD, n).vector;       
+    y_stride = gsl_vector_const_subvector_with_stride(y, i_1, myD, n).vector;       
     gsl_matrix_view gamma_vec_mat = gsl_matrix_view_vector(myDGammaVec, 1, 
                                                            myDGammaVec->size);
-    gsl_vector_memcpy(myTmpCol, &yr_stride);
+    gsl_vector_memcpy(myTmpCol, &y_stride);
   
-    gsl_vector_set_zero(res);
-    tmv_prod_vector(myDGammaVec, myW->getMu(), yr, n, &res_stride);  
-    tmv_prod_new(myDGammaTrMat, myW->getMu(), myTmpCol, n, res, 1.0);  
+    gsl_vector_set_zero(z);
+    tmv_prod_vector(myDGammaVec, myW->getMu(), y, n, &res_stride);  
+    tmv_prod_new(myDGammaTrMat, myW->getMu(), myTmpCol, n, z, 1.0);  
   }
 }
 

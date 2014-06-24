@@ -174,7 +174,7 @@ void VarproFunction::computeJacobianOfCorrection( const gsl_vector* yr,
 void VarproFunction::computeGradFromYr( const gsl_vector* yr, 
          const gsl_matrix *Rorig, const gsl_matrix *perm, gsl_matrix *gradR ) {
   gsl_matrix_const_view yr_matr = gsl_matrix_const_view_vector(yr, getN(), getD());
-  myDeriv->calcYrtDgammaYr(myTmpGradR, Rorig, yr);
+  myDeriv->calcYtDgammaY(myTmpGradR, Rorig, &yr_matr.matrix);
   gsl_blas_dgemm(CblasTrans, CblasNoTrans, 2.0, myMatr, &yr_matr.matrix,
                 -1.0, myTmpGradR);
   if (myPhi != NULL) {

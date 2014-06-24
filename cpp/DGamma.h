@@ -1,20 +1,32 @@
-/** Abstract class for differentiating \f$\Gamma(R)\f$.
- * Computations with \f$\Gamma(R)\f$ */
+/** Abstract class for computations with derivarives of \f$\Gamma(R)\f$. */
 class DGamma {
 public:  
   virtual ~DGamma() {}
-  /** Calculate the nonlinear part of the gradient.
-   * Updates the gradient \f$grad \leftarrow grad + A\f$, where
-   * \f$A\f$ is defined by \f$trace(A,H) = y_r d \Gamma(R, H) y_r\f$
+  /** Calculate the nonlinear part of the matrix gradient.
+   * Computes the matrix \f$A\in\mathbb{R}^{d\times m}\f$ such that
+   * \f$\mathrm{trace}(AH^{top}) = y^{\top} d \Gamma(R, H) y \f$.
+   * See also eqn. \f$(df(R,H))\f$ in \cite slra-efficient.
+   *
+   * @param[out] Bt  transposed matrix \f$B^{\top}\in\mathbb{R}^{m\times d}\f$
+   * @param[in]  Rt  transposed matrix \f$R^{\top}\in\mathbb{R}^{m\times d}\f$
+   * @param[in]  Yt  matrix \f$Y^{\top} \in \mathbb{R}^{n\times d}\f$,
+   *                 see eqn. \f$(Y)\f$ in \cite slra-efficient. 
    * */
-  virtual void calcYrtDgammaYr( gsl_matrix *grad, const gsl_matrix *R, 
-                   const gsl_vector *yr ) = 0;
-  /** Calculate the nonlinear part of pseudojacobian.
-   * Calculates \f$\displaystyle res \leftarrow \frac{\partial}{\partial R_{ij}} 
-    \Gamma \left(R \right)y_r\f$
+  virtual void calcYtDgammaY( gsl_matrix *At, const gsl_matrix *Rt, 
+                   const gsl_matrix *Yt ) = 0;
+
+  /** Calculates \f$z \leftarrow \frac{\partial\Gamma}{\partial R_{ij}} y\f$.
+   * See also eqn. \f$(z_{ij})\f$ in \cite slra-efficient. 
+   * @param[out] z    the result of the multiplcation
+   * @param[in]  j_1  \f$0\f$-based index \f$j_1\f$, such that 
+   *                  \f$j=j_1+1\f$  and \f$0 \le j_1 <m \f$.   
+   * @param[in]  i_1  \f$0\f$-based index \f$i_1\f$, such that 
+   *                  \f$i=i_1+1\f$  and \f$0 \le i_1 <d \f$.   
+   * @param[in]  Rt  transposed matrix \f$R^{\top}\in\mathbb{R}^{m\times d}\f$
+   * @param[in]  y   vector \f$y \in \mathbb{R}^{dn}\f$
    * */
-  virtual void calcDijGammaYr( gsl_vector *res, const gsl_matrix *R, 
-                   size_t i, size_t j, const gsl_vector *Yr ) = 0;
+  virtual void calcDijGammaYr( gsl_vector *z, const gsl_matrix *Rt, 
+                   size_t j_1, size_t i_1, const gsl_vector *y ) = 0;
 };
 
 
