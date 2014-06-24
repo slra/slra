@@ -2,34 +2,32 @@
 #include <cstdarg>
 #include "slra.h"
 
-StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  size_t D ) : 
-                                      MuDependentCholesky(s, D), myWs(s)  {
-  myGamma = gsl_matrix_alloc(getD(), getD() * (getMu() + 1));
-  myVkTmp = gsl_matrix_alloc(getM(), getD());
+StationaryCholesky::StationaryCholesky( const StationaryStructure *s,  size_t d ) : 
+                                      MuDependentCholesky(s, d), myStStruct(s)  {
+  myGammaK = gsl_matrix_alloc(d, d * (getMu() + 1));
 }  
   
 StationaryCholesky::~StationaryCholesky() {
-  gsl_matrix_free(myGamma);
-  gsl_matrix_free(myVkTmp);
+  gsl_matrix_free(myGammaK);
 }
 
-void StationaryCholesky::computeGammak( const gsl_matrix *R, double reg ) {
+void StationaryCholesky::computeGammak( const gsl_matrix *Rt, double reg ) {
   gsl_matrix_view submat;
   
-  for (size_t k = 0; k < getMu(); k++) { /* compute brgamma_k = R' * w_k * R */
-    submat = gsl_matrix_submatrix(myGamma, 0, k * getD(), getD(), getD());
-    myWs->AtVkB(&submat.matrix, k, R, R, myVkTmp);
+  for (size_t k = 0; k < getMu(); k++) { 
+    submat = gsl_matrix_submatrix(myGammaK, 0, k * getD(), getD(), getD());
+    myStStruct->AtVkB(&submat.matrix, k, Rt, Rt, myTempVijtRt);
  
     if (reg > 0) {
       gsl_vector diag = gsl_matrix_diagonal(&submat.matrix).vector;
       gsl_vector_add_constant(&diag, reg);
     }    
   }
-  submat = gsl_matrix_submatrix(myGamma, 0, getMu() * getD(), getD(), getD());
+  submat = gsl_matrix_submatrix(myGammaK, 0, getMu() * getD(), getD(), getD());
   gsl_matrix_set_zero(&submat.matrix);
 }
   
-void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg ) {
+void StationaryCholesky::computeGammaUpperTrg( const gsl_matrix *R, double reg ) {
   computeGammak(R, reg);
   
   size_t row_gam, col_gam, icor;
@@ -38,7 +36,7 @@ void StationaryCholesky::computeGammaUpperPart( const gsl_matrix *R, double reg 
   for (size_t i = 0; i < myDMu; i++) {
     for (size_t j = 0; j < getD(); j++) {
       icor = i + j + 1;
-      gp[i + j * myDMu] = gsl_matrix_get(myGamma, 
+      gp[i + j * myDMu] = gsl_matrix_get(myGammaK, 
           icor % getD(), j + (getMu() - (icor / getD())) * getD());
     }
   }

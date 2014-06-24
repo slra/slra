@@ -6,6 +6,9 @@
  *
  * Thus \f$\mu\f$ is the block bandwidth of \f$\Gamma(R)\f$.
  * See also Theorems 1--3 in \cite slra-efficient.
+ *
+ * The notion of \f$\mu\f$-dependence also coincides with the notion of
+ * \f$s\f$-dependence from \cite KMV02e.
  */
 class MuDependentStructure : public Structure {
 public:

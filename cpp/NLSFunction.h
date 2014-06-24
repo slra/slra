@@ -12,7 +12,7 @@ public:
   virtual size_t getNEssVar() { getNvar(); }
   /** Returns \f$n_s\f$ --- the number of squares (dimension of \f$g\f$) */
   virtual size_t getNsq() = 0;
-  /** Computes function \f$ff$ and gradient */
+  /** Computes function \f$f\f$ and gradient */
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, 
                                    gsl_vector *grad ) = 0;
   /** Computes the vector \f$g\f$ and the Jacobian (or pseudo-jacobian) */
@@ -56,7 +56,7 @@ public:
   /** Returns \f$n_s\f$ --- the number of squares (dimension of \f$g\f$) */
   virtual size_t getNsq() = 0;
     
-  /** Computes function \f$ff$ and gradient */
+  /** Computes function \f$f\f$ and gradient */
   virtual void computeFuncAndGrad( const gsl_vector* x, double* f, 
                                    gsl_vector *grad ) = 0;
   /** Computes the vector \f$g\f$ and the Jacobian (or pseudo-jacobian) */

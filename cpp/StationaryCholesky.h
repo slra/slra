@@ -1,16 +1,32 @@
+/** Implementation of Cholesky class for the StationaryStructure.
+ * A descendant of MuDependentCholesky. Basically, only
+ * MuDependentCholesky::computeGammaUpperTrg is reimplemented
+ */
 class StationaryCholesky : public MuDependentCholesky {
 public:
-  StationaryCholesky( const StationaryStructure *s, size_t D );
+  /** Constructs the StationaryCholesky object.
+   * @param[in] s    Pointer to the corresponding StationaryStructure.
+   * @param[in] d     number of rows \f$d\f$ of  the matrix \f$R\f$ */
+  StationaryCholesky( const StationaryStructure *s, size_t d );
   virtual ~StationaryCholesky();
 
-  virtual void computeGammaUpperPart( const gsl_matrix *R, double reg = 0 );
-
 protected:
-  const StationaryStructure *myWs;
-  gsl_matrix *myGamma;
-  gsl_matrix *myVkTmp;
-  
-  virtual void computeGammak( const gsl_matrix *R, double reg = 0 );
+  const StationaryStructure *myStStruct;
+  /** A temporary object for storing 
+   * \f$ \begin{bmatrix} \Gamma_0 & \Gamma_1 & \cdots & \Gamma_{\mu-1} & 0 \end{bmatrix}\f$. */
+  gsl_matrix *myGammaK;   
+
+  /** Reimplements  MuDependentCholesky::computeGammaUpperTrg() using the
+   * fact that \f$\Gamma_{\#ij} = \Gamma_{j-i}\f$.
+   *
+   * @param[in] Rt        the matrix \f$R^{\top} \in \mathbb{R}^{m \times d}\f$.
+   * @param[in] reg_gamma a regularization parameter \f$\gamma\f$. 
+   */
+  virtual void computeGammaUpperTrg( const gsl_matrix *Rt, double reg = 0 );
+
+  /** Computes all \f$\Gamma_k\f$ and puts them in StationaryCholesky::myGammaK.
+   * @copydetails StationaryCholesky::computeGammaUpperTrg */
+  virtual void computeGammak( const gsl_matrix *Rt, double reg = 0 );
 };
 
 
