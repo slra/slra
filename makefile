@@ -20,18 +20,28 @@ BUILD_MODE=BUILD_DEFAULT
 # Windows-specific defines (for compilation with Mingw64)
 MINGWPATH=c:/Rtools/gcc-4.6.3
 MATLABROOT=c:/Progra~1/MATLAB/R2013a
-WINLIBS= -L$(MATLABROOT)/bin/win64 -L$(MATLABROOT)/extern/lib/win64/microsoft  -lmex -lmx -lmwlapack -lmwblas -leng 
-WINGSL=mex/libgsl.a mex/libgslcblas.a
+WIN_LIBS= -L$(MATLABROOT)/bin/win64 -L$(MATLABROOT)/extern/lib/win64/microsoft  -lmex -lmx -lmwlapack -lmwblas -leng 
+WIN_GSL_LIBS=mex/libgsl.a mex/libgslcblas.a
 WINMEX=$(MINGWPATH)/bin/g++ -m64 -shared mex/mex.def -DMATLAB_MEX_FILE -DBUILD_MEX_WINDOWS -I$(MATLABROOT)/extern/include -Wno-write-strings  
+
+# Mac-specific defines (the paths need to be updated before compilation)
+MACMEXAPP = /Applications/MATLAB_R2014a.app/bin/mex
+MAC_GSL_INCLUDE=/Users/usevichk/software/gsl
+MAC_GSL_LIBS=mex/libgsl.a mex/libgslcblas.a
+MACMEX = $(MACMEXAPP) -v -largeArrayDims -I$(MAC_GSL_INCLUDE) 
 
 # Main targets
 matlab: clean $(MEX_SRC_FILES) 
 	$(MEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
-	-lgsl -lgslcblas -lmwlapack -lmwblas -o slra_mex_obj 
+	-lgsl -lgslcblas -lmwlapack -lmwblas -output slra_mex_obj 
 
 matlab-win: $(MEX_SRC_FILES) 
-	$(WINMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(WINGSL) \
-	$(WINLIBS) -o slra_mex_obj.mexw64
+	$(WINMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(WIN_GSL_LIBS) \
+	$(WIN_LIBS) -output slra_mex_obj.mexw64
+
+matlab-mac: clean $(MEX_SRC_FILES) 
+	$(MACMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(MAC_GSL_LIBS) \
+	-lmwlapack -lmwblas -output slra_mex_obj 
 	
 
 octave: clean $(MEX_SRC_FILES)
