@@ -2,7 +2,7 @@
 CC  = gcc  -g -fPIC -static -Wno-write-strings
 CCPP  = g++  -g -fPIC -Wno-write-strings
 F77 = gcc -g -fPIC -static 
-INC_FLAGS = -I./$(SLRA_CPP_DIR) 
+INC_FLAGS = -I./$(SLRA_CPP_DIR) -I/Users/usevichk/software/gsl
 OPT_FLAGS = -O2 # -pg 
 
 OCTAVE_MEX = mkoctfile --mex -v -DBUILD_MEX_OCTAVE 
@@ -62,7 +62,12 @@ R:
 ## Targets for advanced users
 testc : clean test_c/test.o $(SLRA_OBJ_FILES) 
 	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test_c/test.o \
-	$(SLRA_OBJ_FILES) -lgsl -lcblas -llapack -latlas -lblas -lm -lrt
+	$(SLRA_OBJ_FILES)  -lgsl -lgslcblas -llapack -latlas -lblas -lm -lrt
+
+testc-mac: clean test_c/test.o $(SLRA_OBJ_FILES) 
+	$(CCPP)  $(INC_FLAGS) $(OPT_FLAGS) -o test_c/test test_c/test.o \
+	$(SLRA_OBJ_FILES)  $(MAC_GSL_LIBS) -llapack -lblas -lm 
+
 
 # Targets with SLICOT
 SLICOT_SRC_FILES = SLICOT/MA02FD.f  SLICOT/MB02CU.f  \

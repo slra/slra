@@ -17,7 +17,7 @@
 
 void meas_time( VarproFunction &costFun,
                 double &tm_func, double &tm_grad, double &tm_pjac ) {
-  OptFunctionSLRACholesky optFun(costFun, NULL);                
+  NLSVarproPsiXICholesky optFun(costFun, NULL);                
   gsl_vector *x = gsl_vector_alloc(optFun.getNvar());
   gsl_vector *grad = gsl_vector_alloc(optFun.getNvar());
   gsl_matrix *jacb = gsl_matrix_alloc(optFun.getNsq(), optFun.getNvar());
