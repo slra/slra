@@ -65,12 +65,16 @@ void slra( VarproFunction *costFun, OptimizationOptions* opt, gsl_matrix *Rini,
       opt->ls_correction = 1;
     }
     if (opt->ls_correction) {
-      optFun = new NLSVarproPsiXICorrection(*costFun, Psi);
-    } else { 
-      if (!opt->avoid_xi) {
-        optFun = new NLSVarproPsiXICholesky(*costFun, Psi);
+      if (opt->avoid_xi) {
+        optFun = new NLSVarproVecRCorrection(*costFun);
       } else {
-        optFun = new NLSVarproVecR(*costFun);
+        optFun = new NLSVarproPsiXICorrection(*costFun, Psi);
+      }
+    } else {
+      if (opt->avoid_xi) {
+        optFun = new NLSVarproVecRCholesky(*costFun);
+      } else {
+        optFun = new NLSVarproPsiXICholesky(*costFun, Psi);
       }
     }
     x = gsl_vector_alloc(optFun->getNvar());

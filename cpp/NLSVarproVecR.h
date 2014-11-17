@@ -8,7 +8,6 @@ public:
   virtual size_t getD() { return myFun.getD(); }
   virtual size_t getM() { return myFun.getNrow(); }
 
-  virtual size_t getNsq() { return myFun.getN() * myFun.getD(); }
   virtual size_t getNvar() { return myFun.getNrow() * myFun.getD(); }
   virtual size_t getNEssVar() { return (myFun.getNrow() - myFun.getD()) * myFun.getD(); }
 
@@ -25,8 +24,6 @@ public:
     gsl_matrix x_mat = x2xmat(x);
     myFun.computeDefaultRTheta(&x_mat);
   }
-
-
   
   virtual void RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) {
     gsl_matrix x_mat = x2xmat(x);
@@ -48,11 +45,35 @@ public:
     }
   }
 
-
-  
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
                                    gsl_matrix *jac ) {
     gsl_matrix tmpR = x2xmat(x);
     myFun.computeFuncAndPseudoJacobianLs(&tmpR, NULL, res, jac); 
   }   
 };
+
+class NLSVarproVecRCholesky : public NLSVarproVecR {
+public:
+    NLSVarproVecRCholesky( VarproFunction &fun ) :  NLSVarproVecR(fun) {}
+    virtual ~NLSVarproVecRCholesky() {}
+    virtual size_t getNsq() { return myFun.getN() * myFun.getD(); }
+    virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res,
+                                   gsl_matrix *jac ) {
+        gsl_matrix tmpR = x2xmat(x);
+        myFun.computeFuncAndPseudoJacobianLs(&tmpR, NULL, res, jac);
+    }
+};
+
+class NLSVarproVecRCorrection : public NLSVarproVecR {
+public:
+    NLSVarproVecRCorrection( VarproFunction &fun ) : NLSVarproVecR(fun)  {}
+    virtual ~NLSVarproVecRCorrection() {}
+    virtual size_t getNsq() { return myFun.getNp(); }
+    virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res,
+                                   gsl_matrix *jac ) {
+        gsl_matrix tmpR = x2xmat(x);
+        myFun.computeCorrectionAndJacobian(&tmpR, NULL, res, jac);
+    }
+};
+
+
