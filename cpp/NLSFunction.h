@@ -1,6 +1,6 @@
 /** Abstract class for nonlinear least squares functions
  * Represents a function of the form
- * \f$f(x) = \|g(x)\|_2^2\f$, where \f$g: \mathbb{R}^{n} \top \mathbb{R}^{n_s}\f$,
+ * \f$f(x) = \|g(x)\|_2^2\f$, where \f$g: \mathbb{R}^{n} \to \mathbb{R}^{n_s}\f$,
  * i.e., a sum of squares of univariate functions.
  */
 class NLSFunction {

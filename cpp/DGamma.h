@@ -7,7 +7,7 @@ public:
    * \f$\mathrm{trace}(AH^{top}) = y^{\top} d \Gamma(R, H) y \f$.
    * See also eqn. \f$(df(R,H))\f$ in \cite slra-efficient.
    *
-   * @param[out] Bt  transposed matrix \f$B^{\top}\in\mathbb{R}^{m\times d}\f$
+   * @param[out] At  transposed matrix \f$A^{\top}\in\mathbb{R}^{m\times d}\f$
    * @param[in]  Rt  transposed matrix \f$R^{\top}\in\mathbb{R}^{m\times d}\f$
    * @param[in]  Yt  matrix \f$Y^{\top} \in \mathbb{R}^{n\times d}\f$,
    *                 see eqn. \f$(Y)\f$ in \cite slra-efficient. 
