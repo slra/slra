@@ -46,32 +46,8 @@ extern "C" {
 #include "Log.h"
 #include "slralapack.h"
 
+#include "MyIterationLogger.h"
 #include "SLRAObject.h"
-
-
-/** Main function that runs SLRA optimization
- * @ingroup MainFunctions 
- * @param [in]     costFunction  VarproFunction object  
- * @param [in]     s             Structure specification  
- * @param [in]     d             Rank reduction  
- * @param [in,out] opt           OptimizationOptions object
- * @param [in]     Rini          Matrix for initial approximation  
- * @param [in]     Psi           \f$\Psi\f$ matrix
- *                               (identity if <tt>Psi == NULL</tt> )   
- * @param [out]    p_out         Approximation \f$\widehat{p}\f$  
- *                               (not computed if <tt>p_out == NULL</tt> )
- * @param [out]    R_out         Output parameter vector 
- *                               (not computed if <tt>R_out == NULL</tt> )
- * @param [out]    v_out         Covariance matrix for X
- * @param [out]    Rs            Matrix of vectorized Rs at each iteration  
- *                               (not computed if <tt>Rs == NULL</tt> )
- * @param [out]    info          Matrix of info (time, fmin, ...) 
- *                               (not computed if <tt>info == NULL</tt> )
- */
-void slra( VarproFunction *costFun, 
-          OptimizationOptions* opt, gsl_matrix *Rini, gsl_matrix *Psi, 
-          gsl_vector *p_out, gsl_matrix *r_out, gsl_matrix *v_out,
-          gsl_matrix *Rs = NULL, gsl_matrix *info = NULL );
 
 
 /** @defgroup MainFunctions

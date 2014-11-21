@@ -52,6 +52,7 @@ void run_test( const char * testname, double & time, double& fmin,
          const char *test_type, int maxiter, const char *method, 
          bool elementwise_w, int ls_correction, int silent ) {
   gsl_matrix *Rt = NULL, *R = NULL, *v = NULL, *Phi = NULL;
+  gsl_matrix nullPhi = { 0, 0, 0, 0, 0, 0 };
   gsl_vector *p = NULL, *p2 = NULL;
   int rk = 1, s_N, s_q, hasR, hasPhi, hasW, m;
   FILE *file;
@@ -79,16 +80,17 @@ void run_test( const char * testname, double & time, double& fmin,
   
   opt.str2Method(method);
   opt.ls_correction = ls_correction;
-  Structure *S = NULL;
-  VarproFunction * myCostFun = NULL;
+  SLRAObject *so = NULL;
+  gsl_vector *n_l = NULL, *m_k = NULL, *w_k = NULL;
 
   try {
     /* Read structure  and allocate structure object */
     file = fopen(fsname, "r");    
     Log::lprintf(Log::LOG_LEVEL_NOTIFY, "Error opening file %s\n", fsname);
     fscanf(file, "%d %d %d %d", &s_N, &s_q, &m, &rk); 
-    gsl_vector *n_l = gsl_vector_alloc(s_N), *m_k = gsl_vector_alloc(s_q),
-               *w_k = gsl_vector_alloc(s_q);
+    n_l = gsl_vector_alloc(s_N);
+    m_k = gsl_vector_alloc(s_q);
+    w_k = gsl_vector_alloc(s_q);
     gsl_vector_fscanf(file, n_l);
     gsl_vector_fscanf(file, m_k);
     fclose(file);
@@ -114,32 +116,30 @@ void run_test( const char * testname, double & time, double& fmin,
       }
       gsl_vector_free(w_k);
       w_k = el_wk;
-    } else {
-      if (!hasW) {
-        gsl_vector_free(w_k); 
-        w_k = NULL;
-      }
     }
     
-    S = createMosaicStructure(m_k, n_l, w_k);
-    gsl_vector_free(n_l);  
-    if (w_k != NULL) {
-      gsl_vector_free(w_k);  
+    size_t mh_m = 0;
+    for (int i = 0; i < m_k->size; i++) {
+      mh_m += gsl_vector_get(m_k, i);
     }
-    gsl_vector_free(m_k);  
+    
+      
+    size_t np = compute_np(m_k, n_l);
     
     /* Compute invariants and read everything else */ 
-    read_vec(p = gsl_vector_alloc(S->getNp()), fpname);
-    p2 = gsl_vector_alloc(S->getNp());
+    read_vec(p = gsl_vector_alloc(np), fpname);
+    p2 = gsl_vector_alloc(np);
     hasR = read_mat(R = gsl_matrix_calloc(m, m - rk), fnR);
-    hasPhi = read_mat(Phi = gsl_matrix_alloc(S->getM(), m), fnPhi);
+    hasPhi = read_mat(Phi = gsl_matrix_alloc(mh_m, m), fnPhi);
     read_mat(Rt = gsl_matrix_calloc(m, m - rk), fRtname);
     /* call slra */  
 
-    myCostFun = new VarproFunction(p, S, m-rk, (hasPhi ? Phi : NULL));
+    double rk_double = rk;
+    gsl_vector rk_vec = {1,1, &rk_double, 0, 0};
+    so = new SLRAObject(*p, *m_k, *n_l, (hasPhi ? *Phi : nullPhi), *w_k, rk_vec);
 
     if (test_type[0] == 'd') {
-      slra(myCostFun, &opt, (hasR ? R : NULL), NULL, p2, R, v);
+      so->optimize(&opt, (hasR ? R : NULL), NULL, p2, R, v);
       gsl_matrix_fprintf(file = fopen(fRresname,"w"), R, "%.14f");
       fclose(file);
       gsl_vector_fprintf(file = fopen(fpresname, "w"), p2, "%.14f");
@@ -155,22 +155,22 @@ void run_test( const char * testname, double & time, double& fmin,
       fmin = opt.fmin;
       fmin2 = dp_norm * dp_norm;
     } else {
-      meas_time(*myCostFun,  fmin, fmin2, diff);
+      meas_time(*so->getF(),  fmin, fmin2, diff);
     }          
 
     throw 0;
   } catch(...) {
+    gsl_vector_free_ifnull(n_l);  
+    gsl_vector_free_ifnull(w_k);  
+    gsl_vector_free_ifnull(m_k);  
     gsl_matrix_free_ifnull(R);
     gsl_matrix_free_ifnull(Rt);
     gsl_matrix_free_ifnull(v);
     gsl_vector_free_ifnull(p);
     gsl_vector_free_ifnull(p2);
     gsl_matrix_free_ifnull(Phi);
-    if (myCostFun != NULL) {
-      delete myCostFun;
-    }
-    if (S != NULL) {
-      delete S;
+    if (so != NULL) {
+      delete so;
     }
     Log::deleteLog();
   }

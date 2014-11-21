@@ -73,7 +73,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       }
       
       /* Call slra solver and output info */
-      slra(slraObj->getF(), &opt, matChkNIL(rini), matChkNIL(psi), 
+      slraObj->optimize(&opt, matChkNIL(rini), matChkNIL(psi), 
            vecChkNIL(p_out), matChkNIL(rhm), matChkNIL(vhm),
            matChkNIL(rsm), matChkNIL(infitm));
 
