@@ -36,6 +36,7 @@ extern "C" {
 
 #include "VarproFunction.h"
 #include "NLSFunction.h"
+#include "NLSVarpro.h"
 #include "NLSVarproPsiXI.h"
 #include "NLSVarproVecR.h"
 
@@ -45,6 +46,7 @@ extern "C" {
 #include "Log.h"
 #include "slralapack.h"
 
+#include "SLRAObject.h"
 
 
 /** Main function that runs SLRA optimization

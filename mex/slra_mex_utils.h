@@ -1,3 +1,6 @@
+#ifndef _slra_mex_utils_h
+#define _slra_mex_utils_h
+
 #include <limits>
 using namespace std;
 #include <stdio.h>
@@ -11,9 +14,6 @@ using namespace std;
 #include "matrix.h"
 #endif
 #include "mex.h"
-
-
-void myMexErrorH( const char *reason, const char *F, int ln, int gsl_err );
 
 gsl_matrix M2trmat(  const mxArray * mat );
 
@@ -43,21 +43,6 @@ char *M2Str( mxArray *myMat, char *str, size_t max_len );
 void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt, 
                  gsl_matrix & Rini, gsl_matrix &Psi, size_t m, size_t r );
 
-
-class SLRAObject {
-  Structure *myS;
-  VarproFunction *myF; 
-  gsl_error_handler_t *old_gsl_err_h;
-  static size_t myObjCnt;
-public:
-  SLRAObject( gsl_vector p_in, gsl_vector ml, gsl_vector nk,
-              gsl_matrix perm, gsl_vector wk, gsl_vector rvec, bool isgcd = false );
-  virtual ~SLRAObject();
-  
-  Structure *getS() { return myS; }
-  VarproFunction *getF() { return myF; }
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,3 +50,5 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] );
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _slra_mex_utils_h */
