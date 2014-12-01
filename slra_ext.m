@@ -14,7 +14,7 @@ end
 if ~exist('C') || isempty(C), C = @(th) th2R(th) * th2R(th)' - eye(m - r); end  
 if ~exist('Rini') | isempty(Rini)
   pext = [0; p];
-  Rini = lra(phi * (s0 + pext(tts + 1)), r); 
+  Rini = lra(phi * (s0 + pext(tts + 1)), r);
 end
 prob.options = optimset(opt); 
 if isempty(prob.options.Display)
@@ -90,9 +90,10 @@ function [R, P, dh] = lra(d, r)
 d(find(isnan(d))) = 0;
 [u, s, v] = svd(d); R = u(:, (r + 1):end)'; P = u(:, 1:r);
 if nargout > 2, dh = u(:, 1:r) * s(1:r, 1:r) * v(:, 1:r)'; end
+
 function th = R2th(R, d, psi, R0)
 if (size(psi, 1) ~= size(psi, 2)) && (all(all(R0 == 0)))
-  P = null(R); dh = P * (P \ d);
+  P = null(R); dh = P * (P \ d); size(dh);
   th = lra(psi * kron(dh, eye(size(R, 1))), size(psi, 1) - 1);
 else
   th = vec(R - R0)' / psi;

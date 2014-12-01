@@ -32,7 +32,6 @@ matlab: clean $(MEX_SRC_FILES)
 matlab-win: $(MEX_SRC_FILES) 
 	$(WINMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(WINGSL) \
 	$(WINLIBS) -o slra_mex_obj.mexw64
-	
 
 octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \
