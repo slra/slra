@@ -16,7 +16,7 @@ public:
   
   virtual void computePhat( gsl_vector* p, const gsl_vector* x );
   virtual size_t getD() { return myFun.getD(); }
-  virtual size_t getM() { return myPsi->size2; }
+  virtual size_t getM() { return myPsi->size1; }
   
   virtual void computeDefaultx( gsl_vector *x ); 
 

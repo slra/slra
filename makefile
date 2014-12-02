@@ -37,7 +37,7 @@ matlab: clean $(MEX_SRC_FILES)
 
 matlab-win: $(MEX_SRC_FILES) 
 	$(WINMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(WIN_GSL_LIBS) \
-	$(WIN_LIBS) -output slra_mex_obj.mexw64
+	$(WIN_LIBS) -o slra_mex_obj.mexw64
 
 matlab-mac: clean $(MEX_SRC_FILES) 
 	$(MACMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(MAC_GSL_LIBS) \

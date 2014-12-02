@@ -44,7 +44,6 @@
 /*@}*/
  
 /** @memberof OptimizationOptions 
- * @defgroup DefaultOptimizationOptions
  * @name Default values for parameters
  * @{ */
 #define SLRA_DEF_disp       SLRA_OPT_DISP_NOTIFY  
