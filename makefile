@@ -42,7 +42,6 @@ matlab-win: $(MEX_SRC_FILES)
 matlab-mac: clean $(MEX_SRC_FILES) 
 	$(MACMEX) $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) $(MAC_GSL_LIBS) \
 	-lmwlapack -lmwblas -output slra_mex_obj 
-	
 
 octave: clean $(MEX_SRC_FILES)
 	$(OCTAVE_MEX)  $(INC_FLAGS) $(MEX_SRC_FILES) $(SLRA_SRC_FILES) \

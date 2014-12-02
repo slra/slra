@@ -1,20 +1,22 @@
 %% Test system identification methods on examples from DAISY
 clear all, close all, warning off, 
 addpath ./data, 
+run('~/mfiles/FrequencyDomainToolbox/setup')
+
 f  = fopen('daisy-results.txt', 'w');
 ff = fopen('daisy-exec-time.txt', 'w');
 
 %% control parameters
 cmp = 1; % compare criterion (1) or normalized percentage misfit (0)
-bar_plots = 0;
-save_data = 1;
+bar_plots = 1;
+save_data = 0;
 plots = 0;  % plots of the outputs and printed figures
 stop  = 0;  % stopping after each method
 eiv   = 1;  % EIV or not
 order_selection = 0; ell = [];
-idt   = .7;  % w(1:(idt * T)) - data for identification
+idt   = .5;  % w(1:(idt * T)) - data for identification
 val   = 1 - idt; % w(end - (val * T):end) - data for validation
-first_ident = 1; % first part of the data is used for identification
+first_ident = 0; % first part of the data is used for identification
 detrended   = 1;
 opt_l.maxiter = inf; opt_l.disp = 'off'; opt_l.method = 'l'; % for slra with LM method
 opt_q.maxiter = 500; opt_q.disp = 'off'; opt_q.method = 'q'; % for slra with QN method
@@ -50,7 +52,9 @@ test_examples = {'#' 'name'                                                     
 };
 fprintf('\nTest examples:\n')
 for i = 2:size(test_examples, 1), fprintf('%3d - %s\n', test_examples{i, 1}, test_examples{i, 2}), end 
-I = input('\nWhich examples to test? (Matlab array or Enter for all.) ... '); 
+%I = input('\nWhich examples to test? (Matlab array or Enter for all.) ... '); 
+I = [1:4,10:13,15:17,19:23]; siso = [10 12 13 14 15 21 23];
+I = intersect(I, siso);
 %I = [1, 5, 9:15 17:24];
 if isempty(I) 
   I = 2:size(test_examples, 1);
@@ -68,11 +72,12 @@ methods = {'#' 'name'      'command'                                            
            6  'cva'        'sys = n4sid(iddata(yi, ui), l * ny, ''nk'', zeros(1, nu), ''dist'', ''none'', ''InitialState'', ''Estimate'', ''Focus'', ''Simulation'', ''N4Weight'', ''CVA''); sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--g'
            7 'stls' '[sys, info_stls] = stlsident([ui, yi], nu, l, opt_stls);' '--r'           
            8 'ident-m'  'opt.exct = exct; opt.solver = ''m''; [sys, info] = ident([ui, yi], nu, l, opt);'  '--r'
+           9 'frq-dom'  'sys = sysid_rik([ui yi], nu, l);' '--b'
 };
 fprintf('\nMethods:\n')
 disp(methods(:, 1:2));
     %J = input('\nWhich methods to use? (Matlab array or Enter for all.) ... '); 
-    J = [1 8];    %J = [1 7];
+    J = [1 9];    %J = [1 7];
 if isempty(J) 
   J = 2:size(methods, 1);
 else
@@ -149,11 +154,11 @@ for i = 1:length(I)
     m_name = methods{j, 2};
     fprintf('\nMethod %8s : ', m_name)
     tic, eval(methods{j, 3}), t = toc;
-    fprintf('exec. time %5.2f, ', t), fprintf(f, '%5.2f & ', t); 
+    fprintf('exec. time %6.2f, ', t), fprintf(f, '%5.2f & ', t); 
     if strfind(methods{j, 3}, 'slra')
-            fprintf(ff, '%5.2f & ', info_slra.time);
+            fprintf(ff, '%6.2f & ', info_slra.time);
     elseif strfind(methods{j, 3}, 'stls')
-            fprintf(ff, '%5.2f & ', info_stls.time);
+            fprintf(ff, '%6.2f & ', info_stls.time);
     end
     res(i, col) = t; col = col + 1;
     % evaluation
