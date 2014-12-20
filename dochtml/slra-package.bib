@@ -12,11 +12,44 @@
   pdf = {http://eprints.soton.ac.uk/263296/1/stls_published.pdf}
 }
 
+@article{slra-ext,
+  author = {I. Markovsky and K. Usevich},
+  title = {Structured low-rank approximation with missing data},
+  year = {2013},
+  journal = {SIAM J. Matrix Anal. Appl.},
+  vol = {34},
+  issue = {2},
+  pages = {814--830},
+  abstract = {We consider low-rank approximation of affinely structured matrices with missing elements. The method proposed is based on reformulation of the problem as inner and outer optimization. The inner minimization is a singular linear least-norm problem and admits an analytic solution. The outer problem is a nonlinear least squares problem and is solved by local optimization methods: minimization subject to quadratic equality constraints and unconstrained minimization with regularized cost function. The method is generalized to weighted low-rank approximation with missing values and is illustrated on approximate low-rank matrix completion, system identification, and data-driven simulation problems. An extended version of the paper is a literate program, implementing the method and reproducing the presented results.},
+  keywords = {low-rank approximation, missing data, variable projection, system identification, approximate matrix completion.},
+  url = {http://homepages.vub.ac.be/~imarkovs/recent-publications.html},
+  pdf = {http://homepages.vub.ac.be/~imarkovs/publications/slra-ext.pdf},
+  doi = {10.1137/120883050},
+  gs = {http://scholar.google.be/citations?view_op=view_citation&hl=en&user=qSl_3FQAAAAJ&cstart=20&citation_for_view=qSl_3FQAAAAJ:l7t_Zn2s7bgC}
+}
+
+@article{ident,
+  author = {I. Markovsky},
+  title = {A software package for system identification in the behavioral setting},
+  year = {2013},
+  journal = {Control Engineering Practice},
+  volume = {21},
+  issue = {10},
+  pages = {1422--1436},
+  abstract = {An identification problem with no a priori separation of the variables into inputs and outputs and representation invariant approximation criterion is considered. The model class consists of linear time-invariant systems of bounded complexity and the approximation criterion is the minimum of a weighted 2-norm distance between the given time series and a time series that is consistent with the model. The problem is equivalent to and is solved as a mosaic-Hankel structured low-rank approximation problem. Software implementing the approach is developed and tested on benchmark problems. Additional nonstandard features of the software are specification of exact and missing variables and identification from multiple experiments.},
+  keywords = {system identification; model reduction; behavioral approach; missing data; low-rank approximation; total least squares; reproducible research; DAISY.},
+  doi = {10.1016/j.conengprac.2013.06.010},
+  url = {http://homepages.vub.ac.be/~imarkovs/recent-publications.html},
+  pdf = {http://homepages.vub.ac.be/~imarkovs/publications/ident.pdf}
+}
+
 @article{slra-efficient,
   author = {K. Usevich and I. Markovsky},
   title = {Variable projection for affinely structured low-rank approximation in weighted 2-norms},
   journal = {J. Comput. Appl. Math.},
-  year = {2013},
+  year = {2014},
+  volume = {272},
+  pages = {430--448},
   doi = {10.1016/j.cam.2013.04.034},
   abstract = {The structured low-rank approximation problem for general affine structures, weighted 2-norms and fixed elements is considered. The variable projection principle is used to reduce the dimensionality of the optimization problem. Algorithms for evaluation of the cost function, the gradient and an approximation of the Hessian are developed. For $m\times n$ mosaic Hankel matrices the algorithms have complexity $O(m^2n)$.},
   keywords = {Structured low-rank approximation; Variable projection; Mosaic Hankel matrices; Weighted 2-norm; Fixed elements; Computational complexity},
@@ -43,4 +76,18 @@ It implements a variable projection type algorithm and allows the user to choose
   url = {http://homepages.vub.ac.be/~imarkovs/recent-publications.html},
   pdf = {http://homepages.vub.ac.be/~imarkovs/publications/slra.pdf},
   doi = {http://dx.doi.org/10.1016/j.cam.2013.07.048}
+}
+
+@article{rslra,
+  author = {M. Ishteva and K. Usevich and I. Markovsky},
+  title = {Factorization approach to structured low-rank approximation with applications},
+  year = {2014},
+  journal = {SIAM J. Matrix Anal. Appl.},
+  volume = {35},
+  number = {3},
+  pages = {1180--1204},
+  doi = {10.1137/130931655},
+  keywords = {low-rank approximation, affine structure, regularization, system identification, approximate greatest common divisor},
+  pdf = {http://homepages.vub.ac.be/~imarkovs/publications/rslra.pdf},
+  abstract = {We consider the problem of approximating an affinely structured matrix, for example a Hankel matrix, by a low-rank matrix with the same structure. This problem occurs in system identification, signal processing and computer algebra, among others. We impose the low-rank by modeling the approximation as a product of two factors with reduced dimension. The structure of the low-rank model is enforced by introducing a regularization term in the objective function. The proposed local optimization algorithm is able to solve the weighted structured low-rank approximation problem, as well as to deal with the cases of missing or fixed elements. In contrast to approaches based on kernel representations (in linear algebraic sense), the proposed algorithm is designed to address the case of small targeted rank. We compare it to existing approaches on numerical examples of system identification, approximate greatest common divisor problem, and symmetric tensor decomposition and demonstrate its consistently good performance.}
 }

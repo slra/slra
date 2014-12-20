@@ -1,4 +1,4 @@
-%% SLRA - solves the structured low-rank approximation problem
+%% SLRA_DOC - solves the structured low-rank approximation problem
 %
 %  minimize over ph |p-ph|^2_w subject to rank(S(ph)) <= r
 %
@@ -9,15 +9,15 @@
 %             defined by a vector of weights w (of length np)
 %             w(i) = Inf  <=>  ph(i) = p(i) (constraint on the approximation)
 %
-% Syntax:
+%% Syntax
 %   [ph, info] = slra(p, s, r, opt)
 %
-% Input:
-%   p - structure parameter vector
-%   s - matrix structure and norm specification (MATLAB structure)
-%       The weights are specified by
-%          s.w - vector of weights w (default ones(np, 1))
-%       The structure can be
+%% Input
+%  p - structure parameter vector
+%  s - matrix structure and norm specification (MATLAB structure)
+%      The weights are specified by
+%         s.w - vector of weights w (default ones(np, 1))
+%      The structure can be
 %       (a) Mosaic-Hankel-like stucture: S(ph) := Phi * H, where
 %             H is a q x N block matrix with Hankel blocks
 %             H_ij(ph) = hankel(ph_ij(1:m_i, m_i:(m_i + n_j - 1)))
@@ -30,8 +30,8 @@
 %             s.S0 - the constant m x n matrix (by default, zeros(m,n))
 %             s.tts - integer matrix of positions of the elements of ph in S(ph)
 %
-%   r (optional) - bound on the rank (default is rank reduction by 1)
-%   opt (optional) - optimization options (MATLAB structure)
+%  r (optional) - bound on the rank (default is rank reduction by 1)
+%  opt (optional) - optimization options (MATLAB structure)
 %      opt.Rini - initial approximation (default unstructured LRA)
 %                 Rini is a basis for an approximate left kernel of S(p)
 %      opt.disp - information about progress of the optimization,
@@ -44,9 +44,9 @@
 %      ... (additional fields, e.g. opt.psi, depend on the solver being used,
 %            see the description of the opt parameter in the solver files help)
 %
-% Output:
-%   ph - approximation structure parameter vector
-%   info - information about optimization (MATLAB structure)
+%% Output
+%  ph - approximation structure parameter vector
+%  info - information about optimization (MATLAB structure)
 %      info.Rh - low-rank certificate Rh (an (m-r) x m matrix)
 %                such that Rh * S(ph) = 0
 %      info.iter - number of iterations
@@ -54,5 +54,5 @@
 %      info.fmin = |p - ph|^2_w - the value of the cost function
 %
 %
-% See also 
-%   REG_SLRA, SLRA_MEX_OBJ
+%% See also 
+%  slra_doc, reg_slra, slra_mex_obj, OptimizationOptions

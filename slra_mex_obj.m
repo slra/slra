@@ -1,31 +1,32 @@
 %% SLRA_MEX_OBJ - an efficient solver for mosaic-Hankel-like structure
-%                 based on C++ object-oriented implementation 
+%                 
+%  The solver is based on C++ object-oriented implementation.
 % 
-%   obj = SLRA_MEX_OBJ('new', p, s, r) - creates an SLRA object, based on the 
-%   parameters p, s, r described in the documentation of the slra function. 
-%   Only mosaic-Hankel-like structure Phi * H and non-zero weights are allowed.
+%  obj = SLRA_MEX_OBJ('new', p, s, r) - creates an SLRA object, based on the 
+%  parameters p, s, r described in the documentation of the slra function. 
+%  Only mosaic-Hankel-like structure Phi * H and non-zero weights are allowed.
 %
-%   The created object allows evaluation of the VARPRO cost function f(R),  
+%  The created object allows evaluation of the VARPRO cost function f(R),  
 %   
-%   Internally, the object contains an instance of the a C++ object SLRAObject, 
-%   and is created by calling the constructor SLRAObject::SLRAObject.
+%  Internally, the object contains an instance of the a C++ object SLRAObject, 
+%  and is created by calling the constructor SLRAObject::SLRAObject.
 %
-%   SLRA_MEX_OBJ('delete', obj) - deletes the SLRA object obj.
-%   Internally, the destructor SLRAObject::~SLRAObject() is called
+%  SLRA_MEX_OBJ('delete', obj) - deletes the SLRA object obj.
+%  Internally, the destructor SLRAObject::~SLRAObject() is called
 %
-% Fast cost function and derivatives evaluation:
+%% Fast cost function and derivatives evaluation
 %
-%   f = SLRA_MEX_OBJ('func', obj, R) - for a given SLRA object obj,
-%   evaluates the VARPRO cost  function at a given (m-r) x m argument R.
+%  f = SLRA_MEX_OBJ('func', obj, R) - for a given SLRA object obj,
+%  evaluates the VARPRO cost  function at a given (m-r) x m argument R.
 %
-%   g = SLRA_MEX_OBJ('grad', obj, R) - for a given SLRA object obj,
-%   computes the VARPRO cost function matrix gradient at a given  R. 
-%   Returns an (m-r) x m matrix g.
+%  g = SLRA_MEX_OBJ('grad', obj, R) - for a given SLRA object obj,
+%  computes the VARPRO cost function matrix gradient at a given  R. 
+%  Returns an (m-r) x m matrix g.
 %
-% Built-in optimization:
-%   [ph, info] = SLRA_MEX_OBJ('optimize', obj, opt) - runs optimization.
+%% Built-in optimization:
+%  [ph, info] = SLRA_MEX_OBJ('optimize', obj, opt) - runs optimization.
 %   
-%   Input: 
+%  Input: 
 %      opt - optimization options, which include
 %        * The options described in the slra.m documentation (Rini, disp)
 %        * opt.method - optimization method, for example,
@@ -53,5 +54,5 @@
 %        * the options described in the documentation in slra.m
 %        * info.iterinfo - a structure which contains information on each iteration
 %  
-% See also
-%   SLRA
+%% See also
+%   slra
