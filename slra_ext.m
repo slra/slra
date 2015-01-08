@@ -1,3 +1,34 @@
+%% SLRA_EXT - MATLAB VARPRO-based solver for SLRA
+%
+%  Implements the variable projection method for SLRA with missing data,
+%  internally uses general purpose optimization routimes
+%
+%% Syntax
+%  [ph, info] = slra_ext(tts, p, r, w, Rini, phi, psi, opt, th2R, C, s0)
+%
+%% Input 
+%     tts     - s.tts    parameter in the slra function
+%     p       - p        parameter in the slra function
+%     r       - r        parameter in the slra function
+%     w       - s.w      parameter in the slra function (vector or matrix)
+%     Rini    - opt.Rini parameter in the slra function
+%     phi     - s.phi    parameter in the slra function
+%     psi     - opt.psi  parameter in the slra function
+%     opt     - options [optional]
+%     - opt.method - optimization method:
+%          'fmincon' -  uses fmincon
+%          'fminunc' -  uses the exact penalty method and fminunc function
+%     - other options of fmincon or fminunc can be passed in this structure    
+%     th2R    - function for conversion of theta to R
+%     C       - function of theta, such that the constraint is C(th) = 0
+%     s0      - s.S0     parameter in the slra function
+%
+%% Output
+%     ph        - approximation of p, corresponding to low-rank matrix
+%     info      - information on optimization returned by MATLAB
+%
+%% See also
+%   slra
 function [ph, info] = slra_ext(tts, p, r, w, Rini, phi, psi, opt, th2R, C, s0)
 p = p(:); if ~exist('opt'), opt = []; end
 [mp, n] = size(tts); np = max(max(tts));

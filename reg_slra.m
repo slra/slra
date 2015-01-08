@@ -10,7 +10,7 @@
 %% Input 
 %     p       - structure parameter vector
 %     s       - structure specification s
-%     - s.S   - bold S
+%     - s.tts - integer matrix, see the documentation of slra function
 %     - s.S0  - S0 [optional; default: zero matrix]
 %     r       - rank of the approximation
 %     opt     - options [optional]

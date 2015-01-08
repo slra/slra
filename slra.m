@@ -55,7 +55,7 @@
 %
 %
 %% See also 
-%  slra_mex_obj, reg_slra
+%  slra_mex_obj, slra_ext, reg_slra
 function [ph, info] = slra(p, s, r, opt)
 if ~exist('opt'), opt = struct; end
 if ~isfield(opt, 'solver'), opt.solver = 'c'; end 

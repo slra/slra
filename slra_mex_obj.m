@@ -36,7 +36,7 @@
 %              'p' - own implementation of Levenberg-Marquardt based 
 %                    on computing pseudoinverse
 %              a complete description of opt.method possible values is
-%              contained in 
+%              contained in the documentation of OptimizationOptions::str2Method
 % 
 %        * other optimization options:
 %          - advanced options
@@ -55,4 +55,4 @@
 %        * info.iterinfo - a structure which contains information on each iteration
 %  
 %% See also
-%   slra, OptimizationOptions, SLRAObject
+%   slra, OptimizationOptions, OptimizationOptions::str2Method(), SLRAObject
