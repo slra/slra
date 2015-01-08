@@ -55,4 +55,4 @@
 %
 %
 %% See also 
-%  slra_doc, reg_slra, slra_mex_obj, OptimizationOptions
+%  slra_mex_obj, reg_slra, OptimizationOptions

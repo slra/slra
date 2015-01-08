@@ -1,11 +1,13 @@
-% Structured low rank approximation
-% [ph, info] = reg_slra(p, s, r, opt)
+%% REG_SLRA - structured low rank approximation using factorization approach
 %
-% Approsimates a given structured (m x n) matrix S(p)
-% as a product PL of two factors P(m x r), L:(r x n),
-% such that PL is again a structured matrix
+%  Approximates a given structured (m x n) matrix S(p)
+%  as a product PL of two factors P(m x r), L:(r x n),
+%  such that PL is again a structured matrix.
 %
-% INPUT: 
+%% Syntax
+%  [ph, info] = slra_reg(p, s, r, opt)
+%
+%% Input 
 %     p       - structure parameter vector
 %     s       - structure specification s
 %     - s.S   - bold S
@@ -18,7 +20,7 @@
 %     - opt.lambda_max - maximal value of lambda [default: 1e+14]
 %     - opt.max_inner_iter - maximal # inner steps [default: 20];
 %
-% OUTPUT:
+%% Output
 %     ph        - approximation of p, corresponding to low-rank matrix
 %     info      - other outputs
 %     - info.P  - P matrix
@@ -29,10 +31,12 @@
 %     - info.fmin = Mslra_ext(info.Rh, s.tts, p, opt.w);
 %     - info.error_constraints = norm(PL_1 - PL_2, 'fro')^2 / norm(PL_1, 'fro')^2;
 %
-% Reference:
+%% Reference
 %     M. Ishteva, K. Usevich, and I. Markovsky.
 %     Regularized structured low-rank approximation with applications.
-
+%
+%% See also
+%   slra
 function [ph, info] = reg_slra(p, s, r, opt)
 
 % set parameters

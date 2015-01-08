@@ -20,7 +20,7 @@ where \f$S_k\f$ are matrices of zeros and ones.
  * A special case of *mosaic-Hankel-like structure*
 \f$\mathscr{S}(p) = \Phi \mathscr{H}_{\bf m, \bf n}(p) \f$,
 where \f$\Phi\f$ is full row rank and 
-\f$\mathscr{H}_{\bf m, \bfn}\f$ is a mosaic Hankel structure.
+\f$\mathscr{H}_{\bf m, \bf n}\f$ is a mosaic Hankel structure.
 
 ### Approximation criteria
  * General weighted semi-norm 
@@ -39,10 +39,11 @@ The left kernel of the approximating matrix is determined by the matrix
 \f$R \in \mathbb{R}^{(m-r)\times m}\f$ such that \f$R \mathscr{S}(\widehat{p}) = 0 \f$.
 Additional constraints can be imposed on the matrix $R$:
   * *General linear constraint* \f$R = \text{vec}_d^{-1} \theta^{\top} \Psi\f$,
-	where \f$\Psi \in \mathbb{R}^{n_{\theta}\times md}\f$, and \f$\theta \in n_{\theta}\f$.
+	where \f$\Psi \in \mathbb{R}^{n_{\theta}\times md}\f$, 
+    and \f$\theta \in \mathbb{R}^{n_{\theta}}\f$.
   * *Matrix-product linear constraint*  \f$R = \Theta \Psi\f$,  where 
     \f$\Theta in \mathbb{R}^{d \times m''}\f$ and 
-    \f$\Psi \in \bbR^{m'' \times m}\f$ is a full row rank matrix.
+    \f$\Psi \in \mathbb{R}^{m'' \times m}\f$ is a full row rank matrix.
 	The matrix-product linear constraint is a special case of the general linear constraint
     since \f$ \text{vec}^{\top} (\Theta \Psi) = \text{vec}^{\top}(\Theta) (\Psi \otimes I)\f$
 
@@ -64,7 +65,7 @@ This package contains implementation of the following methods for
 
 The following table contains a summary of the features 
 
-  Feature                                   | 1.   | 2.   | 3.
+  Feature  \ Method                         | 1.   | 2.   | 3.
 --------------------------------------------|------|------|------ 
   General affine structure                  | -    | +    | +  
   mosaic-Hankel-like structure              | ++   | +    | +
@@ -81,16 +82,13 @@ Note: in 1., missing data can be approximated by small weights
 Using the package
 -----------------
 
-The package consists of a single \ref slra_doc function.
+The package consists of a single \ref slra function.
 The standard help for the function is also available by typing:
 * `help slra` in MATLAB/Octave
 * `?slra` in R
 In the HTML version of the documentation, the help is available only for MATLAB.
 
-
-
 Directories `test_m` and `test_r` contain demo files for MATLAB/Octave and R.
-
 
 ### Citing the package
 If you use the package in your research, please cite \cite slra-software :

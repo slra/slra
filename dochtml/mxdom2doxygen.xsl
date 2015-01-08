@@ -19,7 +19,7 @@ $Revision: 1.1.6.7 $  $Date: 2008/02/29 12:45:30 $
 
 <xsl:variable name="dTitle" select="//steptitle[@style='document']"/>
   
-<xsl:template match="mscript">/*! \page <xsl:value-of select="m-file"/><xsl:text> </xsl:text><!--xsl:if test="$dTitle"><xsl:value-of select="$dTitle"/></xsl:if-->
+<xsl:template match="mscript">/*! \page <xsl:value-of select="m-file"/><xsl:text> </xsl:text><xsl:value-of select="m-file"/><!--xsl:if test="$dTitle"><xsl:value-of select="$dTitle"/></xsl:if-->
     <!-- Determine if the there should be an introduction section. -->
     <xsl:variable name="hasIntro" select="count(cell[@style = 'overview'])"/>
     <xsl:if test = "$hasIntro">
@@ -32,7 +32,7 @@ $Revision: 1.1.6.7 $  $Date: 2008/02/29 12:45:30 $
     <xsl:for-each select="$body-cells">
 <xsl:choose>
 <xsl:when test="steptitle != 'See also'"> 
-\section<xsl:text> </xsl:text><xsl:apply-templates select="steptitle"/><xsl:text>
+\section<xsl:text> </xsl:text>sec<xsl:value-of select="position()"/><xsl:text> </xsl:text><xsl:apply-templates select="steptitle"/><xsl:text>
 </xsl:text><xsl:apply-templates select="text|mcode|mcodeoutput|img"/>
 </xsl:when>
 <xsl:otherwise>

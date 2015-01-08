@@ -45,7 +45,7 @@
 %              opt.epsabs, opt.epsrel, opt.epsgrad, opt.epsx, opt.maxx
 %          - method-specific minor parameters
 %              opt.step, opt.tol, opt.epscov
-%          the complete description and default values are decribed in 
+%          the complete description and default values are contained in 
 %          the documentation of the OptimizationOptions class.
 %
 %   Output:
@@ -55,4 +55,4 @@
 %        * info.iterinfo - a structure which contains information on each iteration
 %  
 %% See also
-%   slra
+%   slra, OptimizationOptions, SLRAObject
