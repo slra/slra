@@ -107,13 +107,14 @@ void VarproFunction::fillZmatTmpJac( const gsl_vector* yr,
   }
 }
 
-void VarproFunction::setPhiPermCol( size_t i, const gsl_matrix *perm ) {
+void VarproFunction::setPhiPermCol( size_t i, const gsl_matrix *perm, 
+                                    gsl_vector *phiPermCol ) {
   if (perm != NULL) {
     gsl_vector permCol = gsl_matrix_const_column(perm, i).vector;
-    gsl_blas_dgemv(CblasNoTrans, 1.0, myPhi, &permCol, 0.0, myPhiPermCol);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, myPhi, &permCol, 0.0, phiPermCol);
   } else {
     gsl_vector phiCol = gsl_matrix_column(myPhi, i).vector;
-    gsl_vector_memcpy(myPhiPermCol, &phiCol);
+    gsl_vector_memcpy(phiPermCol, &phiCol);
   }  
 }
 
@@ -121,7 +122,7 @@ void VarproFunction::mulZmatPerm( gsl_vector* res, const gsl_matrix *perm,
                                   size_t i, size_t j ) {
   gsl_matrix subJ = gsl_matrix_submatrix(myTmpJac, j * getM(), 0, getM(),
                          myTmpJac->size2).matrix;
-  setPhiPermCol(i, perm);    
+  setPhiPermCol(i, perm, myPhiPermCol);    
   gsl_blas_dgemv(CblasTrans, 1.0, &subJ, myPhiPermCol, 0.0, res); 
 }
 
@@ -161,7 +162,7 @@ void VarproFunction::computeJacobianOfCorrection( const gsl_vector* yr,
 
       /* Compute second term (gamma * dG_{ij} * yr) */
       gsl_matrix_set_zero(myTmpGradR);
-      setPhiPermCol(i, perm);
+      setPhiPermCol(i, perm, myPhiPermCol);
       gsl_matrix_set_col(myTmpGradR, j, myPhiPermCol);
       myStruct->multByGtUnweighted(myTmpCorr, myTmpGradR, yr, -1, 1);
 
@@ -184,7 +185,15 @@ void VarproFunction::computeGradFromYr( const gsl_vector* yr,
     gsl_matrix_memcpy(myTmpGradR2, myTmpGradR);
   }
   if (perm != NULL) {
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, perm, myTmpGradR2, 0.0, gradR);
+    if (perm.size1 == getNrow()) {
+      gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, perm, myTmpGradR2, 0.0, gradR);
+    } else {
+      gsl_vector vecTmpGradR2 = gsl_vector_view_array(myTmpGradR2->tda,
+                                     myTmpGradR2->size1 * myTmpGradR2->size2).vector, 
+                 vecGradR =  gsl_vector_view_array(gradR->tda,
+                                     gradR->size1 * gradR->size2).vector;
+      gsl_blas_dgemv(CblasTrans, 1.0, perm, &vecTmpGradR2, 0.0, &vecGradR); 
+    }
   } else {
     gsl_matrix_memcpy(gradR, myTmpGradR2);
   }
