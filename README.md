@@ -13,6 +13,20 @@ where \f${\mathscr{S}}: \mathbb{R}^{n_p} \to \mathbb{R}^{m \times n}\f$
 is an *affine matrix structure*,  \f$p \in \mathbb{R}^{n_p}\f$
 is a given parameter vector, and *r* is a specified bound on the rank.
 
+Using the package
+-----------------
+
+The package consists of a single \ref slra function.
+The standard help for the function is also available by typing:
+* `help slra` in MATLAB/Octave
+* `?slra` in R
+In the HTML version of the documentation, the help is available only for MATLAB.
+
+Directories `test_m` and `test_r` contain demo files for MATLAB/Octave and R.
+
+Supported features
+------------------
+
 ### Considered structures
  * A *general affine structure* 
 \f$\mathscr{S}(p) = S_0 + \sum\limits_{k=1}^{n_p} p_k S_k \f$
@@ -59,7 +73,7 @@ This package contains implementation of the following methods for
     method for mosaic Hankel matrices \cite slra-efficient
  2. an implementation of the VARPRO method for SLRA with 
     missing data \cite slra-ext.
-    This method is also called ''experimental Matlab solver'' in \cite slra-ext.
+    This method is also called ''experimental Matlab solver'' in \cite slra-software.
  3. an implementation of the factorization approach to SLRA
     based on a penalty method \cite rslra
 
@@ -79,16 +93,6 @@ The following table contains a summary of the features
  
 Note: in 1., missing data can be approximated by small weights
 
-Using the package
------------------
-
-The package consists of a single \ref slra function.
-The standard help for the function is also available by typing:
-* `help slra` in MATLAB/Octave
-* `?slra` in R
-In the HTML version of the documentation, the help is available only for MATLAB.
-
-Directories `test_m` and `test_r` contain demo files for MATLAB/Octave and R.
 
 ### Citing the package
 If you use the package in your research, please cite \cite slra-software :
