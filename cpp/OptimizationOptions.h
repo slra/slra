@@ -164,7 +164,7 @@ public:
   /** @name Stopping criteria parameters */  
   ///@{
   size_t maxiter;///< Maximal number of iterations
-  double epsabs  ///< epsabs in gsl_multifit_test_delta (see GSL documentation)
+  double epsabs; ///< epsabs in gsl_multifit_test_delta (see GSL documentation)
   double epsrel; ///< epsrel in gsl_multifit_test_delta (see GSL documentation)
   double epsgrad;///< epsabs in gsl_multimin_test_gradient or 'gsl_multifit_test_gradient'
   double epsx;   ///< epsabs in gsl_multimin_test_size  (used only in Nelder-Mead)

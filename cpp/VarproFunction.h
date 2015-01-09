@@ -20,7 +20,7 @@ class VarproFunction  {
   gsl_vector *myPhiPermCol;  
   gsl_vector *myTmpJacobianCol;  
 protected:  
-  void setPhiPermCol( size_t i, const gsl_matrix *perm );
+  void setPhiPermCol( size_t i, const gsl_matrix *perm, gsl_vector *phiPermCol );
   virtual void fillZmatTmpJac( const gsl_vector* yr, const gsl_matrix *Rorig, 
                                   double factor = 0.5 );
   virtual void mulZmatPerm( gsl_vector* res, const gsl_matrix *perm, 
