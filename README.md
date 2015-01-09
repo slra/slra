@@ -56,7 +56,7 @@ Additional constraints can be imposed on the matrix $R$:
 	where \f$\Psi \in \mathbb{R}^{n_{\theta}\times md}\f$, 
     and \f$\theta \in \mathbb{R}^{n_{\theta}}\f$.
   * *Matrix-product linear constraint*  \f$R = \Theta \Psi\f$,  where 
-    \f$\Theta in \mathbb{R}^{d \times m''}\f$ and 
+    \f$\Theta \in \mathbb{R}^{d \times m''}\f$ and 
     \f$\Psi \in \mathbb{R}^{m'' \times m}\f$ is a full row rank matrix.
 	The matrix-product linear constraint is a special case of the general linear constraint
     since \f$ \text{vec}^{\top} (\Theta \Psi) = \text{vec}^{\top}(\Theta) (\Psi \otimes I)\f$
@@ -77,7 +77,7 @@ This package contains implementation of the following methods for
  3. an implementation of the factorization approach to SLRA
     based on a penalty method \cite rslra
 
-The following table contains a summary of the features 
+The following table contains a summary of features supported by the methods
 
   Feature  \ Method                         | 1.   | 2.   | 3.
 --------------------------------------------|------|------|------ 
