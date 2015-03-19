@@ -8,32 +8,33 @@
 %  [ph, info] = slra_reg(p, s, r, opt)
 %
 %% Input 
-%     p       - structure parameter vector
-%     s       - structure specification s
-%     - s.tts - integer matrix, see the documentation of slra function
-%     - s.S0  - S0 [optional; default: zero matrix]
-%     r       - rank of the approximation
-%     opt     - options [optional]
-%     - opt.w - vector of weights [default: vector of ones]
-%     - opt.P_init - initial approximation for P [default: based on SVD]
-%     - opt.lambda_init - initial value of lambda [default: 1]
-%     - opt.lambda_max - maximal value of lambda [default: 1e+14]
-%     - opt.max_inner_iter - maximal # inner steps [default: 20];
+% p       - structure parameter vector
+% s       - structure specification s
+% - s.tts - integer matrix, see the documentation of slra function
+% - s.S0  - S0 [optional; default: zero matrix]
+% r       - rank of the approximation
+% opt     - options [optional]
+% - opt.w - vector of weights [default: vector of ones]
+% - opt.P_init - initial approximation for P [default: based on SVD]
+% - opt.lambda_init - initial value of lambda [default: 1]
+% - opt.lambda_max - maximal value of lambda [default: 1e+14]
+% - opt.max_inner_iter - maximal # inner steps [default: 20];
 %
 %% Output
-%     ph        - approximation of p, corresponding to low-rank matrix
-%     info      - other outputs
-%     - info.P  - P matrix
-%     - info.L  - L matrix
-%     - info.lambda - last value of lambda
-%     - info.outer_iterations - # outer iterations
-%     - info.inner_iterations - # inner iterations for each outer iteration
-%     - info.fmin = Mslra_ext(info.Rh, s.tts, p, opt.w);
-%     - info.error_constraints = norm(PL_1 - PL_2, 'fro')^2 / norm(PL_1, 'fro')^2;
+% ph        - approximation of p, corresponding to low-rank matrix
+% info      - other outputs
+% - info.P  - P matrix
+% - info.L  - L matrix
+% - info.lambda - last value of lambda
+% - info.outer_iterations - # outer iterations
+% - info.inner_iterations - # inner iterations for each outer iteration
+% - info.fmin = Mslra_ext(info.Rh, s.tts, p, opt.w);
+% - info.error_constraints = norm(PL_1 - PL_2, 'fro')^2 / norm(PL_1, 'fro')^2;
 %
 %% Reference
-%     M. Ishteva, K. Usevich, and I. Markovsky.
-%     Regularized structured low-rank approximation with applications.
+% M. Ishteva, K. Usevich, and I. Markovsky.
+% Regularized structured low-rank approximation with applications. 
+% SIAM J. Matrix Anal. Appl., 35(3):1180-1204, 2014.
 %
 %% See also
 %   slra

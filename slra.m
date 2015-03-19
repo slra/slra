@@ -1,11 +1,11 @@
 %% SLRA - solves the structured low-rank approximation problem
 %
-%  minimize over ph |p-ph|^2_w subject to rank(S(ph)) <= r
+%  minimize over ph |p - ph|^2_w subject to rank(S(ph)) <= r
 %
-%  where  S(ph) is the (m x n)  matrix structure
+%  where  S(ph) is the (m x n) structured matrix
 %         p is a given vector (of length np)
 %         r is bound on the rank
-%         |p|^2_w = sum(w .* (p.^2)) - the weigthed semi-norm
+%         |p|^2_w = sum(w .* (p.^2)) - the weighted semi-norm
 %             defined by a vector of weights w (of length np)
 %             w(i) = Inf  <=>  ph(i) = p(i) (constraint on the approximation)
 %
@@ -18,7 +18,7 @@
 %      The weights are specified by
 %         s.w - vector of weights w (default ones(np, 1))
 %      The structure can be
-%       (a) Mosaic-Hankel-like stucture: S(ph) := Phi * H, where
+%       (a) Mosaic-Hankel-like structure: S(ph) := Phi * H, where
 %             H is a q x N block matrix with Hankel blocks
 %             H_ij(ph) = hankel(ph_ij(1:m_i, m_i:(m_i + n_j - 1)))
 %             and ph = [ph_11; ... ph_q1; ... ph_1N; ... ph_qN]
@@ -53,6 +53,9 @@
 %      info.time - execution time
 %      info.fmin = |p - ph|^2_w - the value of the cost function
 %
+%% Reference
+% I. Markovsky and K. Usevich. Software for weighted structured low-rank 
+% approximation. J. Comput. Appl. Math., 256:278-292, 2014.
 %
 %% See also 
 %  slra_mex_obj, slra_ext, reg_slra

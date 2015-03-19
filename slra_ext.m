@@ -1,31 +1,42 @@
-%% SLRA_EXT - MATLAB VARPRO-based solver for SLRA
+%% SLRA_EXT - MATLAB solver for structured low-rank approximation
+%             (requires Optimization Toolbox)
 %
-%  Implements the variable projection method for SLRA with missing data,
-%  internally uses general purpose optimization routimes
+%  minimize over ph |p - ph|^2_w subject to rank(S(ph)) <= r
+%
+%  where  S(ph) is the (m x n) structured matrix 
+%         p is a given vector (of length np)
+%         r is bound on the rank
+%         |p|^2_w = sum(w .* (p.^2)) - the weighted semi-norm
+%             defined by a vector of weights w (of length np)
+%             w(i) = Inf  <=>  ph(i) = p(i) (constraint on the approximation)
 %
 %% Syntax
 %  [ph, info] = slra_ext(tts, p, r, w, Rini, phi, psi, opt, th2R, C, s0)
 %
 %% Input 
-%     tts     - s.tts    parameter in the slra function
-%     p       - p        parameter in the slra function
-%     r       - r        parameter in the slra function
-%     w       - s.w      parameter in the slra function (vector or matrix)
-%     Rini    - opt.Rini parameter in the slra function
-%     phi     - s.phi    parameter in the slra function
-%     psi     - opt.psi  parameter in the slra function
-%     opt     - options [optional]
+%     tts  - structure specification S(p) = phi * (s0 + p(tts)) 
+%     p    - data vector
+%     r    - bound on the rank
+%     w    - vector of weights 
+%     Rini - initial approximation (default unstructured LRA)
+%     phi  - full row rank matrix in the structure specification (default I)
+%     psi  - 
+%     opt  - options [optional]
 %     - opt.method - optimization method:
 %          'fmincon' -  uses fmincon
 %          'fminunc' -  uses the exact penalty method and fminunc function
 %     - other options of fmincon or fminunc can be passed in this structure    
-%     th2R    - function for conversion of theta to R
-%     C       - function of theta, such that the constraint is C(th) = 0
-%     s0      - s.S0     parameter in the slra function
+%     th2R - structure on the kernel R = th2R(th), R S(ph) = 0 (default unstr.)
+%     C    - constraint on R, C(th) = 0, (default RR' = I)
+%     s0   - the constant term in the structure specification (default 0)
+%
+%% Reference
+% I. Markovsky and K. Usevich. Structured low-rank approximation 
+% with missing data. SIAM J. Matrix Anal. Appl., pages 814-830, 2013.
 %
 %% Output
-%     ph        - approximation of p, corresponding to low-rank matrix
-%     info      - information on optimization returned by MATLAB
+%  ph        - approximation of p, corresponding to low-rank matrix
+%  info      - information on optimization returned by MATLAB
 %
 %% See also
 %   slra

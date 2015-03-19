@@ -20,6 +20,7 @@
 %   INFO.M - misfit ||W - WH||_F^2
 %   INFO.ITER - number of iterations
 % WH    - optimal approximating time series
+
 function [sysh, info, wh] = ident(w, m, ell, opt)
 if ~exist('opt'), opt = []; end
 if ~isfield(opt, 'exct'), opt.exct = []; end
@@ -28,6 +29,26 @@ if ~iscell(w)
 else
   N = length(w); for k = 1:N, [T(k), q] = size(w{k}); end, T = T(:);
 end, p = q - m; n = p * ell; 
+if (m == 0) & (p > 1)
+  for i = 1:p, wp{i}  = w(:, i); end 
+  if isfield(opt, 'n'), 
+    ellp = opt.n; opt = rmfield(opt, 'n'); 
+  else, 
+    ellp = ell * p; 
+  end 
+  optp = opt;
+  % exact variables
+  % initial conditions
+  % initial system
+  if isfield(optp, 'sys0') % && ???
+    optp.sys0 = ss(optp.sys0.a, [], ones(1, size(optp.sys0, 'order')), [], -1);
+  end
+  [sysph, infop, wph] = ident(wp, 0, ellp, optp); 
+  sysh = ss(sysph.a, [], inistate(wph, sysph)', [], -1); % xini = sysph.c'; 
+  for i = 1:p, wh(:, i) = wph{i}; end 
+  info = infop; % is this correct?
+  return 
+end
 s.m = (ell + 1) * ones(q, 1); s.n = T - ell; r = (ell + 1) * m + n;
 if ~isempty(opt.exct)
   if iscell(opt.exct)
@@ -56,7 +77,7 @@ if isfield(opt, 'wini')
     s.n = s.n + ell; T = T + ell;
     s.w = [inf * ones(ell, q, N); W]; 
     w   = [opt.wini; w];
-  elseif iscell(opt.wini) && ~isempty(cell2mat(opt.wini))
+  elseif iscell(opt.wini) 
     for k = 1:N
       W = ones(T(k), q); W(:, opt.exct{k}) = inf;
       if ~isempty(opt.wini{k})
@@ -66,7 +87,7 @@ if isfield(opt, 'wini')
       else
         s.w{k} = W;
       end
-    end  
+    end
   end
 end
 if isfield(opt, 'sys0') 
@@ -128,9 +149,6 @@ if isfield(s, 'w') && isfield(opt, 'v')
     s.w = s.w .* w_inf;
   end
 elseif isfield(opt, 'v'), s.w = opt.v; end
-
-
-
 [ph, info] = slra(w2p(w), s, r, opt); info.M = info.fmin;
 wh = p2w(ph, q, N, T, iscell(w)); 
 if isfield(opt, 'ss') && (opt.ss == 0) 
@@ -148,6 +166,9 @@ if isfield(opt, 'wini')
       end
     end  
   end
+end
+if isfield(opt, 'n') && (p * ell) ~= opt.n
+  sysh = balred(sysh, opt.n);
 end
 function p = w2p(w)
 if ~iscell(w), p = w(:); else
@@ -190,3 +211,22 @@ for i = 1:ell
   b(ind_i, :) = inv_Pl * (Q(:, :, i) - Pi * d);
 end
 sysh = ss(a, b, c, d, 1);
+function xini = inistate(w, sys, use_all_data)
+a = sys.a; c = sys.c; [p, m] = size(sys.d); n = size(a, 1); 
+if ~iscell(w)
+  [T, q, N] = size(w); T = ones(N, 1) * T;
+else
+  N = length(w); for k = 1:N, [T(k), q] = size(w{k}); end, T = T(:);
+end 
+if ~exist('use_all_data') || use_all_data ~= 1, T = max(n, 2) * ones(1, N); end
+L = max(T); O = c; for t = 2:L, O = [O; O(end - p + 1:end, :) * a]; end
+sys.Ts = -1; xini = zeros(n, N);  
+for k = 1:N
+  if ~iscell(w)
+    uk = w(1:T(k), 1:m, k); yk = w(1:L, (m + 1):end, k);
+  else  
+    uk = w{k}(1:T(k), 1:m); yk = w{k}(1:L, (m + 1):end);
+  end
+  if m > 0, y0k = (yk - lsim(sys, uk, 0:(T(k) - 1)))'; else, y0k = yk'; end
+  xini(:, k) = O(1:(T(k) * p), :) \ y0k(:);
+end
