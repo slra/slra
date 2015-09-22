@@ -49,7 +49,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         mexFillOpt(prhs[2], opt, rini, psi, m, m-d); 
       }  
       mwSize rs_dims[] = { d, m, opt.maxiter + 1 };
-      int mtheta = psi.data != NULL ? psi.size2 : m;
       /* Prepare output info */
       plhs[0] = mxCreateDoubleMatrix(slraObj->getF()->getNp(), 1, mxREAL);
       gsl_vector p_out = M2vec(plhs[0]);
@@ -60,7 +59,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
                                 RS_STR, INF_ITER_STR };
         plhs[1] = mxCreateStructArray(1, &l, sizeof(names) / sizeof(names[0]), names);
         rhm = M2trmat(rh = mxCreateDoubleMatrix(d, m, mxREAL));
-        vhm = M2trmat(vh = mxCreateDoubleMatrix(d*(mtheta-d), d*(mtheta-d), mxREAL));
+        {
+          int nxvar = psi.data != NULL ? d*(psi.size2-d) :  d*(m-d);
+          vhm = M2trmat(vh = mxCreateDoubleMatrix(nxvar, nxvar, mxREAL));
+        }
         infitm = M2trmat(infit = mxCreateDoubleMatrix(3, rs_dims[2], mxREAL));
         
         rs_vec = M2vec(rs = mxCreateNumericArray(3, rs_dims, mxDOUBLE_CLASS, mxREAL));

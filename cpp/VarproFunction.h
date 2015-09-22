@@ -1,4 +1,9 @@
-
+/** The core class for cost function/derivatives computation.
+ * This is the class for compuation of the VARPRO cost function, 
+ * its gradient and Jacobian, according to \cite slra-efficient.
+ *
+ * The matrix structure that is allowed is
+ */
 class VarproFunction  {
   Structure *myStruct;
   size_t myD;
@@ -21,14 +26,14 @@ class VarproFunction  {
   gsl_vector *myTmpJacobianCol;  
 protected:  
   void setPhiPermCol( size_t i, const gsl_matrix *perm, gsl_vector *phiPermCol );
-  virtual void fillZmatTmpJac( const gsl_vector* yr, const gsl_matrix *Rorig, 
-                                  double factor = 0.5 );
-  virtual void mulZmatPerm( gsl_vector* res, const gsl_matrix *perm, 
-                            size_t i, size_t j );
+  virtual void fillZmatTmpJac( gsl_matrix *Zmatr, const gsl_vector* yr,
+                               const gsl_matrix *PhiTRt, double factor = 0.5 );
+  virtual void mulZmatPerm( gsl_vector* res, const gsl_matrix *Zmatr,
+                            const gsl_matrix *perm, size_t i, size_t j );
   size_t getM() { return myStruct->getM(); }
   
-  virtual void computeGammaSr( const gsl_matrix *R, gsl_matrix *Rorig, gsl_vector *Sr, 
-                               bool regularize_gamma );
+  virtual void computeGammaSr( const gsl_matrix *R, gsl_matrix *PhiTRt,
+                               gsl_vector *Sr, bool regularize_gamma );
   virtual void computePseudoJacobianLsFromYr( const gsl_vector* yr, 
                    const gsl_matrix *Rorig, const gsl_matrix *perm, 
                    gsl_matrix *pjac, double factor = 0.5 );
@@ -40,8 +45,10 @@ protected:
   const gsl_vector *getP() { return myP; }
   virtual const gsl_matrix * getOrigSMatr() { return myMatr; }
 public:
-  VarproFunction( const gsl_vector *p, Structure *s, size_t d, gsl_matrix *Phi,
-                  bool isGCD = false );
+  
+  
+  VarproFunction( const gsl_vector *p, Structure *s,
+                  size_t d, gsl_matrix *PhiT, bool isGCD = false );
   virtual ~VarproFunction();
   
   bool isGCD() { return myIsGCD; }
