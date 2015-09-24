@@ -47,8 +47,9 @@ MuDependentDGamma::~MuDependentDGamma(){
 }
 
 void MuDependentDGamma::calcDijGammaYr( gsl_vector *z, const gsl_matrix *Rt, 
-                   size_t j_1, size_t i_1, const gsl_vector *y )  {
-  gsl_vector e_j = gsl_matrix_column(myEye, j_1).vector, yr_sub, z_sub;
+         size_t j_1, size_t i_1, const gsl_vector *y, const gsl_matrix *Phi ) {
+  gsl_vector e_j = gsl_matrix_const_row(Phi != NULL ? Phi : myEye, j_1).vector,
+             yr_sub, z_sub;
   size_t k, l, n = y->size / myD; long Mu = myStruct->getMu();
   double tmp;
 

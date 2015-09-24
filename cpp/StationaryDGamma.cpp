@@ -54,16 +54,17 @@ void StationaryDGamma::calcYtDgammaY( gsl_matrix *At, const gsl_matrix *Rt,
   }    
 }
 
-void StationaryDGamma::calcDijGammaYr( gsl_vector *z, const gsl_matrix *R, 
-         size_t j_1, size_t i_1, const gsl_vector *y ) {
-  gsl_vector gv_sub, e_j = gsl_matrix_column(myEye, j_1).vector, dgammajrow,
-             res_stride, y_stride;
+void StationaryDGamma::calcDijGammaYr( gsl_vector *z, const gsl_matrix *Rt,
+         size_t j_1, size_t i_1, const gsl_vector *y, const gsl_matrix *Phi ) {
+  gsl_vector gv_sub,
+             e_j = gsl_matrix_const_row(Phi != NULL ? Phi : myEye, j_1).vector,
+             dgammajrow, res_stride, y_stride;
   long S = myW->getMu();           
 
   for (long k = 1 - S; k < S; k++) {
     gv_sub = gsl_vector_subvector(myDGammaVec, (k + S - 1) * myD, 
               myD).vector;
-    myW->AtVkV(&gv_sub, -k, R, &e_j, myTempVkColRow);
+    myW->AtVkV(&gv_sub, -k, Rt, &e_j, myTempVkColRow);
     gsl_matrix_set_col(myDGammaTrMat, -k + myW->getMu() - 1, &gv_sub);
   }
 

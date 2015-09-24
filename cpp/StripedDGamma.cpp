@@ -37,7 +37,8 @@ void StripedDGamma::calcYtDgammaY( gsl_matrix *At, const gsl_matrix *Rt,
 }
 
 void StripedDGamma::calcDijGammaYr( gsl_vector *z, const gsl_matrix *Rt, 
-                        size_t j_1, size_t i_1, const gsl_vector *y ) {
+                        size_t j_1, size_t i_1, const gsl_vector *y,
+                        const gsl_matrix *Phi ) {
   size_t n_row = 0, k;
   gsl_vector sub_y, sub_z;
   
@@ -46,6 +47,6 @@ void StripedDGamma::calcDijGammaYr( gsl_vector *z, const gsl_matrix *Rt,
                                   myS->getBlock(k)->getN() * Rt->size2).vector;    
     sub_z = gsl_vector_const_subvector(z, n_row * Rt->size2, 
                                    myS->getBlock(k)->getN() * Rt->size2).vector;    
-    myLHDGamma[k]->calcDijGammaYr(&sub_z, Rt, j_1, i_1, &sub_y);
+    myLHDGamma[k]->calcDijGammaYr(&sub_z, Rt, j_1, i_1, &sub_y, Phi);
   }                   
 }

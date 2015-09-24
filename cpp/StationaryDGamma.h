@@ -27,7 +27,9 @@ public:
   virtual void calcYtDgammaY(  gsl_matrix *At, const gsl_matrix *Rt, 
                               const gsl_matrix *Yt );
   virtual void calcDijGammaYr( gsl_vector *z, const gsl_matrix *Rt, 
-                    size_t j_1, size_t i_1, const gsl_vector *y );
+                    size_t j_1, size_t i_1, const gsl_vector *y,
+                    const gsl_matrix *Phi = NULL );
+
   /**@}*/
 };
 
