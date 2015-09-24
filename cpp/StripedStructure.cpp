@@ -53,7 +53,7 @@ void StripedStructure::multByGtUnweighted( gsl_vector* p, const gsl_matrix *Rt,
   }                         
 }
 
-void StripedStructure::multByWInv( gsl_vector* p, long deg ) {
+void StripedStructure::multByWInv( gsl_vector* p, long deg ) const {
   size_t sum_np = 0;
   gsl_vector sub_p;
   

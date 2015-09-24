@@ -48,7 +48,7 @@ public:
    *
    * \f$\mathrm{L}_{\mathrm{W}}\f$ is defined in Table 1 of \cite slra-efficient.
    */
-  virtual void multByWInv( gsl_vector* p, long deg = 2 ) = 0;
+  virtual void multByWInv( gsl_vector* p, long deg = 2 ) const = 0;
 
   /** Creates Cholesky object for this structure.
    * \param[in]      d   rank reduction \f$d = m-r\f$,

@@ -25,7 +25,8 @@ class StripedStructure : public Structure {
 public:
   /** Constructs StripedStructure from array of Structure  objects.
    * @param blocksN     \f$N\f$ --- number of blocks
-   * @param stripe      array of Structure objects
+   * @param stripe      array of Structure objects.
+   *              NB: the destructor of StripedStructure destroys these objects!
    * @param isSameGamma if `isSameGamma == true`, it is assumed that all 
    *     \f$\Gamma_{\mathscr{S}^{(l)}}(R)\f$  are submatrices of 
    *     \f$\Gamma_{\mathscr{S}^{(l_{max})}}(R)\f$ (where \f$l_{max}\f$ is defined  
@@ -47,7 +48,7 @@ public:
                                    const gsl_vector *y, 
                                    double alpha = -1, double beta = 1,
                                    bool skipFixedBlocks = true ); 
-  virtual void multByWInv( gsl_vector* p, long deg = 2 );
+  virtual void multByWInv( gsl_vector* p, long deg = 2 ) const;
   virtual Cholesky *createCholesky( size_t d ) const;
   virtual DGamma *createDGamma( size_t d ) const;
   /**@}*/

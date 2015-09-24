@@ -39,7 +39,7 @@ void HLayeredElWStructure::multByGtUnweighted( gsl_vector* p,
   myBase.multByGtUnweighted(p, Rt, y, alpha, beta, skipFixedBlocks);        
 }
 
-void HLayeredElWStructure::multByWInv( gsl_vector* p, long deg ) {
+void HLayeredElWStructure::multByWInv( gsl_vector* p, long deg ) const {
   if (deg == 0) {
     return;
   }

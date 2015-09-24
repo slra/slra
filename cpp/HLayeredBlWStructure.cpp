@@ -97,8 +97,8 @@ void HLayeredBlWStructure::multByGtUnweighted( gsl_vector* p,
       }
     } 
   }
-} 
-void HLayeredBlWStructure::multByWInv( gsl_vector* p, long deg ) {
+}
+void HLayeredBlWStructure::multByWInv( gsl_vector* p, long deg ) const {
   size_t l_1, k, sum_np = 0;
   gsl_vector psub;
   

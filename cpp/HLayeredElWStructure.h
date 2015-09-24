@@ -36,7 +36,7 @@ public:
                                    const gsl_vector *y, 
                                    double alpha = -1, double beta = 1,
                                    bool skipFixedBlocks = true ); 
-  virtual void multByWInv( gsl_vector* p, long deg = 2 );
+  virtual void multByWInv( gsl_vector* p, long deg = 2 ) const;
   /**@}*/
   
   /** @name Implementing SDependentStructure interface */
