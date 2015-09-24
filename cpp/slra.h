@@ -33,6 +33,7 @@ extern "C" {
 #include "StationaryCholeskySlicot.h"
 #include "MuDependentDGamma.h"
 #include "StationaryDGamma.h"
+#include "PhiStructure.h"
 
 #include "VarproFunction.h"
 #include "NLSFunction.h"
