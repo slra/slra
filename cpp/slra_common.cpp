@@ -8,7 +8,7 @@
 typedef Structure* pStructure;
 
 Structure *createMosaicStructure( gsl_vector * ml, gsl_vector *nk,
-               gsl_vector * wk ) {
+               gsl_vector * wk, gsl_matrix *phi ) {
   enum { ROW_BLW_MOSAIC = 1, BLW_MOSAIC, ELW_MOSAIC } stype;
   
   if (wk == NULL || wk->size == ml->size) {
@@ -36,7 +36,11 @@ Structure *createMosaicStructure( gsl_vector * ml, gsl_vector *nk,
       }
     } 
   }
-  return new StripedStructure(nk->size, res,  stype == ROW_BLW_MOSAIC);
+  Structure *res1 =new StripedStructure(nk->size, res,  stype == ROW_BLW_MOSAIC);
+  if (phi != NULL) {
+    res1 = new PhiStructure(phi, res1);
+  }
+  return res1;
 }
 
 size_t compute_np( gsl_vector* ml, gsl_vector *nk ) {

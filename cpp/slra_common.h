@@ -66,7 +66,7 @@
  * @param [in]     d       Rank reduction  (\f$m-r\f$) 
  */                
 Structure *createMosaicStructure( gsl_vector * ml,  gsl_vector *nk, 
-               gsl_vector * wk );
+               gsl_vector * wk, gsl_matrix *phi = NULL );
          
 /*
  * tmv_prod_new: block-Toeplitz banded matrix p =  T * v
