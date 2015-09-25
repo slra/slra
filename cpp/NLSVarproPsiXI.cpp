@@ -1,8 +1,8 @@
 #include <memory.h>
 #include "slra.h"
 
-NLSVarproPsiXI::NLSVarproPsiXI( VarproFunction &fun, gsl_matrix *Psi ) : 
-    myFun(fun) {
+NLSVarproPsiXI::NLSVarproPsiXI( VarproFunction &fun, gsl_matrix *Psi ) :
+    NLSVarpro(fun) {
   if (Psi == NULL) {
     myPsi = gsl_matrix_alloc(myFun.getNrow(), myFun.getNrow());
     gsl_matrix_set_identity(myPsi);
@@ -83,14 +83,3 @@ void NLSVarproPsiXI::x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ) {
   }
 }
 
-void NLSVarproPsiXI::computeDefaultx( gsl_vector *x ) {
- gsl_matrix *Rtheta = gsl_matrix_alloc(myFun.getNrow(), myFun.getD());
- myFun.computeDefaultRTheta(Rtheta);
- RTheta2x(Rtheta, x);
- gsl_matrix_free(Rtheta);
-}
-
-void NLSVarproPsiXI::computePhat( gsl_vector* p, const gsl_vector* x ) {
-  x2RTheta(myTmpR, x);
-  myFun.computePhat(p, myTmpR);
-}

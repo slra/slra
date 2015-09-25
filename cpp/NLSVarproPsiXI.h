@@ -1,6 +1,5 @@
 class NLSVarproPsiXI : public NLSVarpro {
 protected:
-  VarproFunction &myFun;
   gsl_matrix *myTmpR;  
   gsl_matrix *myPsi;
   gsl_matrix myPsiSubm;
@@ -13,12 +12,6 @@ public:
 
   size_t getRank() { return myPsi->size2 - myFun.getD(); }
   
-  virtual void computePhat( gsl_vector* p, const gsl_vector* x );
-  virtual size_t getD() { return myFun.getD(); }
-  virtual size_t getM() { return myPsi->size1; }
-  
-  virtual void computeDefaultx( gsl_vector *x ); 
-
   virtual void RTheta2x( const gsl_matrix *RTheta, gsl_vector *x );
   virtual void x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ); 
 

@@ -1,13 +1,8 @@
 class NLSVarproVecR : public NLSVarpro {
-protected:
-  VarproFunction &myFun;
-public: 
-  NLSVarproVecR( VarproFunction &fun ) : myFun(fun) {}
+public:
+  NLSVarproVecR( VarproFunction &fun ) : NLSVarpro(fun) {}
   virtual ~NLSVarproVecR() {}
   
-  virtual size_t getD() { return myFun.getD(); }
-  virtual size_t getM() { return myFun.getNrow(); }
-
   virtual size_t getNvar() { return myFun.getNrow() * myFun.getD(); }
   virtual size_t getNEssVar() { return (myFun.getNrow() - myFun.getD()) * myFun.getD(); }
 
@@ -15,16 +10,6 @@ public:
     return gsl_matrix_const_view_vector(x, getM(), getD()).matrix;
   }
 
-  virtual void computePhat( gsl_vector* p, const gsl_vector* x ) {
-    gsl_matrix x_mat = x2xmat(x);
-	myFun.computePhat(p, &x_mat);
-  }
-  
-  virtual void computeDefaultx( gsl_vector *x ) {
-    gsl_matrix x_mat = x2xmat(x);
-    myFun.computeDefaultRTheta(&x_mat);
-  }
-  
   virtual void RTheta2x( const gsl_matrix *RTheta, gsl_vector *x ) {
     gsl_matrix x_mat = x2xmat(x);
     gsl_matrix_memcpy(&x_mat, RTheta);
@@ -44,12 +29,6 @@ public:
       myFun.computeFuncAndGrad(&tmpR, f, NULL, &gradM);
     }
   }
-
-  virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
-                                   gsl_matrix *jac ) {
-    gsl_matrix tmpR = x2xmat(x);
-    myFun.computeFuncAndPseudoJacobianLs(&tmpR, NULL, res, jac); 
-  }   
 };
 
 class NLSVarproVecRCholesky : public NLSVarproVecR {
