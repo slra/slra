@@ -12,9 +12,7 @@ class VarproFunction  {
   double myReggamma;
   bool myIsGCD;
 
-  gsl_matrix *myPhi;
   gsl_matrix *myMatr;
-  gsl_matrix *myRorig;
   gsl_matrix *myTmpGradR, *myTmpGradR2;
   gsl_matrix *myTmpJac, *myTmpJac2, *myTmpJtJ, *myTmpEye;
   gsl_vector *myTmpYr;  
@@ -27,19 +25,20 @@ class VarproFunction  {
 protected:  
   void setPhiPermCol( size_t i, const gsl_matrix *perm, gsl_vector *phiPermCol );
   virtual void fillZmatTmpJac( gsl_matrix *Zmatr, const gsl_vector* yr,
-                               const gsl_matrix *PhiTRt, double factor = 0.5 );
+                               const gsl_matrix *PhiTRt, double factor = 0.5,
+                               int mult_gam = 0 );
   virtual void mulZmatPerm( gsl_vector* res, const gsl_matrix *Zmatr,
-                            const gsl_matrix *perm, size_t i, size_t j );
+                            const gsl_matrix *perm, size_t j_1, size_t i_1 );
   size_t getM() { return myStruct->getM(); }
   
-  virtual void computeGammaSr( const gsl_matrix *R, gsl_matrix *PhiTRt,
+  virtual void computeGammaSr( const gsl_matrix *Rt,
                                gsl_vector *Sr, bool regularize_gamma );
   virtual void computePseudoJacobianLsFromYr( const gsl_vector* yr, 
-                   const gsl_matrix *Rorig, const gsl_matrix *perm, 
+                   const gsl_matrix *Rorig, const gsl_matrix *PsiT,
                    gsl_matrix *pjac, double factor = 0.5 );
 
   virtual void computeJacobianOfCorrection( const gsl_vector* yr, 
-                   const gsl_matrix *Rorig, const gsl_matrix *perm, gsl_matrix *jac );
+                   const gsl_matrix *Rorig, const gsl_matrix *PsiT, gsl_matrix *jac );
   virtual void computeGradFromYr( const gsl_vector* yr, const gsl_matrix *Rorig, 
                                   const gsl_matrix *perm, gsl_matrix *grad );
   const gsl_vector *getP() { return myP; }
@@ -55,7 +54,7 @@ public:
 
   size_t getD() { return myD; }
   size_t getN() { return myStruct->getN(); }
-  size_t getNrow() { return myPhi->size2; }
+  size_t getNrow() { return myStruct->getM(); }
   size_t getNp() { return myStruct->getNp(); }
   double getReggamma() { return myReggamma; }
   void setReggamma( double reg_gamma ) { myReggamma = reg_gamma; }
