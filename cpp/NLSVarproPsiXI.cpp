@@ -63,7 +63,7 @@ void NLSVarproPsiXI::PQ2XId( const gsl_matrix *R, gsl_matrix * x ) {
   gsl_matrix_free(tR);
 }
 
-void NLSVarproPsiXI::RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) {
+void NLSVarproPsiXI::RTheta2x( const gsl_matrix *RTheta, gsl_vector *x ) {
   gsl_matrix x_mat = x2xmat(x);
   if (myPsi == NULL) {
     gsl_matrix_memcpy(myTmpXId, RTheta);

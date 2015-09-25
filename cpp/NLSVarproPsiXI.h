@@ -19,7 +19,7 @@ public:
   
   virtual void computeDefaultx( gsl_vector *x ); 
 
-  virtual void RTheta2x( gsl_matrix *RTheta, gsl_vector *x ); 
+  virtual void RTheta2x( const gsl_matrix *RTheta, gsl_vector *x );
   virtual void x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ); 
 
   virtual gsl_matrix x2xmat( const gsl_vector *x ) {

@@ -21,7 +21,7 @@ public:
     virtual size_t getD() = 0;
     virtual size_t getM() = 0;
     
-    virtual void RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) = 0;
+    virtual void RTheta2x( const gsl_matrix *RTheta, gsl_vector *x ) = 0;
     virtual void x2RTheta( gsl_matrix *RTheta, const gsl_vector *x ) = 0;
     
     /* To remove: */

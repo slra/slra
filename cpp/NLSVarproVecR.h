@@ -25,7 +25,7 @@ public:
     myFun.computeDefaultRTheta(&x_mat);
   }
   
-  virtual void RTheta2x( gsl_matrix *RTheta, gsl_vector *x ) {
+  virtual void RTheta2x( const gsl_matrix *RTheta, gsl_vector *x ) {
     gsl_matrix x_mat = x2xmat(x);
     gsl_matrix_memcpy(&x_mat, RTheta);
   }
