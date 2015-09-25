@@ -5,8 +5,7 @@ protected:
   gsl_matrix *myPsi;
   gsl_matrix myPsiSubm;
   gsl_matrix *myTmpXId;
-  void computeR( const gsl_vector *x, gsl_matrix *R ); 
-public: 
+public:
   NLSVarproPsiXI( VarproFunction &fun, gsl_matrix *Psi );
   virtual ~NLSVarproPsiXI();
   virtual size_t getNvar() { return getRank() * myFun.getD(); }
@@ -38,7 +37,7 @@ public:
   virtual size_t getNsq() { return myFun.getN() * myFun.getD(); }
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
                                    gsl_matrix *jac ) {
-    computeR(x, myTmpR);
+    x2RTheta(myTmpR, x);
     myFun.computeFuncAndPseudoJacobianLs(myTmpR, &myPsiSubm, res, jac); 
   }   
 };
@@ -51,7 +50,7 @@ public:
   virtual size_t getNsq() { return myFun.getNp(); }
   virtual void computeFuncAndJac( const gsl_vector* x, gsl_vector *res, 
                                   gsl_matrix *jac ) {
-    computeR(x, myTmpR);
+    x2RTheta(myTmpR, x);
     myFun.computeCorrectionAndJacobian(myTmpR, &myPsiSubm, res, jac); 
   }
 };

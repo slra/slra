@@ -25,15 +25,9 @@ NLSVarproPsiXI::~NLSVarproPsiXI()  {
   gsl_matrix_free(myPsi);
 }
 
-void NLSVarproPsiXI::computeR( const gsl_vector * x, gsl_matrix *R ) { 
-  gsl_matrix x_mat = x2xmat(x);
-  X2XId(&x_mat, myTmpXId);
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1, myPsi, myTmpXId, 0, R);
-}
-
 void NLSVarproPsiXI::computeFuncAndGrad( const gsl_vector* x, double* f, 
                                          gsl_vector *grad ) {
-  computeR(x, myTmpR);
+  x2RTheta(myTmpR, x);
   if (grad == NULL) {
     myFun.computeFuncAndGrad(myTmpR, f, NULL, NULL);
   } else {
@@ -97,6 +91,6 @@ void NLSVarproPsiXI::computeDefaultx( gsl_vector *x ) {
 }
 
 void NLSVarproPsiXI::computePhat( gsl_vector* p, const gsl_vector* x ) {
-  computeR(x, myTmpR);
+  x2RTheta(myTmpR, x);
   myFun.computePhat(p, myTmpR);
 }
