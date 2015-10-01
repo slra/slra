@@ -144,8 +144,19 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
   switch (this->method) {
   case SLRA_OPT_METHOD_LM:
     gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
-    gsl_multifit_gradient(solverlm->J, solverlm->f, g);	
+    gsl_multifit_gradient(solverlm->J, solverlm->f, g);
     gsl_vector_scale(g, 2);
+    {
+      gsl_vector *g2 = gsl_vector_alloc(g->size);
+      F->computeFuncAndGrad(x_vec, NULL, g2);
+      gsl_vector_sub(g2, g);
+      if (gsl_vector_max(g2) > 1e-10 || gsl_vector_min(g2) < -1e-10) {
+        PRINTF("Gradient error, max = %14.10f,  min = %14.10f  ...",
+               gsl_vector_max(g2), gsl_vector_min(g2));
+        print_vec(g2);
+      }
+      gsl_vector_free(g2);
+    }
     if (itLog != NULL) {
       itLog->reportIteration(0, solverlm->x, this->fmin, g);
     }
@@ -311,12 +322,24 @@ static void normalizeJacobian( gsl_matrix *jac, gsl_vector *scaling ) {
 static void moveGN( const gsl_matrix *Vt, const gsl_vector *sig2,  const gsl_vector *ufuncsig,
                double lambda2, gsl_vector * dx, int k, gsl_vector * scaling ) {
   gsl_vector_set_zero(dx);
-  for (int i = 0; i < k; i++) {
+  double threshold = gsl_vector_get(sig2, 0) * Vt->size2 * DBL_EPSILON * 100;
+  
+  size_t i;
+  
+  for (i = 0; (i<sig2->size) &&(gsl_vector_get(sig2, i) >= threshold); i++) {
     gsl_vector VtRow = gsl_matrix_const_row(Vt, i).vector;
-	gsl_blas_daxpy(gsl_vector_get(ufuncsig, i) / 
+    gsl_blas_daxpy(gsl_vector_get(ufuncsig, i) /
                    (gsl_vector_get(sig2, i) * gsl_vector_get(sig2, i) + lambda2), &VtRow, dx);
   }
+  
+/*  if (i >= k) {
+    PRINTF("Pseudoinverse threshold exceeded.\n");
+    PRINTF("Threshold: %g, i: %d, last: %g, next: %g\n",
+           threshold, i, gsl_vector_get(sig2, i-1), gsl_vector_get(sig2, i));
+ }*/
+ 
 
+  
   if (scaling != NULL) {
     gsl_vector_mul(dx, scaling);
   }
@@ -373,7 +396,22 @@ int OptimizationOptions::lmpinvOptimize( NLSFunction *F, gsl_vector* x_vec,
   if (itLog != NULL) {
     itLog->reportIteration(0, x_cur, this->fmin, g);
   }
-  while (status_dx == GSL_CONTINUE && 
+  
+  
+  {
+    gsl_vector *g2 = gsl_vector_alloc(g->size);
+    F->computeFuncAndGrad(x_vec, NULL, g2);
+    gsl_vector_sub(g2, g);
+    if (gsl_vector_max(g2) > 1e-10 || gsl_vector_min(g2) < -1e-10) {
+      PRINTF("Gradient error, max = %14.10f,  min = %14.10f  ...",
+             gsl_vector_max(g2), gsl_vector_min(g2));
+      print_vec(g2);
+    }
+    gsl_vector_free(g2);
+  }
+  
+  
+  while (status_dx == GSL_CONTINUE &&
          status_grad == GSL_CONTINUE &&
          status == GSL_SUCCESS &&
          this->iter < this->maxiter) {
@@ -381,50 +419,50 @@ int OptimizationOptions::lmpinvOptimize( NLSFunction *F, gsl_vector* x_vec,
     if (this->maxx > 0) {
   	  if (gsl_vector_max(x_cur) > this->maxx || gsl_vector_min(x_cur) < -this->maxx ){
   	    break;
-	  }
-	}
+      }
+    }
   
-	this->iter++;
-	
+    this->iter++;
+
     if (scaling != NULL) {
       normalizeJacobian(jac, scaling);
     }
+
     
     /* Compute the SVD */
     dgesvd_("A", "O", &jac->size2, &jac->size1, jac->data, &jac->tda, sig->data,
         tempv->data, &tempv->size2, NULL, &jac->size1, work_vec->data, 
 		&work_vec->size, &status_svd);
 
-    gsl_blas_dgemv(CblasTrans, -1.0, jac, func, 0.0, tempufuncsig); 
-	gsl_vector_mul(tempufuncsig, sig);
-    
-	while (1) {
-	  moveGN(tempv, sig, tempufuncsig, lambda2, dx, F->getNEssVar(), scaling);
+    gsl_blas_dgemv(CblasTrans, -1.0, jac, func, 0.0, tempufuncsig);
+    gsl_vector_mul(tempufuncsig, sig);
+    while (1) {
+      moveGN(tempv, sig, tempufuncsig, lambda2, dx, F->getNEssVar(), scaling);
       gsl_vector_memcpy(x_new, x_cur);
       gsl_vector_add(x_new, dx);
       F->computeFuncAndGrad(x_new, &f_new, NULL);
 	  
-	  if (f_new <= this->fmin + 1e-16) {
+	    if (f_new <= this->fmin + 1e-16) {
         lambda2 = 0.4 * lambda2;
-	    break;
-	  }
-	  /* Else: update lambda */
-	  if (start_lm) {
+	      break;
+	    }
+	    /* Else: update lambda */
+	    if (start_lm) {
         lambda2 = gsl_vector_get(sig, 0) * gsl_vector_get(sig, 0);
-	    start_lm = 0;
-	  } else {
-        lambda2 = 10 * lambda2; 
+	      start_lm = 0;
+      } else {
+        lambda2 = 10 * lambda2;
         Log::lprintf(Log::LOG_LEVEL_ITER, "lambda: %f\n", lambda2);
       }
-	} 
+    }
     /* check the dx convergence criteria */
     if (this->epsabs != 0 || this->epsrel != 0) {
       status_dx = gsl_multifit_test_delta(dx, x_cur, this->epsabs, this->epsrel);
     }     
-	gsl_vector_memcpy(x_cur, x_new);
+    gsl_vector_memcpy(x_cur, x_new);
 
     F->computeFuncAndJac(x_cur, func, jac);
-	gsl_multifit_gradient(jac, func, g);
+    gsl_multifit_gradient(jac, func, g);
     gsl_vector_scale(g, 2);
     gsl_blas_ddot(func, func, &this->fmin);
 

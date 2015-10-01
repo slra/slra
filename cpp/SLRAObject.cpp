@@ -72,18 +72,30 @@ void SLRAObject::optimize( OptimizationOptions* opt, gsl_matrix *Rini,
     time_t t_b = clock();
 
     myF->setReggamma(opt->reggamma);
+    if (Psi != NULL && Psi->size1 != myF->getNrow()) {
+      opt->avoid_xi = 1;
+    }
+    
     if (myF->isGCD()) {
       opt->ls_correction = 1;
     }
     if (opt->ls_correction) {
       if (opt->avoid_xi) {
-        optFun = new NLSVarproVecRCorrection(*myF);
+        if (Psi != NULL) {
+          optFun = new NLSVarproPsiVecRCorrection(*myF, Psi);
+        } else {
+          optFun = new NLSVarproVecRCorrection(*myF);
+        }
       } else {
         optFun = new NLSVarproPsiXICorrection(*myF, Psi);
       }
     } else {
       if (opt->avoid_xi) {
-        optFun = new NLSVarproVecRCholesky(*myF);
+        if (Psi != NULL) {
+          optFun = new NLSVarproPsiVecRCholesky(*myF, Psi);
+        } else {
+          optFun = new NLSVarproVecRCholesky(*myF);
+        }
       } else {
         optFun = new NLSVarproPsiXICholesky(*myF, Psi);
       }
