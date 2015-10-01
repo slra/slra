@@ -40,6 +40,7 @@ extern "C" {
 #include "NLSVarpro.h"
 #include "NLSVarproPsiXI.h"
 #include "NLSVarproVecR.h"
+#include "NLSVarproPsiVecR.h"
 
 #include "OptimizationOptions.h"
 

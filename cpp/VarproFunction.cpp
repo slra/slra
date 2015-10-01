@@ -206,7 +206,7 @@ void VarproFunction::computeGradFromYr( const gsl_vector* yr,
   gsl_matrix_memcpy(myTmpGradR2, myTmpGradR);
 
   if (perm != NULL) {
-    if (perm->size1 == getNrow()) {
+    if (perm->size1 == getNrow() && perm->size2 == gradR->size1) { // TODO: improve on this
       gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, perm, myTmpGradR2, 0.0, gradR);
     } else {
       gsl_vector vecTmpGradR2 = gsl_vector_view_array(myTmpGradR2->data,
