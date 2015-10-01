@@ -59,9 +59,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
                                 RS_STR, INF_ITER_STR };
         plhs[1] = mxCreateStructArray(1, &l, sizeof(names) / sizeof(names[0]), names);
         rhm = M2trmat(rh = mxCreateDoubleMatrix(d, m, mxREAL));
-        {
+        if (psi.data == NULL || psi.size1 == m) {
           int nxvar = psi.data != NULL ? d*(psi.size2-d) :  d*(m-d);
           vhm = M2trmat(vh = mxCreateDoubleMatrix(nxvar, nxvar, mxREAL));
+          mxSetField(plhs[1], 0, VH_STR, vh);
         }
         infitm = M2trmat(infit = mxCreateDoubleMatrix(3, rs_dims[2], mxREAL));
         
@@ -69,7 +70,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         rsm = gsl_matrix_view_vector(&rs_vec, rs_dims[2], 
                                      rs_dims[0] * rs_dims[1]).matrix;
         mxSetField(plhs[1], 0, RH_STR, rh);
-        mxSetField(plhs[1], 0, VH_STR, vh);
         mxSetField(plhs[1], 0, RS_STR, rs);
         mxSetField(plhs[1], 0, INF_ITER_STR, infit);
       }

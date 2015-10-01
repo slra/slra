@@ -42,11 +42,11 @@ void mexFillOpt( const mxArray *Mopt, OptimizationOptions &opt,
 
     Psi = M2trmat(mxGetField(Mopt, 0, PSI_STR));
     if (Psi.data != NULL) {
-      if (Psi.size1 != m || Psi.size2 == 0 || Psi.size2 > m) {
+/*      if (Psi.size1 != m || Psi.size2 == 0 || Psi.size2 > m) {
         throw new Exception("Incorrect Psi\n");   
-      }
+      }*/
       
-      if ((m-r) >= Psi.size2) {
+      if (Psi.size1 == m && (m-r) >= Psi.size2) {
         throw new Exception("Rank reduction and psi incompatible\n");   
       }
     } 
