@@ -1,0 +1,13 @@
+This directory contains the tests for the AGCD paper.
+
+In order to run the tests:
+1) NACLAB (containing UVGCD) should be installed in the directory uvgcd. 
+
+NACLAB can be downloaded from http://homepages.neiu.edu/~naclab/
+
+2) FASTGCD should be installed in the directory fastgcd
+
+This is done by running the script 'install_fastgcd.m'
+
+
+

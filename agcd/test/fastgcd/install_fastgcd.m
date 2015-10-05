@@ -1,5 +1,8 @@
-F = webread('http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m')
+%F = webread('http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m')
+F = fopen('download/fast_gcd_wls.m');
+
 T = textscan(F, '%s', 'Delimiter', {'\n'})
+fclose(F);
 
 F_strs = T{1,1};
 fun_heads = (~cellfun('isempty', strfind(F_strs, '----')))
@@ -19,6 +22,7 @@ fun_ends = [fun_str_num-1;  size(F_strs,1)];
 fun_names{1} = 'fast_gcd_wls';
 
 for i=1:length(fun_names)
-    
-    
+  fid = fopen([fun_names{i} '.m'],'w');
+  fprintf(fid, '%s', strjoin(F_strs(fun_begins(i):fun_ends(i))','\n'));  
+  fclose(fid);  
 end

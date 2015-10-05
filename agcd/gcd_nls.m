@@ -2,7 +2,7 @@ function [ph, info] = gcd_nls(p, w, d, opt)
   if ~exist('opt', 'var')
     opt = struct();
   end
-  if ~isreal(p)
+  if ~prod(cellfun(@isreal,p))
     error('Only real polynomials are allowed. Use gcd_nls_complex instead');      
   end    
   
