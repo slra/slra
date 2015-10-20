@@ -5,7 +5,9 @@ void tmv_prod_vector( gsl_vector *T, size_t s, const gsl_vector* v, size_t m,
                       gsl_vector* p ) {
   double res;
   size_t i, temp, s_1 = s - 1;
-  size_t bCols = T->size / (2 * s - 1), corner_row_lim = GSL_MIN(s_1, m/2); 
+  size_t bCols = T->size / (2 * s - 1),
+                 corner_row_lim = GSL_MIN(s_1, (m+1)/2),
+                 middle_lim = GSL_MIN(m - s_1, 0 );
   gsl_vector subT, subv; /* subvectors of v and p */
 
   for (i = 0; i < corner_row_lim; i++) {  /* beginning and end parts */
@@ -23,7 +25,7 @@ void tmv_prod_vector( gsl_vector *T, size_t s, const gsl_vector* v, size_t m,
     gsl_vector_set(p, p->size - (i + 1), res);
   }
   /* middle part */
-  for (i = s_1; i < m - s_1; i++) {
+  for (i = s_1; i < middle_lim; i++) {
     subv = gsl_vector_const_subvector(v, (i - s_1) * bCols, T->size).vector;
     gsl_blas_ddot(T, &subv, &res);
     gsl_vector_set(p, i,  res);
@@ -34,7 +36,8 @@ void tmv_prod_new( gsl_matrix *T, size_t s, const gsl_vector* v,
                    size_t m, gsl_vector* p, double beta ) {
   size_t i, temp, s_1 = s - 1;
   size_t D = T->size1;
-  size_t bCols = T->size2 / (2 * s - 1), corner_row_lim = GSL_MIN(s_1, m/2); 
+  size_t bCols = T->size2 / (2 * s - 1), corner_row_lim = GSL_MIN(s_1, (m+1)/2),
+         middle_lim = GSL_MIN(m - s_1, 0);
   gsl_matrix subT;
   gsl_vector subv, subp; 	/* subvectors of v and p */
 
@@ -52,7 +55,7 @@ void tmv_prod_new( gsl_matrix *T, size_t s, const gsl_vector* v,
     gsl_blas_dgemv(CblasNoTrans, 1.0, &subT, &subv, beta, &subp);
   }
   /* middle part */
-  for (i = s_1; i < m - s_1; i++) {
+  for (i = s_1; i < middle_lim; i++) {
     subp = gsl_vector_subvector(p, i * T->size1, T->size1).vector;
     subv = gsl_vector_const_subvector(v, (i - s_1) * bCols, T->size2).vector;
     gsl_blas_dgemv(CblasNoTrans, 1.0, T, &subv, beta, &subp);
