@@ -35,7 +35,7 @@ StationaryDGamma::~StationaryDGamma() {
 void StationaryDGamma::calcYtDgammaY( gsl_matrix *At, const gsl_matrix *Rt, 
                                       const gsl_matrix *Yt ) {
   size_t n = Yt->size1;
-  size_t k_lim = GSL_MIN(myW->getMu(), n - 1);
+  size_t k_lim = GSL_MIN(myW->getMu(), n);
   gsl_matrix YrB, YrT;
 
   gsl_matrix_set_zero(At);

@@ -9,10 +9,7 @@ VarproFunction::VarproFunction( const gsl_vector *p, Structure *s, size_t d,
   if (myStruct->getNp() > p->size) {
     throw new Exception("Inconsistent parameter vector\n");
   }
-  if (myStruct->getN() < myStruct->getM()) {
-    throw new Exception("Number of columns %d is less than "
-                        "the number of rows %d.", myStruct->getN(), myStruct->getM());
-  }
+
   if (myStruct->getNp() < myStruct->getN() * getD()) {
     throw new Exception("The inner minimization problem is overdetermined: " 
         "n * (m-r) = %d, n_p = %d.\n", myStruct->getN() * getD(), myStruct->getNp());
