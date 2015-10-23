@@ -5,7 +5,7 @@ T = textscan(F, '%s', 'Delimiter', {'\n'})
 fclose(F);
 
 F_strs = T{1,1};
-fun_heads = (~cellfun('isempty', strfind(F_strs, '----')))
+fun_heads = (~cellfun('isempty', strfind(F_strs, '----')));
 fun_str_num = find(fun_heads);
 fun_str_num = fun_str_num(1:2:end);
 
@@ -23,6 +23,12 @@ fun_names{1} = 'fast_gcd_wls';
 
 for i=1:length(fun_names)
   fid = fopen([fun_names{i} '.m'],'w');
+  if (strcmp(fun_names{i}, 'c_f_newton_iter'))
+    [~,ind] = max(~cellfun('isempty', strfind(F_strs(fun_begins(i):fun_ends(i)), 'function [')));
+    ind = ind + fun_begins(i) - 1;
+    F_strs(ind) = strrep(F_strs(ind), '[z,res]', '[z,res,q1,q2,num_iter]');
+  end    
+  
   fprintf(fid, '%s', strjoin(F_strs(fun_begins(i):fun_ends(i))','\n'));  
   fclose(fid);  
 end

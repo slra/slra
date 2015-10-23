@@ -3,11 +3,10 @@ addpath '..';
 addpath 'uvgcd';
 addpath 'fastgcd';
 
-p = 1;
-q = 1;
-
 n = 10;
 
+%% Generate polynomials
+p = 1; q = 1;
 for j=1:n
   x_j = (-1)^j * j/2;
   p = conv(p,[-x_j; 1]);
@@ -15,59 +14,42 @@ for j=1:n
 end
 
 sccoef = norm(p,2);
-p = p./sccoef;
-q = q./sccoef;
+p = p./ norm(p,2); %sccoef;
+q = q./ norm(q,2); %sccoef;
 
-res = zeros(n,8);
+res = zeros(n,5);
 iters = zeros(n,5);
 res(:,1) = (1:n)';
 iters(:,1) = (1:n)';
-res(:,3) = [5.17e-1;6.95e-4;1.97e-5;2.89e-6;5.28e-5;...
-            2.15e-3;8.34e-2;2.04e0;4.70e1;7.73e2] / sccoef;
-            
+
 opt.disp = 'iter';
 opt.epsgrad = 1e-20;
 
+methods = {'gcd_nothing', 'gcd_nls', 'gcd_cofe', 'gcd_syl', 'gcd_uvgcd', 'gcd_fastgcd'};
+names = { '', 'd', 'LRA', 'VP$_{h}$', 'VP$_{g}$', 'VP$_{S}$', 'UVGCD', 'FASTGCD'};
+
+%% Run methods
 for d=1:n
   d
-  [ph, info] = gcd_nls({p,q}, [], d, opt);
-  info.Rh(:)
-  res(d,5) =  norm([p;q] -cell2mat(ph),2);
-  iters(d,2) = info.iter;
-end
+  opt.gini = g_ini({p,q}, d);
+  opt.hini = lsdivmult({p,q}, d, opt.gini);
 
-for d=1:n
-  [ph, info] = gcd_cofe({p,q}, [], d, opt);
-  res(d,8) =  norm([p;q] -cell2mat(ph),2);
-  iters(d,5) = info.iter;
-end
-% % 
-for d=1:n
-  [ph, info] = gcd_syl({p,q}, [], d, opt);
-  res(d,6) =  norm([p;q] -cell2mat(ph),2);
-  iters(d,3) = info.iter;
-end
-% % 
-% 
+  for j=1:length(methods)
+    eval(['[ph, info] = ' methods{j} '({p,q}, [], d, opt);']) 
+    res(d, j+1) = norm([p;q] -cell2mat(ph),2);
+    iters(d, j+1) = info.iter;  
+  end    
+end  
+%res(:,3) = [5.17e-1;6.95e-4;1.97e-5;2.89e-6;5.28e-5;...
+%            2.15e-3;8.34e-2;2.04e0;4.70e1;7.73e2] / sccoef;
 
-for d=1:n 
-  gini = g_ini({p,q}, d);
-  hh = lsdivmult({p,q}, d, gini)';
-  g1h = gini(1:length(p)-d)';
-  g2h = gini(length(p)-d + (1:length(q)-d))';
-   
-  res(d,2) =  norm([p;q] -[conv(hh,g1h).';conv(hh,g2h).'],2);
-  
- 
-  [hh,res1,g1h,g2h,num_iter] = (c_f_newton_iter(p',q', hh,g1h,g2h, 1, 1));
-  res(d,7) =  norm([p;q] -[conv(hh,g1h).';conv(hh,g2h).'],2);
-  iters(d,4) = num_iter;  
-  
-  
-  d
-  [hh, g1h, g2h,  uvres, uvcond] = uvGCDfixedDegree(p,q,d)  
-  res(d,4) =  norm([p;q] -[conv(hh,g1h);conv(hh,g2h)],2);
-end
-
-save('res_terui5.txt', 'res', '-ascii');
-% save('iter_terui5.txt', 'iters', '-ascii');
+fid = fopen('res_ex1_matlab.txt', 'w');
+fprintf(fid, '\t%s', names{:});
+fprintf(fid, '\n');
+fclose(fid);
+save('res_ex1_matlab.txt', 'res', '-ascii','-append');
+fid = fopen('iters_ex1_matlab.txt', 'w');
+fprintf(fid, '\t%s', names{:});
+fprintf(fid, '\n');
+fclose(fid);
+save('iters_ex1_matlab.txt', 'iters', '-ascii','-append');
