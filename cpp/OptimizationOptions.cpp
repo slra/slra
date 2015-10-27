@@ -446,6 +446,12 @@ int OptimizationOptions::lmpinvOptimize( NLSFunction *F, gsl_vector* x_vec,
         lambda2 = 0.4 * lambda2;
 	      break;
 	    }
+      
+      if (lambda2 > 1e100) {
+        status = GSL_ENOPROG;
+        break;
+      }
+      
 	    /* Else: update lambda */
 	    if (start_lm) {
         lambda2 = gsl_vector_get(sig, 0) * gsl_vector_get(sig, 0);
