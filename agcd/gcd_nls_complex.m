@@ -19,10 +19,10 @@ function [ph, info] = gcd_nls_complex(p, w, d, opt)
     opt.hini = lsdivmult(p, d, opt.gini);
   end    
   
-  A = kron(eye(d+1), [1 0]);
-  B = kron(eye(d+1), [0 1]);
+  At = kron(eye(d+1), [1 0]);
+  Bt= kron(eye(d+1), [0 1]);
   
-  opt.psi = [A B; -B A];
+  opt.psi = [At Bt; -Bt At];
   opt.Rini = [real(opt.hini(:).') imag(opt.hini(:).')] * opt.psi * sqrt(0.5);
   opt.Rini = reshape(opt.Rini, 2, 2*(d+1));
   

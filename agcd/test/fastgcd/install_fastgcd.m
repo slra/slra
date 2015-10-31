@@ -1,8 +1,8 @@
-%F = webread('http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m')
-F = fopen('download/fast_gcd_wls.m');
+F = webread('http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m')
+%F = fopen('download/fast_gcd_wls.m');
 
 T = textscan(F, '%s', 'Delimiter', {'\n'})
-fclose(F);
+%fclose(F);
 
 F_strs = T{1,1};
 fun_heads = (~cellfun('isempty', strfind(F_strs, '----')));
