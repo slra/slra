@@ -9,5 +9,14 @@ NACLAB can be downloaded from http://homepages.neiu.edu/~naclab/
 
 This is done by running the script 'install_fastgcd.m'
 
+3) SLRA package should be in path.
+
+The list of tests:
+
+test_ex1.m
+test_ex2.m
+test_ex2b.m
+test_ex_many.m
+
 
 

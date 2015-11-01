@@ -1,8 +1,13 @@
-F = webread('http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m')
-%F = fopen('download/fast_gcd_wls.m');
+% The following two lines work only in MATLAB 2014b..
+%F = webread('http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m')
+%T = textscan(F, '%s', 'Delimiter', {'\n'})
 
+F = fopen('download/fast_gcd_wls.m');
+if F == -1
+  error('Please download the file http://www.unilim.fr/pages_perso/paola.boito/fast_gcd_wls.m to "download" subdirectory and rerun the file')
+end
 T = textscan(F, '%s', 'Delimiter', {'\n'})
-%fclose(F);
+fclose(F);
 
 F_strs = T{1,1};
 fun_heads = (~cellfun('isempty', strfind(F_strs, '----')));
