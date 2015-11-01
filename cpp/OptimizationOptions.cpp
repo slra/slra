@@ -151,7 +151,8 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
       F->computeFuncAndGrad(x_vec, NULL, g2);
       gsl_vector_sub(g2, g);
       if (gsl_vector_max(g2) > 1e-10 || gsl_vector_min(g2) < -1e-10) {
-        PRINTF("Gradient error, max = %14.10f,  min = %14.10f  ...",
+        Log::lprintf(Log::LOG_LEVEL_NOTIFY,
+               "Gradient error, max = %14.10f,  min = %14.10f  ...",
                gsl_vector_max(g2), gsl_vector_min(g2));
         print_vec(g2);
       }
@@ -403,7 +404,8 @@ int OptimizationOptions::lmpinvOptimize( NLSFunction *F, gsl_vector* x_vec,
     F->computeFuncAndGrad(x_vec, NULL, g2);
     gsl_vector_sub(g2, g);
     if (gsl_vector_max(g2) > 1e-10 || gsl_vector_min(g2) < -1e-10) {
-      PRINTF("Gradient error, max = %14.10f,  min = %14.10f  ...",
+      Log::lprintf(Log::LOG_LEVEL_NOTIFY,
+             "Gradient error, max = %14.10f,  min = %14.10f  ...",
              gsl_vector_max(g2), gsl_vector_min(g2));
       print_vec(g2);
     }

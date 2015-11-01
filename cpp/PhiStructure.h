@@ -74,10 +74,10 @@ public:
                                   bool skipFixedBlocks = true );
   
   virtual Cholesky *createCholesky( size_t d ) const {
-    return new PhiCholesky::PhiCholesky(this, d);
+    return new PhiCholesky(this, d);
   }
   virtual DGamma *createDGamma( size_t d ) const {
-    return new PhiDGamma::PhiDGamma(this, d);
+    return new PhiDGamma(this, d);
   }
   /**@}*/
   
