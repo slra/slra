@@ -1,5 +1,5 @@
 % IDENT - LTI system identification by Hankel low-rank approximation
-% [sysh, info, wh] = ident(w, m, ell, opt)
+% [sysh, info, wh, xini] = ident(w, m, ell, opt)
 %
 % W   - T samples, Q variate time series, stored in a TxQ array
 %       or N such trajectories, stored in a TxQxN array
@@ -19,33 +19,48 @@
 % INFO - information from the optimization solver:
 %   INFO.M - misfit ||W - WH||_F^2
 %   INFO.ITER - number of iterations
-% WH    - optimal approximating time series
-
-function [sysh, info, wh] = ident(w, m, ell, opt)
+% WH   - optimal approximating time series
+% XINI - initial condition
+function [sysh, info, wh, xini] = ident(w, m, ell, opt)
 if ~exist('opt'), opt = []; end
 if ~isfield(opt, 'exct'), opt.exct = []; end
 if ~iscell(w)
   [T, q, N] = size(w); T = ones(N, 1) * T;
 else
-  N = length(w); for k = 1:N, [T(k), q] = size(w{k}); end, T = T(:);
+  N = length(w); for k = 1:N, [T(k), q, NN(k)] = size(w{k}); end, T = T(:);
+  if any(NN > 1), error('W can not be a cell array with a 3D element.'), end
 end, p = q - m; n = p * ell; 
 if (m == 0) & (p > 1)
-  for i = 1:p, wp{i}  = w(:, i); end 
+  if ~iscell(w)
+    for k = 1:N, for i = 1:p, wp{(k - 1) * p + i}  = w(:, i, k); end, end
+  else
+    for k = 1:N, for i = 1:p, wp{(k - 1) * p + i}  = w{k}(:, i); end, end
+  end
+
   if isfield(opt, 'n'), 
     ellp = opt.n; opt = rmfield(opt, 'n'); 
   else, 
     ellp = ell * p; 
   end 
+
   optp = opt;
-  % exact variables
-  % initial conditions
+  % exact variables TODO
+  % initial conditions TODO
   % initial system
   if isfield(optp, 'sys0') % && ???
     optp.sys0 = ss(optp.sys0.a, [], ones(1, size(optp.sys0, 'order')), [], -1);
   end
+
   [sysph, infop, wph] = ident(wp, 0, ellp, optp); 
-  sysh = ss(sysph.a, [], inistate(wph, sysph)', [], -1); % xini = sysph.c'; 
-  for i = 1:p, wh(:, i) = wph{i}; end 
+  for i = 1:p, c(p, :) = inistate(wph{i}, sysph)'; end
+  sysh = ss(sysph.a, [], c, [], -1); 
+
+  if ~iscell(w)
+    for k = 1:N, for i = 1:p, wh(:, i, k) = wph{(k - 1) * p + i}; end, end  
+  else
+    for k = 1:N, for i = 1:p, wh{k}(:, i) = wph{(k - 1) * p + i}; end, end      
+  end
+
   info = infop; % is this correct?
   return 
 end
@@ -152,9 +167,10 @@ elseif isfield(opt, 'v'), s.w = opt.v; end
 [ph, info] = slra(w2p(w), s, r, opt); info.M = info.fmin;
 wh = p2w(ph, q, N, T, iscell(w)); 
 if isfield(opt, 'ss') && (opt.ss == 0) 
-  sysh = info.Rh; 
+  sysh = info.Rh; xini = NaN;
 else 
   sysh = r2ss(info.Rh, m, ell); 
+  xini = inistate(wh, sysh);
 end
 if isfield(opt, 'wini')
   if ~iscell(opt.wini) && ~isempty(opt.wini)
@@ -216,7 +232,8 @@ a = sys.a; c = sys.c; [p, m] = size(sys.d); n = size(a, 1);
 if ~iscell(w)
   [T, q, N] = size(w); T = ones(N, 1) * T;
 else
-  N = length(w); for k = 1:N, [T(k), q] = size(w{k}); end, T = T(:);
+  N = length(w); for k = 1:N, [T(k), q, NN(k)] = size(w{k}); end, T = T(:);
+  if any(NN > 1), error('W can not be a cell array with a 3D element.'), end
 end 
 if ~exist('use_all_data') || use_all_data ~= 1, T = max(n, 2) * ones(1, N); end
 L = max(T); O = c; for t = 2:L, O = [O; O(end - p + 1:end, :) * a]; end

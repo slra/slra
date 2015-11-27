@@ -1,36 +1,37 @@
 %% Test system identification methods on examples from DAISY
 clear all, close all, warning off, 
-addpath ../doc/ident/data, 
+addpath ./data, 
 % run('~/mfiles/FrequencyDomainToolbox/setup')
 
 f  = fopen('daisy-results.txt', 'w');
 ff = fopen('daisy-exec-time.txt', 'w');
 
 %% control parameters
-cmp = 1; % compare criterion (1) or normalized percentage misfit (0)
+cmp = 1; % validation criterion: 'compare' (1) or normalized percentage misfit (0)
+eiv = 1; % identification criterion: EIV or not
+idt = .7;  % w(1:(idt * T)) - data for identification
+val = 1 - idt; % w(end - (val * T):end) - data for validation
+first_ident = 1; % first part of the data is used for identification
+detrended   = 0;
+order_selection = 0; ell = [];
+
 bar_plots = 1;
 save_data = 0;
 plots = 0;  % plots of the outputs and printed figures
 stop  = 0;  % stopping after each method
-eiv   = 1;  % EIV or not
-order_selection = 0; ell = [];
-idt   = .6;  % w(1:(idt * T)) - data for identification
-val   = 1 - idt; % w(end - (val * T):end) - data for validation
-first_ident = 0; % first part of the data is used for identification
-detrended   = 1;
-opt_l.maxiter =  500; opt_l.disp = 'off'; opt_l.method = 'll'; % for slra with LM method
-opt_q.maxiter =  500; opt_q.disp = 'off'; opt_q.method = 'qb'; % for slra with QN method
-opt_n.maxiter = 1000; opt_n.disp = 'off'; opt_n.method = 'nn'; % for slra with NM method
-opt_p.maxiter =  500; opt_p.disp = 'off'; opt_n.method = 'ps'; % for slra with permutations method
 
-opt_ls.maxiter =  500; opt_ls.disp = 'off'; opt_ls.method = 'ls'; % for slra with LM method
+%% solver options
+opt_l.maxiter  =  500; opt_l.disp  = 'off'; opt_l.method  = 'll'; % for slra with LM method
+opt_q.maxiter  =  500; opt_q.disp  = 'off'; opt_q.method  = 'qb'; % for slra with QN method
+opt_n.maxiter  = 1000; opt_n.disp  = 'off'; opt_n.method  = 'nn'; % for slra with NM method
+opt_p.maxiter  =  500; opt_p.disp  = 'off'; opt_n.method  = 'ps'; % for slra with LM with pinv
+opt_ls.maxiter =  500; opt_ls.disp = 'off'; opt_ls.method = 'ls'; % for slra with LM scaled
 opt_q2.maxiter =  500; opt_q2.disp = 'off'; opt_q2.method = 'q2'; % for slra with QN method
 opt_qp.maxiter =  500; opt_qp.disp = 'off'; opt_qp.method = 'qp'; % for slra with QN method
 opt_qf.maxiter =  500; opt_qf.disp = 'off'; opt_qf.method = 'qf'; % for slra with QN method
 opt_n2.maxiter = 1000; opt_n2.disp = 'off'; opt_n2.method = 'n2'; % for slra with NM method
 opt_nr.maxiter = 1000; opt_nr.disp = 'off'; opt_nr.method = 'nr'; % for slra with NM method
-opt_pu.maxiter =  500; opt_pu.disp = 'off'; opt_nu.method = 'pu'; % for slra with permutations method
-
+opt_pu.maxiter =  500; opt_pu.disp = 'off'; opt_nu.method = 'pu'; % for slra with LM with pinv unscaled
 
 %% data sets
 test_examples = {'#' 'name'                                                               'file name'          'l'
@@ -77,25 +78,25 @@ methods = {'#' 'name'      'command'                                            
            2  'ident-qn'    'opt_q.exct = exct; sys = ident([ui, yi], nu, l, opt_q);' '--b'
            3  'ident-nm'    'opt_n.exct = exct; sys = ident([ui, yi], nu, l, opt_n);' '--b'
            4  'ident-p'    'opt_n.exct = exct; sys = ident([ui, yi], nu, l, opt_p);' '--b'
-           5  'pem'          'sys = pem(iddata(yi, ui), ny * l, ''nk'', zeros(1, nu), ''dist'', ''none'', ''ss'', ''can'', ''InitialState'', ''Estimate'', ''LimitError'', 0); x0 = sys.x0; sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--r'
-           6  'moesp'        'sys = n4sid(iddata(yi, ui), l * ny, ''nk'', zeros(1, nu), ''dist'', ''none'', ''InitialState'', ''Estimate'', ''Focus'', ''Simulation'', ''N4Weight'', ''MOESP''); sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--g'
-           7  'cva'        'sys = n4sid(iddata(yi, ui), l * ny, ''nk'', zeros(1, nu), ''dist'', ''none'', ''InitialState'', ''Estimate'', ''Focus'', ''Simulation'', ''N4Weight'', ''CVA''); sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--g'
-           8 'stls' '[sys, info_stls] = stlsident([ui, yi], nu, l, opt_stls);' '--r'           
-           9 'ident-m'  'opt.exct = exct; opt.solver = ''m''; [sys, info] = ident([ui, yi], nu, l, opt);'  '--r'
-          10 'frq-dom'  'sys = sysid_rik([ui yi], nu, l);' '--b'
-          11  'ident-ls'    'opt_ls.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_ls);' '--b'           
-          12  'ident-q2'    'opt_q2.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_q2);' '--b'           
-          13  'ident-qp'    'opt_qp.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_qp);' '--b'           
-          14  'ident-qf'    'opt_qf.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_qf);' '--b'
-          15  'ident-n2'    'opt_n2.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_n2);' '--b'
-          16  'ident-nr'    'opt_nr.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_nr);' '--b'           
-          17  'ident-pu'    'opt_pu.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_pu);' '--b'           
+           5  'ident-ls'    'opt_ls.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_ls);' '--b'           
+           6  'ident-q2'    'opt_q2.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_q2);' '--b'           
+           7  'ident-qp'    'opt_qp.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_qp);' '--b'           
+           8  'ident-qf'    'opt_qf.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_qf);' '--b'
+           9  'ident-n2'    'opt_n2.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_n2);' '--b'
+          10  'ident-nr'    'opt_nr.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_nr);' '--b'           
+          11  'ident-pu'    'opt_pu.exct = exct; [sys, info_slra] = ident([ui, yi], nu, l, opt_pu);' '--b'           
+          12  'ident-m'  'opt.exct = exct; opt.solver = ''m''; [sys, info] = ident([ui, yi], nu, l, opt);'  '--r'
+          13  'frq-dom'  'sys = sysid_rik([ui yi], nu, l);' '--b'
+          14  'pem'          'sys = pem(iddata(yi, ui), ny * l, ''nk'', zeros(1, nu), ''dist'', ''none'', ''ss'', ''can'', ''InitialState'', ''Estimate'', ''LimitError'', 0); x0 = sys.x0; sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--r'
+          15  'moesp'        'sys = n4sid(iddata(yi, ui), l * ny, ''nk'', zeros(1, nu), ''dist'', ''none'', ''InitialState'', ''Estimate'', ''Focus'', ''Simulation'', ''N4Weight'', ''MOESP''); sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--g'
+          16  'cva'        'sys = n4sid(iddata(yi, ui), l * ny, ''nk'', zeros(1, nu), ''dist'', ''none'', ''InitialState'', ''Estimate'', ''Focus'', ''Simulation'', ''N4Weight'', ''CVA''); sys = ss(sys.a, sys.b, sys.c, sys.d, -1);' '--g'
+           
 };
     
 fprintf('\nMethods:\n')
 disp(methods(:, 1:2));
     %J = input('\nWhich methods to use? (Matlab array or Enter for all.) ... '); 
-    J = [2 12:14];    %J = [1 7];
+    J = 2:11; % [2 12:14];    %J = [1 7];
 if isempty(J) 
   J = 2:size(methods, 1);
 else
@@ -242,8 +243,8 @@ if bar_plots
     axis(gca, [0 size(idt_misfits, 1) + 1 0 100])
     set(gca, 'xtick', [1:size(idt_misfits, 1)])
     set(gca, 'fontsize', 15)
-    %    legend(methods(J, 2)), legend boxoff
-    eval(['print -depsc ' file_str 'idt-' int2str(idt*100) '.eps'])
+    legend(methods(J, 2)), legend boxoff
+        % eval(['print -depsc ' file_str 'idt-' int2str(idt*100) '.eps'])
     m_idt_misfits = mean(idt_misfits);
 
     figure
@@ -252,8 +253,8 @@ if bar_plots
     axis(gca, [0 size(val_misfits, 1) + 1 0 100])
     set(gca, 'xtick', [1:size(val_misfits, 1)])
     set(gca, 'fontsize', 15)
-    %    legend(methods(J, 2)), legend boxoff
-    eval(['print -depsc ' file_str 'val-' int2str(idt * 100) '.eps'])
+    legend(methods(J, 2)), legend boxoff
+        % eval(['print -depsc ' file_str 'val-' int2str(idt * 100) '.eps'])
     m_val_misfits = mean(val_misfits);
 
     figure
@@ -264,9 +265,10 @@ if bar_plots
     set(gca, 'xtick', [1:size(times, 1)])
     set(gca, 'fontsize', 15)
     legend(methods(J, 2), 2), legend boxoff
-    eval(['print -depsc ' file_str 'time-' int2str(idt * 100) '.eps'])
+        %eval(['print -depsc ' file_str 'time-' int2str(idt * 100) '.eps'])
         
     mean_times = mean(times)
 end
 
 fclose(f);
+fclose(ff);
