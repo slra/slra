@@ -5,6 +5,7 @@
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
+#include <gsl/gsl_version.h>
 
 #include "slra.h"
 
@@ -144,7 +145,11 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
   switch (this->method) {
   case SLRA_OPT_METHOD_LM:
     gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
+#if GSL_MAJOR_VERSION == 1
     gsl_multifit_gradient(solverlm->J, solverlm->f, g);
+#else /* GSL_MAJOR_VERSION == 1 */
+    gsl_vector_memcpy(g, solverlm->g);
+#endif /* GSL_MAJOR_VERSION == 1 */
     gsl_vector_scale(g, 2);
     {
       gsl_vector *g2 = gsl_vector_alloc(g->size);
@@ -191,9 +196,13 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
     switch (this->method) {
     case SLRA_OPT_METHOD_LM: /* Levenberg-Marquardt */
       status = gsl_multifit_fdfsolver_iterate(solverlm);
+#if GSL_MAJOR_VERSION == 1
       gsl_multifit_gradient(solverlm->J, solverlm->f, g);
+#else /* GSL_MAJOR_VERSION == 1 */
+      gsl_vector_memcpy(g, solverlm->g);
+#endif /* GSL_MAJOR_VERSION == 1 */
       gsl_vector_scale(g, 2);
-
+        
       /* check the convergence criteria */
       if (this->epsabs != 0 || this->epsrel != 0) {
         status_dx = gsl_multifit_test_delta(solverlm->dx, solverlm->x, 
@@ -240,7 +249,14 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
   case  SLRA_OPT_METHOD_LM:
     gsl_vector_memcpy(x_vec, solverlm->x);
     if (v != NULL) {
+#if GSL_MAJOR_VERSION == 1
       gsl_multifit_covar(solverlm->J, this->epscov, v); /* ??? Different eps */
+#else /* GSL_MAJOR_VERSION == 1 */
+      gsl_matrix *J = gsl_matrix_alloc(fdflm.n, fdflm.p)
+      gsl_multifit_fdfsolver_jac(solverlm, J);
+      gsl_multifit_covar (J, this->epscov, v);
+      gsl_matrix_free(J);
+#endif /* GSL_MAJOR_VERSION == 1 */
     }
     gsl_blas_ddot(solverlm->f, solverlm->f, &this->fmin);
     break;
