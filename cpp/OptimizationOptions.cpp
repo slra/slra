@@ -252,7 +252,7 @@ int OptimizationOptions::gslOptimize( NLSFunction *F, gsl_vector* x_vec,
 #if GSL_MAJOR_VERSION == 1
       gsl_multifit_covar(solverlm->J, this->epscov, v); /* ??? Different eps */
 #else /* GSL_MAJOR_VERSION == 1 */
-      gsl_matrix *J = gsl_matrix_alloc(fdflm.n, fdflm.p)
+      gsl_matrix *J = gsl_matrix_alloc(fdflm.n, fdflm.p);
       gsl_multifit_fdfsolver_jac(solverlm, J);
       gsl_multifit_covar (J, this->epscov, v);
       gsl_matrix_free(J);
